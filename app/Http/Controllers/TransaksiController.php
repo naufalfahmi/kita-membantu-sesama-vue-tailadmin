@@ -26,6 +26,12 @@ class TransaksiController extends Controller
             'fundraiser:id,name',
         ]);
 
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search) {
@@ -141,12 +147,20 @@ class TransaksiController extends Controller
      */
     public function show(string $id)
     {
-        $transaksi = Transaksi::with([
+        $query = Transaksi::with([
             'kantorCabang:id,nama',
             'donatur:id,nama',
             'program:id,nama_program',
             'fundraiser:id,name',
-        ])->find($id);
+        ]);
+
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
+        $transaksi = $query->find($id);
 
         if (! $transaksi) {
             return response()->json([
@@ -166,7 +180,15 @@ class TransaksiController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $transaksi = Transaksi::find($id);
+        $query = Transaksi::query();
+
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
+        $transaksi = $query->find($id);
 
         if (! $transaksi) {
             return response()->json([
@@ -224,7 +246,15 @@ class TransaksiController extends Controller
      */
     public function destroy(string $id)
     {
-        $transaksi = Transaksi::find($id);
+        $query = Transaksi::query();
+
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
+        $transaksi = $query->find($id);
 
         if (! $transaksi) {
             return response()->json([

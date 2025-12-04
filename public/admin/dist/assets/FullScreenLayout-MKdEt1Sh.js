@@ -1,0 +1,1 @@
+import{_ as e}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{a as o,d as t,b as a,s as n}from"./index-24nulL_6.js";const d="/admin/assets/auth-logo-CqhENfDg.svg",r={},c={class:"min-h-screen"};function _(s,l){return o(),t("div",c,[a("main",null,[n(s.$slots,"default")])])}const f=e(r,[["render",_]]);export{f as F,d as _};

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\DonaturController;
 use App\Http\Controllers\LandingKegiatanController;
 use App\Http\Controllers\JabatanController;
 use App\Http\Controllers\KantorCabangController;
@@ -10,7 +11,7 @@ use App\Http\Controllers\MitraController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TipeAbsensiController;
 use App\Http\Controllers\TipeDonaturController;
-use App\Http\Controllers\DonaturController;
+use App\Http\Controllers\TransaksiController;
 use App\Services\MenuService;
 
 // Frontend Routes
@@ -95,12 +96,16 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::apiResource('mitra', MitraController::class);
 
     // Donatur API
+    Route::get('donatur-next-kode', [DonaturController::class, 'getNextKode'])->name('admin.api.donatur.next-kode');
     Route::apiResource('donatur', DonaturController::class);
     
     // Search API
     Route::get('/search', [SearchController::class, 'search'])->name('admin.api.search');
     Route::get('/search/autocomplete', [SearchController::class, 'autocomplete'])->name('admin.api.search.autocomplete');
      Route::apiResource('tipe-donatur', TipeDonaturController::class);
+
+    // Transaksi API
+    Route::apiResource('transaksi', TransaksiController::class);
 });
 
 // Admin Signin Route - Public (no auth required, must be before protected routes)

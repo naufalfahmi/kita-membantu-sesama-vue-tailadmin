@@ -19,6 +19,19 @@
         <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Kode
+            </label>
+            <input
+              type="text"
+              v-model="formData.kode"
+              placeholder="Kode donatur"
+              readonly
+              class="h-11 w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 cursor-not-allowed"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Tipe Donor <span class="text-red-500">*</span>
             </label>
             <SearchableMultiSelect
@@ -205,17 +218,6 @@ const donorTypeOptions = [
   { value: 'retail', label: 'Retail' },
 ]
 
-const picOptions = [
-  { value: 'ahmad_hidayat', label: 'Ahmad Hidayat' },
-  { value: 'siti_nurhaliza', label: 'Siti Nurhaliza' },
-  { value: 'budi_santoso', label: 'Budi Santoso' },
-  { value: 'dewi_lestari', label: 'Dewi Lestari' },
-  { value: 'eko_prasetyo', label: 'Eko Prasetyo' },
-  { value: 'fitri_handayani', label: 'Fitri Handayani' },
-  { value: 'guntur_wibowo', label: 'Guntur Wibowo' },
-  { value: 'hesti_rahayu', label: 'Hesti Rahayu' },
-]
-
 const statusOptions = [
   { value: 'aktif', label: 'Aktif' },
   { value: 'tidak_aktif', label: 'Tidak Aktif' },
@@ -229,7 +231,14 @@ interface KantorCabangOption {
   kode?: string | null
 }
 
+interface KaryawanOption {
+  id: string | number
+  nama?: string | null
+  name?: string | null
+}
+
 const kantorCabangOptions = ref<KantorCabangOption[]>([])
+const karyawanOptions = ref<KaryawanOption[]>([])
 const kantorCabangSearchInput = ref('')
 const picSearchInput = ref('')
 const statusSearchInput = ref('')
@@ -242,7 +251,15 @@ const kantorCabangSelectOptions = computed(() =>
   }))
 )
 
+const picOptions = computed(() =>
+  karyawanOptions.value.map((item) => ({
+    value: item.nama || item.name || '',
+    label: item.nama || item.name || '-',
+  }))
+)
+
 const formData = reactive({
+  kode: '',
   nama: '',
   jenis_donatur: [] as string[],
   pic: '',
@@ -256,15 +273,43 @@ const formData = reactive({
 
 const fetchReferenceData = async () => {
   try {
-    const res = await fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' })
-    if (!res.ok) throw new Error('Failed to load kantor cabang')
-    const json = await res.json()
-    if (json.success) {
-      const payload = Array.isArray(json.data) ? json.data : json.data?.data
-      kantorCabangOptions.value = Array.isArray(payload) ? payload : []
+    const requests: Promise<Response>[] = [
+      fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' }),
+      fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
+    ]
+
+    // Fetch next kode only for new donatur
+    if (!isEditMode.value) {
+      requests.push(fetch('/admin/api/donatur-next-kode', { credentials: 'same-origin' }))
+    }
+
+    const responses = await Promise.all(requests)
+    const [kantorRes, karyawanRes, nextKodeRes] = responses
+
+    if (kantorRes.ok) {
+      const json = await kantorRes.json()
+      if (json.success) {
+        const payload = Array.isArray(json.data) ? json.data : json.data?.data
+        kantorCabangOptions.value = Array.isArray(payload) ? payload : []
+      }
+    }
+
+    if (karyawanRes.ok) {
+      const json = await karyawanRes.json()
+      if (json.success) {
+        const payload = Array.isArray(json.data) ? json.data : json.data?.data
+        karyawanOptions.value = Array.isArray(payload) ? payload : []
+      }
+    }
+
+    if (nextKodeRes && nextKodeRes.ok) {
+      const json = await nextKodeRes.json()
+      if (json.success && json.data?.kode) {
+        formData.kode = json.data.kode
+      }
     }
   } catch (error) {
-    toast.error('Gagal memuat data kantor cabang')
+    toast.error('Gagal memuat data referensi')
   }
 }
 
@@ -276,6 +321,7 @@ const loadData = async (id: string) => {
 
     if (json.success && json.data) {
       const data = json.data
+      formData.kode = data.kode || ''
       formData.nama = data.nama || ''
       formData.jenis_donatur = Array.isArray(data.jenis_donatur) ? data.jenis_donatur : []
       formData.pic = data.pic || ''

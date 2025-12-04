@@ -20,6 +20,43 @@ class DonaturController extends Controller
     protected array $allowedStatuses = ['aktif', 'tidak_aktif', 'pending'];
 
     /**
+     * Generate next kode donatur
+     */
+    private function generateKode(): string
+    {
+        // Get all kodes that match pattern DNT### (case insensitive)
+        $allKodes = Donatur::withTrashed()->pluck('kode')->toArray();
+
+        $maxNumber = 0;
+        foreach ($allKodes as $kode) {
+            if (preg_match('/^DNT(\d+)$/i', $kode, $matches)) {
+                $number = (int) $matches[1];
+                if ($number > $maxNumber) {
+                    $maxNumber = $number;
+                }
+            }
+        }
+
+        // Increment and format
+        $nextNumber = $maxNumber + 1;
+
+        return 'DNT'.str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Get next kode for new donatur
+     */
+    public function getNextKode()
+    {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'kode' => $this->generateKode(),
+            ],
+        ]);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -106,6 +143,12 @@ class DonaturController extends Controller
 
         try {
             $data = $this->sanitizePayload($validator->validated());
+            
+            // Auto-generate kode if not provided
+            if (empty($data['kode'])) {
+                $data['kode'] = $this->generateKode();
+            }
+            
             $data['status'] = $data['status'] ?? 'aktif';
             $data['created_by'] = auth()->id();
 

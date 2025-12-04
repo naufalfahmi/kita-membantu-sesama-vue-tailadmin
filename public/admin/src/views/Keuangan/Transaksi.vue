@@ -57,34 +57,13 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Donatur
+              Cari
             </label>
             <input
               type="text"
-              v-model="filterDonatur"
-              placeholder="Cari donatur..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Fundraiser
-            </label>
-            <input
-              type="text"
-              v-model="filterFundraiser"
-              placeholder="Cari fundraiser..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Program
-            </label>
-            <input
-              type="text"
-              v-model="filterProgram"
-              placeholder="Cari program..."
+              v-model="filterSearch"
+              placeholder="Cari kode, donatur, program..."
+              @input="debouncedFetch"
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
@@ -93,64 +72,34 @@
               Tanggal
             </label>
             <div class="relative">
-              <flat-pickr
+              <FlatPickr
                 v-model="filterTanggal"
                 :config="flatpickrDateConfig"
-                class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                @on-change="debouncedFetch"
+                class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 placeholder="Pilih tanggal"
               />
-              <span
-                class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400"
-              >
-                <svg
-                  class="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 9.99999C18.3333 5.39762 14.6024 1.66666 10 1.66666C5.39763 1.66666 1.66667 5.39762 1.66667 9.99999C1.66667 14.6024 5.39763 18.3333 10 18.3333Z"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M10 5V10L13.3333 11.6667"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
+                <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M6.66659 1.5415C7.0808 1.5415 7.41658 1.87729 7.41658 2.2915V2.99984H12.5833V2.2915C12.5833 1.87729 12.919 1.5415 13.3333 1.5415C13.7475 1.5415 14.0833 1.87729 14.0833 2.2915V2.99984L15.4166 2.99984C16.5212 2.99984 17.4166 3.89527 17.4166 4.99984V7.49984V15.8332C17.4166 16.9377 16.5212 17.8332 15.4166 17.8332H4.58325C3.47868 17.8332 2.58325 16.9377 2.58325 15.8332V7.49984V4.99984C2.58325 3.89527 3.47868 2.99984 4.58325 2.99984L5.91659 2.99984V2.2915C5.91659 1.87729 6.25237 1.5415 6.66659 1.5415ZM6.66659 4.49984H4.58325C4.30711 4.49984 4.08325 4.7237 4.08325 4.99984V6.74984H15.9166V4.99984C15.9166 4.7237 15.6927 4.49984 15.4166 4.49984H13.3333H6.66659ZM15.9166 8.24984H4.08325V15.8332C4.08325 16.1093 4.30711 16.3332 4.58325 16.3332H15.4166C15.6927 16.3332 15.9166 16.1093 15.9166 15.8332V8.24984Z" fill="currentColor"/>
                 </svg>
               </span>
             </div>
           </div>
-        </div>
-        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Jumlah Min
+              Status
             </label>
-            <input
-              type="number"
-              v-model="filterJumlahMin"
-              placeholder="Jumlah minimum..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Jumlah Max
-            </label>
-            <input
-              type="number"
-              v-model="filterJumlahMax"
-              placeholder="Jumlah maksimum..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
+            <select
+              v-model="filterStatus"
+              @change="fetchData"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+            >
+              <option value="">Semua Status</option>
+              <option value="pending">Pending</option>
+              <option value="verified">Verified</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
           <div class="flex items-end">
             <button
@@ -163,58 +112,26 @@
         </div>
       </div>
 
-      <div class="relative" style="width: 100%; height: 450px;">
-        <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 100%;">
-          <ag-grid-vue
-            ref="agGridRef"
-            class="ag-theme-alpine"
-            style="width: 100%; height: 100%;"
-            :columnDefs="columnDefs"
-            :defaultColDef="defaultColDef"
-            :rowModelType="'infinite'"
-            :datasource="dataSource"
-            :rowBuffer="10"
-            :cacheBlockSize="10"
-            :maxBlocksInCache="5"
-            :maxConcurrentDatasourceRequests="2"
-            :infiniteInitialRowCount="10"
-            :suppressSorting="false"
-            theme="legacy"
-            :animateRows="true"
-            :suppressHorizontalScroll="true"
-            @sortChanged="onSortChanged"
-          />
-        </div>
-        
-        <!-- Custom empty state overlay -->
-        <div
-          v-if="showEmptyState"
-          class="absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 rounded-lg z-50 pointer-events-none"
-          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"
-        >
-          <svg class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              v-if="filterDonatur || filterFundraiser || filterProgram || filterTanggal || filterJumlahMin || filterJumlahMax"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            ></path>
-            <path
-              v-else
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            ></path>
-          </svg>
-          <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
-            {{ filterDonatur || filterFundraiser || filterProgram || filterTanggal || filterJumlahMin || filterJumlahMax ? 'Tidak ada data ditemukan' : 'Tidak ada data' }}
-          </p>
-          <p class="text-gray-500 dark:text-gray-500 text-sm">
-            {{ filterDonatur || filterFundraiser || filterProgram || filterTanggal || filterJumlahMin || filterJumlahMax ? 'Coba ubah filter pencarian Anda' : 'Belum ada data yang tersedia' }}
-          </p>
-        </div>
+      <!-- Loading State -->
+      <div v-if="loading" class="flex items-center justify-center py-12">
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
+        <span class="ml-3 text-gray-600 dark:text-gray-400">Memuat data...</span>
+      </div>
+
+      <div v-else class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
+        <ag-grid-vue
+          class="ag-theme-alpine"
+          style="width: 100%;"
+          :columnDefs="columnDefs"
+          :rowData="rowData"
+          :defaultColDef="defaultColDef"
+          :pagination="true"
+          :paginationPageSize="20"
+          theme="legacy"
+          :animateRows="true"
+          :suppressHorizontalScroll="true"
+          :domLayout="'autoHeight'"
+        />
       </div>
     </div>
 
@@ -231,11 +148,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { AgGridVue } from 'ag-grid-vue3'
-import type { IDatasource, IGetRowsParams } from 'ag-grid-community'
-import flatPickr from 'vue-flatpickr-component'
+import FlatPickr from 'vue-flatpickr-component'
 import * as XLSX from 'xlsx'
 import 'flatpickr/dist/flatpickr.css'
 import 'ag-grid-community/styles/ag-grid.css'
@@ -243,27 +160,35 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
-import { useToast } from 'vue-toastification'
-
 
 interface TransaksiRow {
   id: string
-  donatur: string
-  fundraiser: string
-  program: string
-  jumlah: number
-  tanggal: string
+  kode: string | null
+  donatur: string | null
+  fundraiser: string | null
+  program: string | null
+  nominal: number
+  nominal_formatted: string
+  tanggal_transaksi: string | null
+  keterangan: string | null
+  status: string
 }
 
 const route = useRoute()
 const router = useRouter()
-const currentPageTitle = computed(() => (route.meta.title as string) || 'Transaksi')
-const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 const toast = useToast()
+
+const currentPageTitle = computed(() => (route.meta.title as string) || 'Transaksi')
+
+const loading = ref(false)
+const rowData = ref<TransaksiRow[]>([])
+const filterSearch = ref('')
+const filterTanggal = ref('')
+const filterStatus = ref('')
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
+let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
-// Flatpickr configuration for date
 const flatpickrDateConfig = {
   dateFormat: 'Y-m-d',
   altInput: true,
@@ -271,61 +196,76 @@ const flatpickrDateConfig = {
   wrap: false,
 }
 
-// Column definitions
 const columnDefs = [
+  {
+    headerName: 'Kode',
+    field: 'kode',
+    sortable: true,
+    width: 160,
+    valueFormatter: (params: any) => params.value || '-',
+  },
   {
     headerName: 'Donatur',
     field: 'donatur',
     sortable: true,
-    filter: false,
     flex: 1,
+    valueFormatter: (params: any) => params.value || '-',
   },
   {
     headerName: 'Fundraiser',
     field: 'fundraiser',
     sortable: true,
-    filter: false,
     flex: 1,
+    valueFormatter: (params: any) => params.value || '-',
   },
   {
     headerName: 'Program',
     field: 'program',
     sortable: true,
-    filter: false,
     flex: 1,
+    valueFormatter: (params: any) => params.value || '-',
   },
   {
-    headerName: 'Jumlah',
-    field: 'jumlah',
+    headerName: 'Nominal',
+    field: 'nominal_formatted',
     sortable: true,
-    filter: false,
     flex: 1,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-          minimumFractionDigits: 0,
-        }).format(params.value)
-      }
-      return ''
-    },
   },
   {
     headerName: 'Tanggal',
-    field: 'tanggal',
+    field: 'tanggal_transaksi',
     sortable: true,
-    filter: false,
-    flex: 1,
+    width: 150,
     valueFormatter: (params: any) => {
       if (params.value) {
         return new Date(params.value).toLocaleDateString('id-ID', {
           year: 'numeric',
-          month: 'long',
+          month: 'short',
           day: 'numeric',
         })
       }
-      return ''
+      return '-'
+    },
+  },
+  {
+    headerName: 'Status',
+    field: 'status',
+    sortable: true,
+    width: 120,
+    cellRenderer: (params: any) => {
+      const span = document.createElement('span')
+      const status = params.value || 'pending'
+      if (status === 'verified') {
+        span.className = 'inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400'
+        span.textContent = 'Verified'
+      } else if (status === 'cancelled') {
+        span.className = 'inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400'
+        span.textContent = 'Cancelled'
+      } else {
+        span.className = 'inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+        span.textContent = 'Pending'
+      }
+      return span
     },
   },
   {
@@ -337,7 +277,7 @@ const columnDefs = [
     cellRenderer: (params: any) => {
       const div = document.createElement('div')
       div.className = 'flex items-center gap-3'
-      
+
       const editBtn = document.createElement('button')
       editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
       editBtn.innerHTML = `
@@ -346,7 +286,7 @@ const columnDefs = [
         </svg>
       `
       editBtn.onclick = () => handleEdit(params.data.id)
-      
+
       const deleteBtn = document.createElement('button')
       deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
       deleteBtn.innerHTML = `
@@ -359,171 +299,127 @@ const columnDefs = [
         </svg>
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
-      
+
       div.appendChild(editBtn)
       div.appendChild(deleteBtn)
-      
+
       return div
     },
   },
 ]
 
-// Default column definition
 const defaultColDef = {
   resizable: true,
   sortable: true,
   filter: false,
 }
 
-// Sample data - generate 200 items for infinite scroll testing
-const generateRowData = (): TransaksiRow[] => {
-  const donaturs = [
-    'PT Dermawan Sejati', 'CV Peduli Bangsa', 'Yayasan Berbagi Kasih', 'PT Bantuan Sosial',
-    'UD Sukarela Jaya', 'PT Cinta Indonesia', 'CV Amal Mulia', 'Yayasan Bantu Sesama',
-    'PT Harapan Baru', 'CV Gotong Royong', 'Yayasan Cinta Kasih', 'PT Sejahtera Bersama',
-    'CV Jaya Abadi', 'Yayasan Peduli Anak', 'PT Mandiri Jaya', 'CV Berkah Selalu',
-    'Yayasan Damai Sentosa', 'PT Harmoni Sejahtera', 'CV Maju Terus', 'Yayasan Kasih Ibu',
-  ]
-  
-  const fundraisers = [
-    'Ahmad Hidayat', 'Siti Nurhaliza', 'Budi Santoso', 'Dewi Lestari', 'Eko Prasetyo',
-    'Fitri Handayani', 'Guntur Wibowo', 'Hesti Rahayu', 'Indra Wijaya', 'Joko Susilo',
-    'Kartika Putri', 'Lukman Hakim', 'Maya Sari', 'Nanda Pratama', 'Olivia Wijaya',
-  ]
-  
-  const programs = [
-    'Program Beasiswa Pendidikan', 'Program Kesehatan Masyarakat', 'Program Pemberdayaan Ekonomi',
-    'Program Bantuan Pangan', 'Program Pengembangan SDM', 'Program Lingkungan Hidup',
-    'Program Sosial Budaya', 'Program Infrastruktur', 'Program Teknologi Informasi',
-    'Program Pertanian Berkelanjutan', 'Program Perumahan Rakyat', 'Program Air Bersih',
-  ]
-  
-  const rowData: TransaksiRow[] = []
-  const startDate = new Date('2024-01-01')
-  
-  for (let i = 1; i <= 200; i++) {
-    const donaturIndex = (i - 1) % donaturs.length
-    const fundraiserIndex = (i - 1) % fundraisers.length
-    const programIndex = (i - 1) % programs.length
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + (i - 1) * 2) // Increment by 2 days for each entry
-    
-    // Random amount between 1M and 10M
-    const jumlah = Math.floor(Math.random() * 9000000) + 1000000
-    
-    rowData.push({
-      id: i.toString(),
-      donatur: `${donaturs[donaturIndex]} ${i > donaturs.length ? `(${Math.floor((i - 1) / donaturs.length) + 1})` : ''}`.trim(),
-      fundraiser: fundraisers[fundraiserIndex],
-      program: programs[programIndex],
-      jumlah: jumlah,
-      tanggal: date.toISOString().split('T')[0],
+const fetchData = async () => {
+  loading.value = true
+
+  try {
+    const params = new URLSearchParams()
+    params.append('per_page', '100')
+
+    if (filterSearch.value) {
+      params.append('search', filterSearch.value)
+    }
+
+    if (filterTanggal.value) {
+      params.append('tanggal', filterTanggal.value)
+    }
+
+    if (filterStatus.value) {
+      params.append('status', filterStatus.value)
+    }
+
+    const res = await fetch(`/admin/api/transaksi?${params.toString()}`, {
+      credentials: 'same-origin',
     })
+
+    if (!res.ok) throw new Error('Failed to fetch transaksi')
+
+    const json = await res.json()
+
+    if (json.success) {
+      rowData.value = (json.data || []).map((item: any) => ({
+        id: item.id,
+        kode: item.kode,
+        donatur: item.donatur?.nama || null,
+        fundraiser: item.fundraiser?.nama || null,
+        program: item.program?.nama || null,
+        nominal: item.nominal,
+        nominal_formatted: item.nominal_formatted,
+        tanggal_transaksi: item.tanggal_transaksi,
+        keterangan: item.keterangan,
+        status: item.status,
+      }))
+    }
+  } catch (error) {
+    toast.error('Gagal memuat data transaksi')
+  } finally {
+    loading.value = false
   }
-  
-  return rowData
 }
 
-const rowDataArray = ref<TransaksiRow[]>(generateRowData())
+const debouncedFetch = () => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    fetchData()
+  }, 300)
+}
 
-// Filter state
-const filterDonatur = ref('')
-const filterFundraiser = ref('')
-const filterProgram = ref('')
-const filterTanggal = ref('')
-const filterJumlahMin = ref('')
-const filterJumlahMax = ref('')
+const resetFilter = () => {
+  filterSearch.value = ''
+  filterTanggal.value = ''
+  filterStatus.value = ''
+  fetchData()
+}
 
-// Filtered data based on filter
-const filteredData = computed(() => {
-  let filtered = [...rowDataArray.value]
-  
-  // Filter by Donatur
-  if (filterDonatur.value) {
-    const searchTerm = filterDonatur.value.toLowerCase()
-    filtered = filtered.filter((item) =>
-      item.donatur.toLowerCase().includes(searchTerm)
-    )
-  }
-  
-  // Filter by Fundraiser
-  if (filterFundraiser.value) {
-    const searchTerm = filterFundraiser.value.toLowerCase()
-    filtered = filtered.filter((item) =>
-      item.fundraiser.toLowerCase().includes(searchTerm)
-    )
-  }
-  
-  // Filter by Program
-  if (filterProgram.value) {
-    const searchTerm = filterProgram.value.toLowerCase()
-    filtered = filtered.filter((item) =>
-      item.program.toLowerCase().includes(searchTerm)
-    )
-  }
-  
-  // Filter by Tanggal
-  if (filterTanggal.value) {
-    filtered = filtered.filter((item) => {
-      const itemDate = new Date(item.tanggal)
-      const filterDate = new Date(filterTanggal.value)
-      
-      return (
-        itemDate.getFullYear() === filterDate.getFullYear() &&
-        itemDate.getMonth() === filterDate.getMonth() &&
-        itemDate.getDate() === filterDate.getDate()
-      )
-    })
-  }
-  
-  // Filter by Jumlah Min
-  if (filterJumlahMin.value) {
-    const minAmount = parseFloat(filterJumlahMin.value)
-    if (!isNaN(minAmount)) {
-      filtered = filtered.filter((item) => item.jumlah >= minAmount)
-    }
-  }
-  
-  // Filter by Jumlah Max
-  if (filterJumlahMax.value) {
-    const maxAmount = parseFloat(filterJumlahMax.value)
-    if (!isNaN(maxAmount)) {
-      filtered = filtered.filter((item) => item.jumlah <= maxAmount)
-    }
-  }
-  
-  return filtered
-})
-
-// Show empty state when filtered data is empty
-const showEmptyState = computed(() => filteredData.value.length === 0)
-
-// Handle add button - redirect to form page
 const handleAdd = () => {
   router.push('/keuangan/transaksi/new')
 }
 
-// Handle edit - redirect to form page
 const handleEdit = (id: string) => {
   router.push(`/keuangan/transaksi/${id}/edit`)
 }
 
-// Handle delete
 const handleDelete = (id: string) => {
   deleteId.value = id
   showDeleteModal.value = true
 }
 
-const confirmDelete = () => {
-  if (!deleteId.value) {
-    return
-  }
+const confirmDelete = async () => {
+  if (!deleteId.value) return
 
-  rowDataArray.value = rowDataArray.value.filter((item) => item.id !== deleteId.value)
-  toast.success('Transaksi berhasil dihapus')
-  showDeleteModal.value = false
-  deleteId.value = null
-  refreshGrid()
+  try {
+    const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+    if (!tokenRes.ok) throw new Error('Failed to fetch CSRF token')
+    const tokenJson = await tokenRes.json()
+
+    const res = await fetch(`/admin/api/transaksi/${deleteId.value}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': tokenJson.csrf_token,
+      },
+      credentials: 'same-origin',
+    })
+
+    const json = await res.json()
+
+    if (json.success) {
+      toast.success(json.message || 'Transaksi berhasil dihapus')
+      fetchData()
+    } else {
+      toast.error(json.message || 'Gagal menghapus transaksi')
+    }
+  } catch (error) {
+    toast.error('Gagal menghapus transaksi')
+  } finally {
+    showDeleteModal.value = false
+    deleteId.value = null
+  }
 }
 
 const cancelDelete = () => {
@@ -531,182 +427,36 @@ const cancelDelete = () => {
   deleteId.value = null
 }
 
-// Handle export to Excel
 const handleExportExcel = () => {
-  const dataToExport = filteredData.value.map((item) => {
-    const tanggal = new Date(item.tanggal)
-    
-    return {
-      'Donatur': item.donatur,
-      'Fundraiser': item.fundraiser,
-      'Program': item.program,
-      'Jumlah': new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-      }).format(item.jumlah),
-      'Tanggal': tanggal.toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-    }
-  })
-  
+  const dataToExport = rowData.value.map((item) => ({
+    'Kode': item.kode || '-',
+    'Donatur': item.donatur || '-',
+    'Fundraiser': item.fundraiser || '-',
+    'Program': item.program || '-',
+    'Nominal': item.nominal_formatted,
+    'Tanggal': item.tanggal_transaksi
+      ? new Date(item.tanggal_transaksi).toLocaleDateString('id-ID', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : '-',
+    'Status': item.status,
+  }))
+
   const worksheet = XLSX.utils.json_to_sheet(dataToExport)
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Transaksi')
-  
+
   const now = new Date()
   const filename = `Transaksi_${now.toISOString().split('T')[0]}.xlsx`
-  
+
   XLSX.writeFile(workbook, filename)
 }
 
-// Helper function to sort data
-const sortData = (data: Array<any>, sortModel: any[]) => {
-  if (!sortModel || sortModel.length === 0) {
-    return data
-  }
-  
-  const sortedData = [...data]
-  sortModel.forEach((sort) => {
-    const { colId, sort: sortDirection } = sort
-    sortedData.sort((a, b) => {
-      let aValue = a[colId]
-      let bValue = b[colId]
-      
-      // Handle date sorting
-      if (colId === 'tanggal') {
-        aValue = new Date(aValue).getTime()
-        bValue = new Date(bValue).getTime()
-      } else if (colId === 'jumlah') {
-        // Already number, no conversion needed
-        aValue = aValue || 0
-        bValue = bValue || 0
-      } else if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase()
-        bValue = bValue.toLowerCase()
-      }
-      
-      if (aValue < bValue) {
-        return sortDirection === 'asc' ? -1 : 1
-      }
-      if (aValue > bValue) {
-        return sortDirection === 'asc' ? 1 : -1
-      }
-      return 0
-    })
-  })
-  
-  return sortedData
-}
-
-// Create datasource function for infinite scroll
-const createDataSource = (): IDatasource => {
-  return {
-    getRows: (params: IGetRowsParams) => {
-      setTimeout(() => {
-        const start = params.startRow || 0
-        const end = params.endRow || 0
-        
-        // Get filtered data
-        let allData = filteredData.value
-        
-        // Apply sorting if sortModel is provided
-        if (params.sortModel && params.sortModel.length > 0) {
-          allData = sortData(allData, params.sortModel)
-        }
-        
-        // Get the chunk of data for this page
-        const rowsThisPage = allData.slice(start, end)
-        
-        // Check if there's more data
-        let lastRow: number | undefined
-        if (allData.length === 0) {
-          lastRow = 0
-        } else if (allData.length <= end) {
-          lastRow = allData.length
-        } else {
-          lastRow = undefined
-        }
-        
-        // Provide data to AG Grid
-        params.successCallback(rowsThisPage, lastRow)
-      }, 50)
-    },
-  }
-}
-
-// Infinite scroll datasource - create as ref for reactivity
-const dataSource = ref<IDatasource>(createDataSource())
-
-const refreshGrid = (scrollToTop = false) => {
-  const newDataSource = createDataSource()
-  dataSource.value.getRows = newDataSource.getRows
-
-  nextTick(() => {
-    if (agGridRef.value && agGridRef.value.api) {
-      try {
-        agGridRef.value.api.purgeInfiniteCache()
-        agGridRef.value.api.refreshInfiniteCache()
-
-        if (scrollToTop) {
-          setTimeout(() => {
-            if (agGridRef.value && agGridRef.value.api) {
-              agGridRef.value.api.ensureIndexVisible(0, 'top')
-            }
-          }, 100)
-        }
-      } catch (error) {
-        console.error('Error refreshing cache:', error)
-      }
-    }
-  })
-}
-
-// Set datasource after component is mounted
 onMounted(() => {
-  refreshGrid()
+  fetchData()
 })
-
-// Clear debounce timer on component unmount
-onUnmounted(() => {
-  if (filterDebounceTimer) {
-    clearTimeout(filterDebounceTimer)
-  }
-})
-
-// Handle sort changes
-const onSortChanged = () => {
-  refreshGrid()
-}
-
-// Debounce timer for filter
-let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null
-
-// Watch for filter changes and refresh grid with debounce
-watch([filterDonatur, filterFundraiser, filterProgram, filterTanggal, filterJumlahMin, filterJumlahMax], () => {
-  // Clear existing timer
-  if (filterDebounceTimer) {
-    clearTimeout(filterDebounceTimer)
-  }
-  
-  // Debounce filter update to prevent flickering
-  filterDebounceTimer = setTimeout(() => {
-    refreshGrid(true)
-  }, 300) // 300ms debounce delay to prevent flickering
-})
-
-// Reset filter
-const resetFilter = () => {
-  filterDonatur.value = ''
-  filterFundraiser.value = ''
-  filterProgram.value = ''
-  filterTanggal.value = ''
-  filterJumlahMin.value = ''
-  filterJumlahMax.value = ''
-}
 </script>
 
 <style>
@@ -723,14 +473,4 @@ const resetFilter = () => {
   --ag-border-color: #374151;
   --ag-row-hover-color: #374151;
 }
-
-/* Ensure row animations work for sorting */
-.ag-theme-alpine .ag-row {
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.ag-theme-alpine-dark .ag-row {
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
 </style>

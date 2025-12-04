@@ -132,15 +132,21 @@
           <button
             @click="handleCancel"
             type="button"
-            class="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            :disabled="saving"
+            class="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Batal
           </button>
           <button
             type="submit"
-            class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+            :disabled="saving"
+            class="flex w-full justify-center items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{ isEditMode ? 'Simpan Perubahan' : 'Simpan' }}
+            <svg v-if="saving" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ saving ? 'Menyimpan...' : (isEditMode ? 'Simpan Perubahan' : 'Simpan') }}
           </button>
         </div>
       </form>
@@ -151,19 +157,30 @@
 <script setup lang="ts">
 import { reactive, computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
+interface SelectOption {
+  value: string
+  label: string
+}
+
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 
 const isEditMode = computed(() => route.params.id !== undefined && route.params.id !== 'new')
 const currentPageTitle = computed(() => {
   return isEditMode.value ? 'Edit Transaksi' : 'Tambah Transaksi'
 })
+
+// Loading states
+const loading = ref(false)
+const saving = ref(false)
 
 // Flatpickr configuration for single date selection
 const flatpickrDateConfig = {
@@ -173,33 +190,10 @@ const flatpickrDateConfig = {
   allowInput: false,
 }
 
-// Kantor Cabang options
-const kantorCabangList = [
-  { value: 'jakarta', label: 'Jakarta' },
-  { value: 'bandung', label: 'Bandung' },
-  { value: 'surabaya', label: 'Surabaya' },
-  { value: 'yogyakarta', label: 'Yogyakarta' },
-  { value: 'medan', label: 'Medan' },
-  { value: 'makassar', label: 'Makassar' },
-  { value: 'semarang', label: 'Semarang' },
-  { value: 'palembang', label: 'Palembang' },
-  { value: 'denpasar', label: 'Denpasar' },
-  { value: 'batam', label: 'Batam' },
-]
-
-const donaturList = [
-  { value: 'donatur-1', label: 'PT Dermawan Sejati' },
-  { value: 'donatur-2', label: 'Yayasan Berbagi Kasih' },
-  { value: 'donatur-3', label: 'CV Amal Mulia' },
-  { value: 'donatur-4', label: 'PT Cinta Indonesia' },
-]
-
-const programList = [
-  { value: 'program-1', label: 'Program Beasiswa Pendidikan' },
-  { value: 'program-2', label: 'Program Kesehatan Masyarakat' },
-  { value: 'program-3', label: 'Program Pemberdayaan Ekonomi' },
-  { value: 'program-4', label: 'Program Bantuan Pangan' },
-]
+// Options from API
+const kantorCabangList = ref<SelectOption[]>([])
+const donaturList = ref<SelectOption[]>([])
+const programList = ref<SelectOption[]>([])
 
 // Search input refs
 const kantorCabangSearchInput = ref('')
@@ -216,12 +210,74 @@ const formData = reactive({
   notes: '',
 })
 
+// Fetch dropdown options from APIs
+const fetchOptions = async () => {
+  try {
+    const [kantorRes, donaturRes, programRes] = await Promise.all([
+      fetch('/admin/api/kantor-cabang?per_page=100', { credentials: 'same-origin' }),
+      fetch('/admin/api/donatur?per_page=100', { credentials: 'same-origin' }),
+      fetch('/admin/api/program?per_page=100', { credentials: 'same-origin' }),
+    ])
+
+    if (kantorRes.ok) {
+      const json = await kantorRes.json()
+      const dataArray = json.success && json.data ? (Array.isArray(json.data) ? json.data : json.data.data || []) : []
+      kantorCabangList.value = dataArray.map((item: any) => ({
+        value: item.id,
+        label: item.nama,
+      }))
+    }
+
+    if (donaturRes.ok) {
+      const json = await donaturRes.json()
+      const dataArray = json.success && json.data ? (Array.isArray(json.data) ? json.data : json.data.data || []) : []
+      donaturList.value = dataArray.map((item: any) => ({
+        value: item.id,
+        label: item.nama,
+      }))
+    }
+
+    if (programRes.ok) {
+      const json = await programRes.json()
+      const dataArray = json.success && json.data ? (Array.isArray(json.data) ? json.data : json.data.data || []) : []
+      programList.value = dataArray.map((item: any) => ({
+        value: item.id,
+        label: item.nama_program,
+      }))
+    }
+  } catch (error) {
+    console.error('Error fetching options:', error)
+    toast.error('Gagal memuat data opsi')
+  }
+}
+
 // Load data if edit mode
 const loadData = async () => {
   if (isEditMode.value && route.params.id) {
-    const id = route.params.id as string
-    // TODO: Load data from API
-    console.log('Loading data for ID:', id)
+    loading.value = true
+    try {
+      const id = route.params.id as string
+      const res = await fetch(`/admin/api/transaksi/${id}`, { credentials: 'same-origin' })
+
+      if (!res.ok) throw new Error('Failed to fetch transaksi')
+
+      const json = await res.json()
+
+      if (json.success && json.data) {
+        const data = json.data
+        formData.branchId = data.kantor_cabang_id || ''
+        formData.nominal = data.nominal
+        formData.donorId = data.donatur_id || ''
+        formData.programId = data.program_id || ''
+        formData.transactionDate = data.tanggal_transaksi || ''
+        formData.notes = data.keterangan || ''
+      }
+    } catch (error) {
+      console.error('Error loading transaksi:', error)
+      toast.error('Gagal memuat data transaksi')
+    } finally {
+      loading.value = false
+    }
   }
 }
 
@@ -233,62 +289,97 @@ const handleCancel = () => {
 // Handle save
 const handleSave = async () => {
   if (!formData.branchId) {
-    alert('Kantor Cabang wajib diisi')
+    toast.warning('Kantor Cabang wajib diisi')
     return
   }
 
   if (!formData.nominal || formData.nominal <= 0) {
-    alert('Nominal wajib diisi')
+    toast.warning('Nominal wajib diisi')
     return
   }
 
   if (!formData.donorId) {
-    alert('Donatur wajib diisi')
+    toast.warning('Donatur wajib diisi')
     return
   }
 
   if (!formData.programId) {
-    alert('Program wajib diisi')
+    toast.warning('Program wajib diisi')
     return
   }
 
   if (!formData.transactionDate) {
-    alert('Tanggal transaksi wajib diisi')
+    toast.warning('Tanggal transaksi wajib diisi')
     return
   }
 
+  saving.value = true
+
   try {
+    // Fetch CSRF token
+    const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+    if (!tokenRes.ok) throw new Error('Failed to fetch CSRF token')
+    const tokenJson = await tokenRes.json()
+
     // Prepare data for API
     const payload = {
-      branch_id: formData.branchId,
+      kantor_cabang_id: formData.branchId,
       nominal: formData.nominal,
-      donor_id: formData.donorId,
+      donatur_id: formData.donorId,
       program_id: formData.programId,
-      transaction_date: formData.transactionDate,
-      notes: formData.notes,
+      tanggal_transaksi: formData.transactionDate,
+      keterangan: formData.notes || null,
     }
 
-    // TODO: Save to API
+    let res: Response
+
     if (isEditMode.value) {
-      console.log('Updating transaksi:', payload)
-      // await updateTransaksi(route.params.id, payload)
-      alert('Transaksi berhasil diupdate')
+      res = await fetch(`/admin/api/transaksi/${route.params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': tokenJson.csrf_token,
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      })
     } else {
-      console.log('Creating transaksi:', payload)
-      // await createTransaksi(payload)
-      alert('Transaksi berhasil ditambahkan')
+      res = await fetch('/admin/api/transaksi', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': tokenJson.csrf_token,
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      })
     }
-    
-    // Redirect to list
-    router.push('/keuangan/transaksi')
+
+    const json = await res.json()
+
+    if (json.success) {
+      toast.success(json.message || (isEditMode.value ? 'Transaksi berhasil diupdate' : 'Transaksi berhasil ditambahkan'))
+      router.push('/keuangan/transaksi')
+    } else {
+      // Handle validation errors
+      if (json.errors) {
+        const errorMessages = Object.values(json.errors).flat().join(', ')
+        toast.error(errorMessages)
+      } else {
+        toast.error(json.message || 'Gagal menyimpan transaksi')
+      }
+    }
   } catch (error) {
     console.error('Error saving:', error)
-    alert('Terjadi kesalahan saat menyimpan data')
+    toast.error('Terjadi kesalahan saat menyimpan data')
+  } finally {
+    saving.value = false
   }
 }
 
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  await fetchOptions()
+  await loadData()
 })
 </script>
 

@@ -62,7 +62,7 @@
             <input
               type="text"
               v-model="filterSearch"
-              placeholder="Cari kode, donatur, program..."
+              placeholder="Cari kode, keterangan..."
               @input="debouncedFetch"
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
@@ -86,20 +86,45 @@
               </span>
             </div>
           </div>
+
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Status
+              Donatur
             </label>
-            <select
-              v-model="filterStatus"
-              @change="fetchData"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            >
-              <option value="">Semua Status</option>
-              <option value="pending">Pending</option>
-              <option value="verified">Verified</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+            <SearchableSelect
+              v-model="filterDonatur"
+              :options="donaturOptions"
+              placeholder="Semua Donatur"
+              :search-input="donaturSearchInput"
+              @update:search-input="donaturSearchInput = $event"
+              @update:model-value="fetchData"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Program
+            </label>
+            <SearchableSelect
+              v-model="filterProgram"
+              :options="programOptions"
+              placeholder="Semua Program"
+              :search-input="programSearchInput"
+              @update:search-input="programSearchInput = $event"
+              @update:model-value="fetchData"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Fundraiser
+            </label>
+            <SearchableSelect
+              v-model="filterFundraiser"
+              :options="fundraiserOptions"
+              placeholder="Semua Fundraiser"
+              :search-input="fundraiserSearchInput"
+              @update:search-input="fundraiserSearchInput = $event"
+              @update:model-value="fetchData"
+            />
           </div>
           <div class="flex items-end">
             <button
@@ -160,6 +185,7 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 interface TransaksiRow {
   id: string
@@ -171,7 +197,6 @@ interface TransaksiRow {
   nominal_formatted: string
   tanggal_transaksi: string | null
   keterangan: string | null
-  status: string
 }
 
 const route = useRoute()
@@ -184,10 +209,45 @@ const loading = ref(false)
 const rowData = ref<TransaksiRow[]>([])
 const filterSearch = ref('')
 const filterTanggal = ref('')
-const filterStatus = ref('')
+const filterDonatur = ref('')
+const filterProgram = ref('')
+const filterFundraiser = ref('')
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
+
+// Dropdown options
+const donaturList = ref<any[]>([])
+const programList = ref<any[]>([])
+const fundraiserList = ref<any[]>([])
+
+// Search inputs for SearchableSelect
+const donaturSearchInput = ref('')
+const programSearchInput = ref('')
+const fundraiserSearchInput = ref('')
+
+// Computed options for SearchableSelect
+const donaturOptions = computed(() =>
+  donaturList.value.map((item) => ({
+    value: item.id,
+    label: item.nama || '-',
+  }))
+)
+
+const programOptions = computed(() =>
+  programList.value.map((item) => ({
+    value: item.id,
+    label: item.nama_program || '-',
+  }))
+)
+
+const fundraiserOptions = computed(() =>
+  fundraiserList.value.map((item) => ({
+    value: String(item.id),
+    label: item.name || '-',
+  }))
+)
+
 
 const flatpickrDateConfig = {
   dateFormat: 'Y-m-d',
@@ -248,27 +308,6 @@ const columnDefs = [
     },
   },
   {
-    headerName: 'Status',
-    field: 'status',
-    sortable: true,
-    width: 120,
-    cellRenderer: (params: any) => {
-      const span = document.createElement('span')
-      const status = params.value || 'pending'
-      if (status === 'verified') {
-        span.className = 'inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400'
-        span.textContent = 'Verified'
-      } else if (status === 'cancelled') {
-        span.className = 'inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400'
-        span.textContent = 'Cancelled'
-      } else {
-        span.className = 'inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-        span.textContent = 'Pending'
-      }
-      return span
-    },
-  },
-  {
     headerName: 'Actions',
     field: 'actions',
     sortable: false,
@@ -314,6 +353,39 @@ const defaultColDef = {
   filter: false,
 }
 
+const fetchFilterOptions = async () => {
+  try {
+    const [donaturRes, programRes, fundraiserRes] = await Promise.all([
+      fetch('/admin/api/donatur?per_page=1000', { credentials: 'same-origin' }),
+      fetch('/admin/api/program?per_page=1000', { credentials: 'same-origin' }),
+      fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
+    ])
+
+    if (donaturRes.ok) {
+      const json = await donaturRes.json()
+      if (json.success) {
+        donaturList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
+      }
+    }
+
+    if (programRes.ok) {
+      const json = await programRes.json()
+      if (json.success) {
+        programList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
+      }
+    }
+
+    if (fundraiserRes.ok) {
+      const json = await fundraiserRes.json()
+      if (json.success) {
+        fundraiserList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching filter options:', error)
+  }
+}
+
 const fetchData = async () => {
   loading.value = true
 
@@ -329,8 +401,16 @@ const fetchData = async () => {
       params.append('tanggal', filterTanggal.value)
     }
 
-    if (filterStatus.value) {
-      params.append('status', filterStatus.value)
+    if (filterDonatur.value) {
+      params.append('donatur_id', filterDonatur.value)
+    }
+
+    if (filterProgram.value) {
+      params.append('program_id', filterProgram.value)
+    }
+
+    if (filterFundraiser.value) {
+      params.append('fundraiser_id', filterFundraiser.value)
     }
 
     const res = await fetch(`/admin/api/transaksi?${params.toString()}`, {
@@ -352,7 +432,6 @@ const fetchData = async () => {
         nominal_formatted: item.nominal_formatted,
         tanggal_transaksi: item.tanggal_transaksi,
         keterangan: item.keterangan,
-        status: item.status,
       }))
     }
   } catch (error) {
@@ -372,7 +451,9 @@ const debouncedFetch = () => {
 const resetFilter = () => {
   filterSearch.value = ''
   filterTanggal.value = ''
-  filterStatus.value = ''
+  filterDonatur.value = ''
+  filterProgram.value = ''
+  filterFundraiser.value = ''
   fetchData()
 }
 
@@ -441,7 +522,6 @@ const handleExportExcel = () => {
           day: 'numeric',
         })
       : '-',
-    'Status': item.status,
   }))
 
   const worksheet = XLSX.utils.json_to_sheet(dataToExport)
@@ -455,6 +535,7 @@ const handleExportExcel = () => {
 }
 
 onMounted(() => {
+  fetchFilterOptions()
   fetchData()
 })
 </script>

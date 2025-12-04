@@ -47,12 +47,24 @@ class TransaksiController extends Controller
             $query->whereHas('donatur', fn ($q) => $q->where('nama', 'like', "%{$request->donatur}%"));
         }
 
+        if ($request->filled('donatur_id')) {
+            $query->where('donatur_id', $request->donatur_id);
+        }
+
         if ($request->filled('fundraiser')) {
             $query->whereHas('fundraiser', fn ($q) => $q->where('name', 'like', "%{$request->fundraiser}%"));
         }
 
+        if ($request->filled('fundraiser_id')) {
+            $query->where('fundraiser_id', $request->fundraiser_id);
+        }
+
         if ($request->filled('program')) {
             $query->whereHas('program', fn ($q) => $q->where('nama_program', 'like', "%{$request->program}%"));
+        }
+
+        if ($request->filled('program_id')) {
+            $query->where('program_id', $request->program_id);
         }
 
         if ($request->filled('tanggal')) {
@@ -118,7 +130,7 @@ class TransaksiController extends Controller
         try {
             $data = $this->sanitizePayload($validator->validated());
             $data['kode'] = $this->generateKode();
-            $data['status'] = $data['status'] ?? 'pending';
+            $data['status'] = $data['status'] ?? 'verified';
             $data['created_by'] = auth()->id();
 
             $transaksi = Transaksi::create($data);

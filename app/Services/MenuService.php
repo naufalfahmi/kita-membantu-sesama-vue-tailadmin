@@ -206,12 +206,12 @@ class MenuService
                     [
                         'icon' => 'PieChartIcon',
                         'name' => 'Keuangan',
-                        'permission' => 'view transaksi', // Use first permission as parent permission
+                        'permission' => 'view keuangan', // Use first permission as parent permission
                         'subItems' => [
                             [
-                                'name' => 'Transaksi',
-                                'path' => '/keuangan/transaksi',
-                                'permission' => 'view transaksi',
+                                'name' => 'Keuangan',
+                                'path' => '/keuangan/keuangan',
+                                'permission' => 'view keuangan',
                                 'pro' => false,
                             ],
                             [
@@ -226,13 +226,14 @@ class MenuService
                                 'permission' => 'view pengajuan dana',
                                 'pro' => false,
                             ],
-                            [
-                                'name' => 'Keuangan',
-                                'path' => '/keuangan/keuangan',
-                                'permission' => 'view keuangan',
-                                'pro' => false,
-                            ],
                         ],
+                    ],
+                    [
+                        'icon' => 'PieChartIcon',
+                        'name' => 'Transaksi',
+                        'path' => '/keuangan/transaksi',
+                        'permission' => 'view transaksi',
+                        'pro' => false,
                     ],
                     [
                         'icon' => 'BarChartIcon',

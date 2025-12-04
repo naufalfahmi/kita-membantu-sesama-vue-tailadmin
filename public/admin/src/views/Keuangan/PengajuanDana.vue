@@ -210,6 +210,16 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :isOpen="showDeleteModal"
+      title="Hapus Pengajuan Dana"
+      message="Apakah Anda yakin ingin menghapus pengajuan dana ini? Tindakan ini tidak dapat dibatalkan."
+      confirmText="Hapus"
+      confirmButtonClass="bg-red-500 hover:bg-red-600"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </AdminLayout>
 </template>
 
@@ -225,12 +235,27 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { useToast } from 'vue-toastification'
+
+interface PengajuanDanaRow {
+  id: string
+  namaPengaju: string
+  tanggalPemakaian: string
+  jumlahDana: number
+  status: string
+  tanggal: string
+  persetujuan: string
+}
 
 
 const route = useRoute()
 const router = useRouter()
 const currentPageTitle = ref(route.meta.title || 'Pengajuan Dana')
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
+const toast = useToast()
+const showDeleteModal = ref(false)
+const deleteId = ref<string | null>(null)
 
 // Flatpickr configuration for date
 const flatpickrDateConfig = {
@@ -377,7 +402,7 @@ const defaultColDef = {
 }
 
 // Sample data - generate 200 items for infinite scroll testing
-const generateRowData = () => {
+const generateRowData = (): PengajuanDanaRow[] => {
   const namaPengaju = [
     'Ahmad Hidayat', 'Siti Nurhaliza', 'Budi Santoso', 'Dewi Lestari', 'Eko Prasetyo',
     'Fitri Handayani', 'Guntur Wibowo', 'Hesti Rahayu', 'Indra Wijaya', 'Joko Susilo',
@@ -387,7 +412,7 @@ const generateRowData = () => {
   const statuses = ['Disetujui', 'Ditolak', 'Pending', 'Draft']
   const persetujuans = ['Direktur', 'Wakil Direktur', 'Manager', '-']
   
-  const rowData: Array<{ id: string; namaPengaju: string; tanggalPemakaian: string; jumlahDana: number; status: string; tanggal: string; persetujuan: string }> = []
+  const rowData: PengajuanDanaRow[] = []
   const startDate = new Date('2024-01-01')
   
   for (let i = 1; i <= 200; i++) {
@@ -417,7 +442,7 @@ const generateRowData = () => {
   return rowData
 }
 
-const rowDataArray = generateRowData()
+const rowDataArray = ref<PengajuanDanaRow[]>(generateRowData())
 
 // Filter state
 const filterNamaPengaju = ref('')
@@ -428,7 +453,7 @@ const filterJumlahMax = ref('')
 
 // Filtered data based on filter
 const filteredData = computed(() => {
-  let filtered = [...rowDataArray]
+  let filtered = [...rowDataArray.value]
   
   // Filter by Nama Pengaju
   if (filterNamaPengaju.value) {
@@ -491,10 +516,25 @@ const handleEdit = (id: string) => {
 
 // Handle delete
 const handleDelete = (id: string) => {
-  console.log('Delete pengajuan dana:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus pengajuan dana ini?')) {
-    alert(`Pengajuan dana dengan ID: ${id} akan dihapus`)
+  deleteId.value = id
+  showDeleteModal.value = true
+}
+
+const confirmDelete = () => {
+  if (!deleteId.value) {
+    return
   }
+
+  rowDataArray.value = rowDataArray.value.filter((item) => item.id !== deleteId.value)
+  toast.success('Pengajuan dana berhasil dihapus')
+  showDeleteModal.value = false
+  deleteId.value = null
+  refreshGrid()
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  deleteId.value = null
 }
 
 // Handle export to Excel
@@ -612,10 +652,33 @@ const createDataSource = (): IDatasource => {
 // Infinite scroll datasource - create as ref for reactivity
 const dataSource = ref<IDatasource>(createDataSource())
 
+const refreshGrid = (scrollToTop = false) => {
+  const newDataSource = createDataSource()
+  dataSource.value.getRows = newDataSource.getRows
+
+  nextTick(() => {
+    if (agGridRef.value && agGridRef.value.api) {
+      try {
+        agGridRef.value.api.purgeInfiniteCache()
+        agGridRef.value.api.refreshInfiniteCache()
+
+        if (scrollToTop) {
+          setTimeout(() => {
+            if (agGridRef.value && agGridRef.value.api) {
+              agGridRef.value.api.ensureIndexVisible(0, 'top')
+            }
+          }, 100)
+        }
+      } catch (error) {
+        console.error('Error refreshing cache:', error)
+      }
+    }
+  })
+}
+
 // Set datasource after component is mounted
 onMounted(() => {
-  console.log('Component mounted, datasource:', dataSource.value)
-  console.log('Total data:', rowDataArray.length)
+  refreshGrid()
 })
 
 // Clear debounce timer on component unmount
@@ -627,18 +690,7 @@ onUnmounted(() => {
 
 // Handle sort changes
 const onSortChanged = () => {
-  if (agGridRef.value && agGridRef.value.api) {
-    // Update datasource to include new sort
-    const newDataSource = createDataSource()
-    dataSource.value.getRows = newDataSource.getRows
-    
-    // Refresh cache immediately - animation will be handled by AG Grid
-    try {
-      agGridRef.value.api.refreshInfiniteCache()
-    } catch (error) {
-      console.error('Error refreshing cache on sort:', error)
-    }
-  }
+  refreshGrid()
 }
 
 // Debounce timer for filter
@@ -653,29 +705,7 @@ watch([filterNamaPengaju, filterStatus, filterTanggal, filterJumlahMin, filterJu
   
   // Debounce filter update to prevent flickering
   filterDebounceTimer = setTimeout(() => {
-    // Recreate datasource with new filter
-    const newDataSource = createDataSource()
-    dataSource.value.getRows = newDataSource.getRows
-    
-    // Refresh grid smoothly without multiple setTimeout
-    nextTick(() => {
-      if (agGridRef.value && agGridRef.value.api) {
-        try {
-          // Purge cache and refresh in one smooth operation
-          agGridRef.value.api.purgeInfiniteCache()
-          agGridRef.value.api.refreshInfiniteCache()
-          
-          // Scroll to top after a brief delay
-          setTimeout(() => {
-            if (agGridRef.value && agGridRef.value.api) {
-              agGridRef.value.api.ensureIndexVisible(0, 'top')
-            }
-          }, 100)
-        } catch (error) {
-          console.error('Error refreshing cache:', error)
-        }
-      }
-    })
+    refreshGrid(true)
   }, 300) // 300ms debounce delay to prevent flickering
 })
 

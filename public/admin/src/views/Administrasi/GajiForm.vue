@@ -47,7 +47,7 @@
             </label>
             <SearchableSelect
               v-model="form.jabatan_id"
-              :options="jabatanOptions.map(j => ({ value: j.id, label: j.name }))"
+              :options="jabatanOptions.map(j => ({ value: String(j.id), label: j.name }))"
               placeholder="Pilih jabatan"
               :search-input="jabatanSearchInput"
               @update:search-input="jabatanSearchInput = $event"
@@ -60,7 +60,7 @@
             </label>
             <SearchableSelect
               v-model="form.pangkat_id"
-              :options="pangkatOptions.map(p => ({ value: p.id, label: p.nama }))"
+              :options="pangkatOptions.map(p => ({ value: String(p.id), label: p.nama }))"
               placeholder="Pilih pangkat"
               :search-input="pangkatSearchInput"
               @update:search-input="pangkatSearchInput = $event"
@@ -190,8 +190,16 @@ async function loadData(id: string) {
         tipe: json.data.tipe || '',
         tanggal_efektif: json.data.tanggal_efektif || '',
         keterangan: json.data.keterangan || '',
-        jabatan_id: json.data.jabatan_id || (json.data.jabatan ? json.data.jabatan.id : '') || '',
-        pangkat_id: json.data.pangkat_id || (json.data.pangkat ? json.data.pangkat.id : '') || '',
+        jabatan_id: json.data.jabatan_id
+          ? String(json.data.jabatan_id)
+          : json.data.jabatan
+            ? String(json.data.jabatan.id)
+            : '',
+        pangkat_id: json.data.pangkat_id
+          ? String(json.data.pangkat_id)
+          : json.data.pangkat
+            ? String(json.data.pangkat.id)
+            : '',
       };
       nominalDisplay.value = new Intl.NumberFormat('id-ID').format(form.value.nominal || 0);
     } else {
@@ -285,3 +293,4 @@ onMounted(async () => {
 
 <style scoped>
 </style>
+

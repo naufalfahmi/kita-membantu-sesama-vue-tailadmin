@@ -206,6 +206,16 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :isOpen="showDeleteModal"
+      title="Hapus Keuangan"
+      message="Apakah Anda yakin ingin menghapus data keuangan ini? Tindakan ini tidak dapat dibatalkan."
+      confirmText="Hapus"
+      confirmButtonClass="bg-red-500 hover:bg-red-600"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </AdminLayout>
 </template>
 
@@ -221,12 +231,25 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { useToast } from 'vue-toastification'
 
+
+interface KeuanganRow {
+  id: string
+  pic: string
+  jumlah: number
+  kantorCabang: string
+  tanggalKeuangan: string
+}
 
 const route = useRoute()
 const router = useRouter()
 const currentPageTitle = ref(route.meta.title || 'Keuangan')
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
+const toast = useToast()
+const showDeleteModal = ref(false)
+const deleteId = ref<string | null>(null)
 
 // Flatpickr configuration for date
 const flatpickrDateConfig = {
@@ -334,7 +357,7 @@ const defaultColDef = {
 }
 
 // Sample data - generate 200 items for infinite scroll testing
-const generateRowData = () => {
+const generateRowData = (): KeuanganRow[] => {
   const pics = [
     'Ahmad Hidayat', 'Siti Nurhaliza', 'Budi Santoso', 'Dewi Lestari', 'Eko Prasetyo',
     'Fitri Handayani', 'Guntur Wibowo', 'Hesti Rahayu', 'Indra Wijaya', 'Joko Susilo',
@@ -348,7 +371,7 @@ const generateRowData = () => {
     'Kantor Cabang Banjarmasin',
   ]
   
-  const rowData: Array<{ id: string; pic: string; jumlah: number; kantorCabang: string; tanggalKeuangan: string }> = []
+  const rowData: KeuanganRow[] = []
   const startDate = new Date('2024-01-01')
   
   for (let i = 1; i <= 200; i++) {
@@ -372,7 +395,7 @@ const generateRowData = () => {
   return rowData
 }
 
-const rowDataArray = generateRowData()
+const rowDataArray = ref<KeuanganRow[]>(generateRowData())
 
 // Filter state
 const filterPIC = ref('')
@@ -383,7 +406,7 @@ const filterJumlahMax = ref('')
 
 // Filtered data based on filter
 const filteredData = computed(() => {
-  let filtered = [...rowDataArray]
+  let filtered = [...rowDataArray.value]
   
   // Filter by PIC
   if (filterPIC.value) {
@@ -450,10 +473,25 @@ const handleEdit = (id: string) => {
 
 // Handle delete
 const handleDelete = (id: string) => {
-  console.log('Delete keuangan:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus data keuangan ini?')) {
-    alert(`Data keuangan dengan ID: ${id} akan dihapus`)
+  deleteId.value = id
+  showDeleteModal.value = true
+}
+
+const confirmDelete = () => {
+  if (!deleteId.value) {
+    return
   }
+
+  rowDataArray.value = rowDataArray.value.filter((item) => item.id !== deleteId.value)
+  toast.success('Data keuangan berhasil dihapus')
+  showDeleteModal.value = false
+  deleteId.value = null
+  refreshGrid()
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  deleteId.value = null
 }
 
 // Handle export to Excel
@@ -568,10 +606,33 @@ const createDataSource = (): IDatasource => {
 // Infinite scroll datasource - create as ref for reactivity
 const dataSource = ref<IDatasource>(createDataSource())
 
+const refreshGrid = (scrollToTop = false) => {
+  const newDataSource = createDataSource()
+  dataSource.value.getRows = newDataSource.getRows
+
+  nextTick(() => {
+    if (agGridRef.value && agGridRef.value.api) {
+      try {
+        agGridRef.value.api.purgeInfiniteCache()
+        agGridRef.value.api.refreshInfiniteCache()
+
+        if (scrollToTop) {
+          setTimeout(() => {
+            if (agGridRef.value && agGridRef.value.api) {
+              agGridRef.value.api.ensureIndexVisible(0, 'top')
+            }
+          }, 100)
+        }
+      } catch (error) {
+        console.error('Error refreshing cache:', error)
+      }
+    }
+  })
+}
+
 // Set datasource after component is mounted
 onMounted(() => {
-  console.log('Component mounted, datasource:', dataSource.value)
-  console.log('Total data:', rowDataArray.length)
+  refreshGrid()
 })
 
 // Clear debounce timer on component unmount
@@ -583,18 +644,7 @@ onUnmounted(() => {
 
 // Handle sort changes
 const onSortChanged = () => {
-  if (agGridRef.value && agGridRef.value.api) {
-    // Update datasource to include new sort
-    const newDataSource = createDataSource()
-    dataSource.value.getRows = newDataSource.getRows
-    
-    // Refresh cache immediately - animation will be handled by AG Grid
-    try {
-      agGridRef.value.api.refreshInfiniteCache()
-    } catch (error) {
-      console.error('Error refreshing cache on sort:', error)
-    }
-  }
+  refreshGrid()
 }
 
 // Debounce timer for filter
@@ -609,32 +659,9 @@ watch([filterPIC, filterKantorCabang, filterTanggalKeuangan, filterJumlahMin, fi
   
   // Debounce filter update to prevent flickering
   filterDebounceTimer = setTimeout(() => {
-    // Recreate datasource with new filter
-    const newDataSource = createDataSource()
-    dataSource.value.getRows = newDataSource.getRows
-    
-    // Refresh grid smoothly without multiple setTimeout
-    nextTick(() => {
-      if (agGridRef.value && agGridRef.value.api) {
-        try {
-          // Purge cache and refresh in one smooth operation
-          agGridRef.value.api.purgeInfiniteCache()
-          agGridRef.value.api.refreshInfiniteCache()
-          
-          // Scroll to top after a brief delay
-          setTimeout(() => {
-            if (agGridRef.value && agGridRef.value.api) {
-              agGridRef.value.api.ensureIndexVisible(0, 'top')
-            }
-          }, 100)
-        } catch (error) {
-          console.error('Error refreshing cache:', error)
-        }
-      }
-    })
+    refreshGrid(true)
   }, 300) // 300ms debounce delay to prevent flickering
 })
-
 // Reset filter
 const resetFilter = () => {
   filterPIC.value = ''

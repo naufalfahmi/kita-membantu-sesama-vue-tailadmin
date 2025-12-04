@@ -1,15 +1,14 @@
 <template>
   <AdminLayout>
     <PageBreadcrumb :pageTitle="currentPageTitle" />
-    <div
-      class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
-    >
+    <div class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">
           {{ currentPageTitle }}
         </h3>
         <button
           @click="handleCancel"
+          type="button"
           class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
         >
           Batal
@@ -18,107 +17,83 @@
 
       <form @submit.prevent="handleSave" class="flex flex-col">
         <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-          <!-- Nama -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Nama <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
               v-model="formData.nama"
-              placeholder="Masukkan nama"
+              placeholder="Nama"
               required
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
-          <!-- No. Handphone -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               No. Handphone
             </label>
             <input
-              type="number"
-              v-model.number="formData.noHandphone"
-              placeholder="Masukkan nomor handphone"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              v-model="formData.no_handphone"
+              placeholder="No. Handphone"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
-          <!-- Email -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Email
             </label>
             <input
               type="email"
               v-model="formData.email"
-              placeholder="Masukkan email"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              placeholder="Email"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
-          <!-- Nama Bank -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Nama Bank
             </label>
             <input
               type="text"
-              v-model="formData.namaBank"
-              placeholder="Masukkan nama bank"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              v-model="formData.nama_bank"
+              placeholder="Nama Bank"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
-          <!-- No. Rekening -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               No. Rekening
             </label>
             <input
               type="number"
-              v-model.number="formData.noRekening"
-              placeholder="Masukkan nomor rekening"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              v-model="formData.no_rekening"
+              placeholder="No. Rekening"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
-          <!-- Tanggal Lahir -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Tanggal Lahir
             </label>
             <div class="relative">
-              <flat-pickr
-                v-model="formData.tanggalLahir"
-                :config="flatpickrConfigTanggalLahir"
-                class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                placeholder="Pilih tanggal lahir"
+              <FlatPickr
+                v-model="formData.tanggal_lahir"
+                :config="flatpickrConfig"
+                class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                placeholder="Tanggal Lahir"
+                readonly
               />
-              <span
-                class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400"
-              >
-                <svg
-                  class="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">
+                <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path
                     fill-rule="evenodd"
                     clip-rule="evenodd"
@@ -130,109 +105,33 @@
             </div>
           </div>
 
-          <!-- Pendidikan -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Pendidikan
             </label>
             <input
               type="text"
               v-model="formData.pendidikan"
-              placeholder="Masukkan pendidikan"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+              placeholder="Pendidikan"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
-          <!-- Kantor Cabang (Searchable Select) -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Kantor Cabang
             </label>
-            <div class="relative z-20 bg-transparent" ref="kantorCabangRef">
-              <div
-                @click="showKantorCabangDropdown = !showKantorCabangDropdown"
-                class="dark:bg-dark-900 h-11 w-full flex items-center rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs cursor-pointer hover:border-brand-300 focus-within:border-brand-300 focus-within:outline-hidden focus-within:ring-3 focus-within:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus-within:border-brand-800"
-              >
-                <span :class="{ 'text-gray-800 dark:text-white/90': kantorCabangSearch, 'text-gray-400': !kantorCabangSearch }">
-                  {{ kantorCabangSearch || 'Pilih atau cari kantor cabang' }}
-                </span>
-              </div>
-              <span
-                class="absolute z-30 text-gray-500 -translate-y-1/2 pointer-events-none right-4 top-1/2 dark:text-gray-400"
-              >
-                <svg
-                  class="stroke-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M4.79175 7.396L10.0001 12.6043L15.2084 7.396"
-                    stroke=""
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-              
-              <!-- Dropdown untuk Kantor Cabang -->
-              <transition
-                enter-active-class="transition duration-100 ease-out"
-                enter-from-class="transform scale-95 opacity-0"
-                enter-to-class="transform scale-100 opacity-100"
-                leave-active-class="transition duration-75 ease-in"
-                leave-from-class="transform scale-100 opacity-100"
-                leave-to-class="transform scale-95 opacity-0"
-              >
-                <div
-                  v-if="showKantorCabangDropdown"
-                  class="absolute z-50 w-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 dark:bg-gray-900 dark:border-gray-700 max-h-60 overflow-hidden"
-                >
-                  <!-- Search input di dalam dropdown -->
-                  <div class="p-2 border-b border-gray-200 dark:border-gray-700">
-                    <input
-                      type="text"
-                      v-model="kantorCabangSearchInput"
-                      @input="filterKantorCabang"
-                      placeholder="Cari kantor cabang..."
-                      class="w-full h-9 rounded-lg border border-gray-300 bg-transparent px-3 py-1.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90"
-                      @click.stop
-                    />
-                  </div>
-                  
-                  <!-- List options -->
-                  <div class="overflow-y-auto max-h-48 custom-scrollbar">
-                    <button
-                      v-for="kantor in filteredKantorCabangList"
-                      :key="kantor.value"
-                      type="button"
-                      @click="selectKantorCabang(kantor)"
-                      class="w-full px-4 py-2 text-left text-sm text-gray-800 hover:bg-gray-100 dark:text-white/90 dark:hover:bg-gray-800 transition-colors"
-                      :class="{ 'bg-gray-100 dark:bg-gray-800': formData.kantorCabang === kantor.value }"
-                    >
-                      {{ kantor.label }}
-                    </button>
-                    <div
-                      v-if="filteredKantorCabangList.length === 0"
-                      class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400"
-                    >
-                      Tidak ada data ditemukan
-                    </div>
-                  </div>
-                </div>
-              </transition>
-            </div>
+            <SearchableSelect
+              v-model="formData.kantor_cabang_id"
+              :options="kantorCabangSelectOptions"
+              placeholder="Kantor Cabang"
+              :search-input="kantorCabangSearchInput"
+              @update:search-input="kantorCabangSearchInput = $event"
+            />
           </div>
         </div>
 
-        <div class="flex items-center gap-3 mt-6 lg:justify-end">
+        <div class="mt-6 flex items-center gap-3 lg:justify-end">
           <button
             @click="handleCancel"
             type="button"
@@ -242,7 +141,8 @@
           </button>
           <button
             type="submit"
-            class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+            :disabled="isSubmitting"
+            class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-brand-300 sm:w-auto"
           >
             {{ isEditMode ? 'Simpan Perubahan' : 'Simpan' }}
           </button>
@@ -253,195 +153,175 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, ref, onMounted, onBeforeUnmount } from 'vue'
+import { reactive, computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import flatPickr from 'vue-flatpickr-component'
+import { useToast } from 'vue-toastification'
+import FlatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 
 const isEditMode = computed(() => route.params.id !== undefined && route.params.id !== 'new')
-const currentPageTitle = computed(() => {
-  return isEditMode.value ? 'Edit Mitra' : 'Tambah Mitra'
-})
+const currentPageTitle = computed(() => (isEditMode.value ? 'Edit Mitra' : 'Tambah Mitra'))
 
-// Flatpickr configuration
-const flatpickrConfigTanggalLahir = {
+const flatpickrConfig = {
   dateFormat: 'Y-m-d',
   altInput: true,
   altFormat: 'd F Y',
   locale: 'id',
-  wrap: true,
+  wrap: false,
   clickOpens: true,
   allowInput: false,
 }
 
-// Kantor Cabang options
-const kantorCabangList = [
-  { value: 'jakarta', label: 'Jakarta' },
-  { value: 'bandung', label: 'Bandung' },
-  { value: 'surabaya', label: 'Surabaya' },
-  { value: 'yogyakarta', label: 'Yogyakarta' },
-  { value: 'medan', label: 'Medan' },
-  { value: 'makassar', label: 'Makassar' },
-  { value: 'semarang', label: 'Semarang' },
-  { value: 'palembang', label: 'Palembang' },
-  { value: 'denpasar', label: 'Denpasar' },
-  { value: 'batam', label: 'Batam' },
-]
-
-// Searchable select state
-const showKantorCabangDropdown = ref(false)
-const kantorCabangSearch = ref('')
+const kantorCabangOptions = ref<any[]>([])
 const kantorCabangSearchInput = ref('')
-const kantorCabangRef = ref<HTMLElement | null>(null)
+const isSubmitting = ref(false)
 
-// Filtered kantor cabang list
-const filteredKantorCabangList = computed(() => {
-  const searchTerm = kantorCabangSearchInput.value.toLowerCase()
-  if (!searchTerm) {
-    return kantorCabangList
-  }
-  return kantorCabangList.filter((kantor) =>
-    kantor.label.toLowerCase().includes(searchTerm)
-  )
-})
+const kantorCabangSelectOptions = computed(() =>
+  kantorCabangOptions.value.map((item: any) => ({
+    value: String(item.id),
+    label: item.nama || item.name || '-',
+  }))
+)
 
-// Select kantor cabang
-const selectKantorCabang = (kantor: { value: string; label: string }) => {
-  formData.kantorCabang = kantor.value
-  kantorCabangSearch.value = kantor.label
-  kantorCabangSearchInput.value = ''
-  showKantorCabangDropdown.value = false
-}
-
-// Filter kantor cabang
-const filterKantorCabang = () => {
-  // Filter already handled in computed
-}
-
-// Form data
 const formData = reactive({
   nama: '',
-  noHandphone: null as number | null,
   email: '',
-  namaBank: '',
-  noRekening: null as number | null,
-  tanggalLahir: '',
+  no_handphone: '',
+  nama_bank: '',
+  no_rekening: '',
+  tanggal_lahir: '',
   pendidikan: '',
-  kantorCabang: '',
+  kantor_cabang_id: '',
 })
 
-// Handle click outside dropdown
-const handleClickOutside = (event: MouseEvent) => {
-  if (kantorCabangRef.value && !kantorCabangRef.value.contains(event.target as Node)) {
-    showKantorCabangDropdown.value = false
-    kantorCabangSearchInput.value = ''
-  }
-}
-
-// Load data if edit mode
-const loadData = async () => {
-  if (isEditMode.value && route.params.id) {
-    const id = route.params.id as string
-    // TODO: Load data from API
-    console.log('Loading data for ID:', id)
-    
-    // Set kantor cabang search value if data loaded
-    if (formData.kantorCabang) {
-      const selected = kantorCabangList.find((k) => k.value === formData.kantorCabang)
-      if (selected) {
-        kantorCabangSearch.value = selected.label
-      }
+const fetchReferenceData = async () => {
+  try {
+    const res = await fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to load kantor cabang')
+    const json = await res.json()
+    if (json.success) {
+      kantorCabangOptions.value = json.data || []
     }
+  } catch (error) {
+    toast.error('Gagal memuat data kantor cabang')
   }
 }
 
-// Handle cancel
+const loadData = async (id: string) => {
+  try {
+    const res = await fetch(`/admin/api/mitra/${id}`, { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch mitra')
+    const json = await res.json()
+
+    if (json.success && json.data) {
+      const data = json.data
+      formData.nama = data.nama || ''
+      formData.email = data.email || ''
+      formData.no_handphone = data.no_handphone || ''
+      formData.nama_bank = data.nama_bank || ''
+      formData.no_rekening = data.no_rekening || ''
+      formData.tanggal_lahir = data.tanggal_lahir || ''
+      formData.pendidikan = data.pendidikan || ''
+      formData.kantor_cabang_id = data.kantor_cabang_id ? String(data.kantor_cabang_id) : ''
+    } else {
+      toast.error(json.message || 'Mitra tidak ditemukan')
+      router.push('/user-kepegawaian/mitra')
+    }
+  } catch (error) {
+    toast.error('Gagal memuat data mitra')
+    router.push('/user-kepegawaian/mitra')
+  }
+}
+
 const handleCancel = () => {
   router.push('/user-kepegawaian/mitra')
 }
 
-// Handle save
 const handleSave = async () => {
-  if (!formData.nama) {
-    alert('Nama wajib diisi')
+  if (!formData.nama.trim()) {
+    toast.error('Nama wajib diisi')
     return
   }
 
+  isSubmitting.value = true
+
   try {
-    // TODO: Save to API
-    if (isEditMode.value) {
-      console.log('Updating mitra:', formData)
-      // await updateMitra(route.params.id, formData)
-      alert('Mitra berhasil diupdate')
+    const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+    if (!tokenRes.ok) throw new Error('Failed to fetch CSRF token')
+    const tokenJson = await tokenRes.json()
+
+    const toNullable = (value: string | number | null | undefined) => {
+      if (value === null || value === undefined) {
+        return null
+      }
+
+      const trimmed = String(value).trim()
+      return trimmed !== '' ? trimmed : null
+    }
+
+    const payload: Record<string, any> = {
+      nama: formData.nama.trim(),
+      email: toNullable(formData.email),
+      no_handphone: toNullable(formData.no_handphone),
+      nama_bank: toNullable(formData.nama_bank),
+      no_rekening: toNullable(formData.no_rekening),
+      tanggal_lahir: formData.tanggal_lahir || null,
+      pendidikan: toNullable(formData.pendidikan),
+      kantor_cabang_id: toNullable(formData.kantor_cabang_id),
+    }
+
+    let url = '/admin/api/mitra'
+    let method: 'POST' | 'PUT' = 'POST'
+
+    if (isEditMode.value && route.params.id) {
+      url = `/admin/api/mitra/${route.params.id}`
+      method = 'PUT'
+    }
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': tokenJson.csrf_token,
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+    })
+
+    const json = await res.json().catch(() => ({}))
+
+    if (!res.ok) {
+      const firstError = json?.errors ? Object.values(json.errors)?.[0]?.[0] : undefined
+      const message = firstError || json.message || 'Request gagal'
+      throw new Error(message)
+    }
+
+    if (json.success) {
+      toast.success(json.message || 'Mitra berhasil disimpan')
+      router.push('/user-kepegawaian/mitra')
     } else {
-      console.log('Creating mitra:', formData)
-      // await createMitra(formData)
-      alert('Mitra berhasil ditambahkan')
+      toast.error(json.message || 'Gagal menyimpan mitra')
     }
-    
-    // Redirect to list
-    router.push('/user-kepegawaian/mitra')
-  } catch (error) {
-    console.error('Error saving:', error)
-    alert('Terjadi kesalahan saat menyimpan data')
+  } catch (error: any) {
+    toast.error(error?.message || 'Gagal menyimpan mitra')
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-// Initialize kantor cabang search value
-const updateKantorCabangSearch = () => {
-  if (formData.kantorCabang) {
-    const selected = kantorCabangList.find((k) => k.value === formData.kantorCabang)
-    if (selected) {
-      kantorCabangSearch.value = selected.label
-    }
+onMounted(async () => {
+  await fetchReferenceData()
+
+  if (isEditMode.value && route.params.id) {
+    await loadData(route.params.id as string)
   }
-}
-
-onMounted(() => {
-  loadData()
-  updateKantorCabangSearch()
-  document.addEventListener('click', handleClickOutside)
-})
-
-onBeforeUnmount(() => {
-  document.removeEventListener('click', handleClickOutside)
 })
 </script>
-
-<style>
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #555;
-}
-
-.dark .custom-scrollbar::-webkit-scrollbar-track {
-  background: #1f2937;
-}
-
-.dark .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #4b5563;
-}
-
-.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #6b7280;
-}
-</style>
 

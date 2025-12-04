@@ -1,5 +1,5 @@
 <template>
-  <div class="relative z-20 bg-transparent" ref="selectRef">
+  <div ref="selectRef" :class="['relative bg-transparent', isOpen ? 'z-50' : 'z-10']">
     <div
       @click="toggleDropdown"
       class="dark:bg-dark-900 h-11 w-full flex items-center rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs cursor-pointer hover:border-brand-300 focus-within:border-brand-300 focus-within:outline-hidden focus-within:ring-3 focus-within:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus-within:border-brand-800"

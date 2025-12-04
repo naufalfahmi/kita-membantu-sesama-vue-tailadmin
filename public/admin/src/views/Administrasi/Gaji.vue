@@ -80,7 +80,7 @@ const toast = useToast();
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Gaji');
 
 const columnDefs = [
-  { headerName: 'Jabatan', valueGetter: (params: any) => params.data?.jabatan?.nama || '-', sortable: true, filter: true, flex: 1 },
+  { headerName: 'Jabatan', valueGetter: (params: any) => params.data?.jabatan?.name || '-', sortable: true, filter: true, flex: 1 },
   { headerName: 'Pangkat', valueGetter: (params: any) => params.data?.pangkat?.nama || '-', sortable: true, filter: true, flex: 1 },
   { headerName: 'Nama', field: 'nama', sortable: true, filter: true, flex: 1 },
   { headerName: 'Nominal', field: 'nominal', valueGetter: (params: any) => formatCurrency(params.data?.nominal), sortable: true, flex: 1 },

@@ -46,8 +46,8 @@ class GajiController extends Controller
             'tipe' => 'nullable|in:bulanan,tunjangan,bonus',
             'tanggal_efektif' => 'nullable|date',
             'keterangan' => 'nullable|string',
-            'jabatan_id' => 'nullable|uuid',
-            'pangkat_id' => 'nullable|uuid',
+            'jabatan_id' => 'nullable|exists:roles,id',
+            'pangkat_id' => 'nullable|uuid|exists:pangkats,id',
         ]);
 
         if ($validator->fails()) {
@@ -59,15 +59,23 @@ class GajiController extends Controller
         }
 
         try {
-            $data = $request->only(['nama', 'nominal', 'tipe', 'tanggal_efektif', 'keterangan', 'jabatan_id', 'pangkat_id']);
+            $data = $request->only([
+                'nama',
+                'nominal',
+                'tipe',
+                'tanggal_efektif',
+                'keterangan',
+                'jabatan_id',
+                'pangkat_id',
+            ]);
             $data['created_by'] = auth()->id();
 
-            $gaji = Gaji::create($data);
+            $gaji = Gaji::create($this->sanitizePayload($data));
 
             return response()->json([
                 'success' => true,
                 'message' => 'Gaji berhasil ditambahkan',
-                'data' => $gaji->load(['creator']),
+                'data' => $gaji->load(['creator', 'jabatan', 'pangkat']),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -118,8 +126,8 @@ class GajiController extends Controller
             'tipe' => 'nullable|in:bulanan,tunjangan,bonus',
             'tanggal_efektif' => 'nullable|date',
             'keterangan' => 'nullable|string',
-            'jabatan_id' => 'nullable|uuid',
-            'pangkat_id' => 'nullable|uuid',
+            'jabatan_id' => 'nullable|exists:roles,id',
+            'pangkat_id' => 'nullable|uuid|exists:pangkats,id',
         ]);
 
         if ($validator->fails()) {
@@ -131,15 +139,23 @@ class GajiController extends Controller
         }
 
         try {
-            $data = $request->only(['nama', 'nominal', 'tipe', 'tanggal_efektif', 'keterangan', 'jabatan_id', 'pangkat_id']);
+            $data = $request->only([
+                'nama',
+                'nominal',
+                'tipe',
+                'tanggal_efektif',
+                'keterangan',
+                'jabatan_id',
+                'pangkat_id',
+            ]);
             $data['updated_by'] = auth()->id();
 
-            $gaji->update($data);
+            $gaji->update($this->sanitizePayload($data));
 
             return response()->json([
                 'success' => true,
                 'message' => 'Gaji berhasil diupdate',
-                'data' => $gaji->fresh()->load(['creator', 'updater']),
+                'data' => $gaji->fresh()->load(['creator', 'updater', 'jabatan', 'pangkat']),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -180,5 +196,32 @@ class GajiController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan',
             ], 500);
         }
+    }
+
+    /**
+     * Normalize payload values before persisting.
+     */
+    protected function sanitizePayload(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (is_string($value)) {
+                $trimmed = trim($value);
+                $data[$key] = $trimmed === '' ? null : $trimmed;
+            }
+        }
+
+        if (array_key_exists('jabatan_id', $data) && $data['jabatan_id'] !== null) {
+            $data['jabatan_id'] = (string) $data['jabatan_id'];
+        }
+
+        if (array_key_exists('pangkat_id', $data) && $data['pangkat_id'] !== null) {
+            $data['pangkat_id'] = (string) $data['pangkat_id'];
+        }
+
+        if (array_key_exists('nominal', $data)) {
+            $data['nominal'] = (int) $data['nominal'];
+        }
+
+        return $data;
     }
 }

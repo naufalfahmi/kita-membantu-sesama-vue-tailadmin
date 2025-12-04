@@ -42,6 +42,7 @@
               type="text"
               v-model="filterNama"
               placeholder="Cari nama karyawan..."
+              @input="debouncedFetch"
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
@@ -56,12 +57,18 @@
         </div>
       </div>
 
-      <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex items-center justify-center py-12">
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
+        <span class="ml-3 text-gray-600 dark:text-gray-400">Memuat data...</span>
+      </div>
+
+      <div v-else class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
         <ag-grid-vue
           class="ag-theme-alpine"
           style="width: 100%;"
           :columnDefs="columnDefs"
-          :rowData="gridRowData"
+          :rowData="rowData"
           :defaultColDef="defaultColDef"
           :pagination="true"
           :paginationPageSize="20"
@@ -72,58 +79,99 @@
         />
       </div>
     </div>
+
+    <ConfirmModal
+      :isOpen="showDeleteModal"
+      title="Hapus Karyawan"
+      message="Apakah Anda yakin ingin menghapus karyawan ini? Tindakan ini tidak dapat dibatalkan."
+      confirmText="Hapus"
+      confirmButtonClass="bg-red-500 hover:bg-red-600"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
+interface RelOption {
+  id: string | number
+  name?: string
+  nama?: string
+}
+
+interface KaryawanRow {
+  id: number
+  name: string
+  email: string
+  no_induk: string | null
+  posisi: string | null
+  no_handphone: string | null
+  tanggal_masuk: string | null
+  is_active: boolean
+  role?: RelOption | null
+  pangkat?: RelOption | null
+  tipe_absensi?: RelOption | null
+  kantor_cabang?: RelOption | null
+}
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
+
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Karyawan')
 
-// Column definitions
+const loading = ref(false)
+const rowData = ref<KaryawanRow[]>([])
+const filterNama = ref('')
+const showDeleteModal = ref(false)
+const deleteId = ref<number | null>(null)
+let debounceTimer: ReturnType<typeof setTimeout> | undefined
+
 const columnDefs = [
   {
     headerName: 'Nama',
-    field: 'nama',
+    field: 'name',
     sortable: true,
     flex: 1,
   },
   {
     headerName: 'No Induk',
-    field: 'noInduk',
+    field: 'no_induk',
     sortable: true,
-    width: 120,
+    width: 140,
+    valueFormatter: (params: any) => params.value || '-',
   },
   {
-    headerName: 'Posisi',
-    field: 'posisi',
-    sortable: true,
-    flex: 1,
-  },
-  {
-    headerName: 'No Handphone',
-    field: 'noHandphone',
-    sortable: true,
-    width: 150,
-  },
-  {
-    headerName: 'Email',
-    field: 'email',
+    headerName: 'Pangkat',
+    valueGetter: (params: any) => params.data?.pangkat?.nama || '-',
     sortable: true,
     flex: 1,
   },
   {
-    headerName: 'Tanggal',
-    field: 'tanggal',
+    headerName: 'Jabatan',
+    valueGetter: (params: any) => params.data?.role?.name || '-',
+    flex: 1,
+    sortable: true,
+  },
+  {
+    headerName: 'Kantor Cabang',
+    valueGetter: (params: any) => params.data?.kantor_cabang?.nama || '-',
+    flex: 1,
+    sortable: true,
+  },
+  {
+    headerName: 'Tanggal Masuk',
+    field: 'tanggal_masuk',
     sortable: true,
     flex: 1,
     valueFormatter: (params: any) => {
@@ -134,7 +182,24 @@ const columnDefs = [
           day: 'numeric',
         })
       }
-      return ''
+      return '-'
+    },
+  },
+  {
+    headerName: 'Status',
+    field: 'is_active',
+    sortable: true,
+    width: 120,
+    cellRenderer: (params: any) => {
+      const span = document.createElement('span')
+      if (params.value) {
+        span.className = 'inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400'
+        span.textContent = 'Aktif'
+      } else {
+        span.className = 'inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-900/30 dark:text-red-400'
+        span.textContent = 'Nonaktif'
+      }
+      return span
     },
   },
   {
@@ -144,9 +209,9 @@ const columnDefs = [
     filter: false,
     width: 120,
     cellRenderer: (params: any) => {
-      const div = document.createElement('div')
-      div.className = 'flex items-center gap-3'
-      
+      const container = document.createElement('div')
+      container.className = 'flex items-center gap-3'
+
       const editBtn = document.createElement('button')
       editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
       editBtn.innerHTML = `
@@ -154,8 +219,8 @@ const columnDefs = [
           <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
         </svg>
       `
-      editBtn.onclick = () => handleEdit(params.data.id)
-      
+      editBtn.addEventListener('click', () => handleEdit(params.data.id))
+
       const deleteBtn = document.createElement('button')
       deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
       deleteBtn.innerHTML = `
@@ -167,141 +232,115 @@ const columnDefs = [
           <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
       `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
-      
-      return div
+      deleteBtn.addEventListener('click', () => handleDelete(params.data.id))
+
+      container.appendChild(editBtn)
+      container.appendChild(deleteBtn)
+
+      return container
     },
   },
 ]
 
-// Default column definition
 const defaultColDef = {
   resizable: true,
   sortable: true,
   filter: true,
 }
 
-// Sample data
-const rowDataArray = [
-  {
-    id: '1',
-    nama: 'Ahmad Hidayat',
-    noInduk: 'K001',
-    posisi: 'Manager',
-    noHandphone: '081234567890',
-    email: 'ahmad.hidayat@example.com',
-    tanggal: '2024-01-15',
-  },
-  {
-    id: '2',
-    nama: 'Siti Nurhaliza',
-    noInduk: 'K002',
-    posisi: 'Supervisor',
-    noHandphone: '081234567891',
-    email: 'siti.nurhaliza@example.com',
-    tanggal: '2024-02-20',
-  },
-  {
-    id: '3',
-    nama: 'Budi Santoso',
-    noInduk: 'K003',
-    posisi: 'Staff',
-    noHandphone: '081234567892',
-    email: 'budi.santoso@example.com',
-    tanggal: '2024-03-10',
-  },
-  {
-    id: '4',
-    nama: 'Dewi Lestari',
-    noInduk: 'K004',
-    posisi: 'Administrasi',
-    noHandphone: '081234567893',
-    email: 'dewi.lestari@example.com',
-    tanggal: '2024-04-05',
-  },
-  {
-    id: '5',
-    nama: 'Eko Prasetyo',
-    noInduk: 'K005',
-    posisi: 'Keuangan',
-    noHandphone: '081234567894',
-    email: 'eko.prasetyo@example.com',
-    tanggal: '2024-05-12',
-  },
-  {
-    id: '6',
-    nama: 'Fitri Handayani',
-    noInduk: 'K006',
-    posisi: 'HRD',
-    noHandphone: '081234567895',
-    email: 'fitri.handayani@example.com',
-    tanggal: '2024-06-18',
-  },
-  {
-    id: '7',
-    nama: 'Guntur Wibowo',
-    noInduk: 'K007',
-    posisi: 'IT Support',
-    noHandphone: '081234567896',
-    email: 'guntur.wibowo@example.com',
-    tanggal: '2024-07-25',
-  },
-  {
-    id: '8',
-    nama: 'Hesti Rahayu',
-    noInduk: 'K008',
-    posisi: 'Marketing',
-    noHandphone: '081234567897',
-    email: 'hesti.rahayu@example.com',
-    tanggal: '2024-08-30',
-  },
-]
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const params = new URLSearchParams({ per_page: '1000' })
+    if (filterNama.value.trim()) {
+      params.set('search', filterNama.value.trim())
+    }
 
-// Create ref for rowData
-const rowData = ref(rowDataArray)
+    const response = await fetch(`/admin/api/karyawan?${params.toString()}`, {
+      credentials: 'same-origin',
+    })
+    const json = await response.json()
 
-// Handle add button - redirect to form page
+    if (json.success) {
+      rowData.value = json.data ?? []
+    } else {
+      toast.error(json.message || 'Gagal memuat data karyawan')
+    }
+  } catch (error) {
+    toast.error('Gagal memuat data karyawan')
+  } finally {
+    loading.value = false
+  }
+}
+
+const debouncedFetch = () => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+  }
+  debounceTimer = setTimeout(() => {
+    fetchData()
+  }, 300)
+}
+
 const handleAdd = () => {
   router.push('/user-kepegawaian/karyawan/new')
 }
 
-// Handle edit - redirect to form page
-const handleEdit = (id: string) => {
+const handleEdit = (id: number) => {
   router.push(`/user-kepegawaian/karyawan/${id}/edit`)
 }
 
-// Handle delete
-const handleDelete = (id: string) => {
-  console.log('Delete karyawan:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus karyawan ini?')) {
-    alert(`Karyawan dengan ID: ${id} akan dihapus`)
+const handleDelete = (id: number) => {
+  deleteId.value = id
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!deleteId.value) {
+    return
+  }
+
+  try {
+    const tokenResponse = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+    const tokenJson = await tokenResponse.json()
+
+    const response = await fetch(`/admin/api/karyawan/${deleteId.value}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': tokenJson.csrf_token,
+      },
+      credentials: 'same-origin',
+    })
+
+    const json = await response.json()
+    if (json.success) {
+      toast.success(json.message || 'Karyawan berhasil dihapus')
+      await fetchData()
+    } else {
+      toast.error(json.message || 'Gagal menghapus karyawan')
+    }
+  } catch (error) {
+    toast.error('Gagal menghapus karyawan')
+  } finally {
+    showDeleteModal.value = false
+    deleteId.value = null
   }
 }
 
-// Filter state
-const filterNama = ref('')
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  deleteId.value = null
+}
 
-// Filtered data for AG Grid
-const gridRowData = computed(() => {
-  let filtered = [...rowDataArray]
-  
-  // Filter by nama
-  if (filterNama.value) {
-    filtered = filtered.filter((item) =>
-      item.nama.toLowerCase().includes(filterNama.value.toLowerCase())
-    )
-  }
-  
-  return filtered
-})
-
-// Reset filter
 const resetFilter = () => {
   filterNama.value = ''
+  fetchData()
 }
+
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style>

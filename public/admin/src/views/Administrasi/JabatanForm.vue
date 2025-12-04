@@ -320,10 +320,15 @@ const menuStructure = [
   {
     name: 'Keuangan',
     subItems: [
-      { name: 'Transaksi', permission: 'transaksi' },
+      { name: 'Keuangan', permission: 'keuangan' },
       { name: 'Penyaluran', permission: 'penyaluran' },
       { name: 'Pengajuan Dana', permission: 'pengajuan dana' },
-      { name: 'Keuangan', permission: 'keuangan' },
+    ],
+  },
+  {
+    name: 'Transaksi',
+    subItems: [
+      { name: 'Transaksi', permission: 'transaksi' },
     ],
   },
   {

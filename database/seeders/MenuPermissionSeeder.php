@@ -65,3 +65,4 @@ class MenuPermissionSeeder extends Seeder
 
 
 
+

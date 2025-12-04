@@ -6,9 +6,11 @@ use App\Http\Controllers\LandingKegiatanController;
 use App\Http\Controllers\JabatanController;
 use App\Http\Controllers\KantorCabangController;
 use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\MitraController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TipeAbsensiController;
 use App\Http\Controllers\TipeDonaturController;
+use App\Http\Controllers\DonaturController;
 use App\Services\MenuService;
 
 // Frontend Routes
@@ -84,6 +86,16 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::apiResource('pangkat', \App\Http\Controllers\PangkatController::class);
     // Gaji API
     Route::apiResource('gaji', \App\Http\Controllers\GajiController::class);
+    
+    // Karyawan API
+    Route::get('karyawan-next-no-induk', [\App\Http\Controllers\KaryawanController::class, 'getNextNoInduk'])->name('admin.api.karyawan.next-no-induk');
+    Route::apiResource('karyawan', \App\Http\Controllers\KaryawanController::class);
+
+    // Mitra API
+    Route::apiResource('mitra', MitraController::class);
+
+    // Donatur API
+    Route::apiResource('donatur', DonaturController::class);
     
     // Search API
     Route::get('/search', [SearchController::class, 'search'])->name('admin.api.search');

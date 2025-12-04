@@ -99,16 +99,13 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Status
             </label>
-            <select
+            <SearchableSelect
               v-model="filterStatus"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            >
-              <option value="">Semua Status</option>
-              <option value="Selesai">Selesai</option>
-              <option value="Pending">Pending</option>
-              <option value="Ditolak">Ditolak</option>
-              <option value="Draft">Draft</option>
-            </select>
+              :options="statusFilterOptions"
+              placeholder="Semua Status"
+              :search-input="statusFilterSearchInput"
+              @update:search-input="statusFilterSearchInput = $event"
+            />
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -257,7 +254,6 @@
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
-import { AllCommunityModule } from 'ag-grid-community'
 import type { IDatasource, IGetRowsParams } from 'ag-grid-community'
 import flatPickr from 'vue-flatpickr-component'
 import * as XLSX from 'xlsx'
@@ -266,6 +262,17 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+
+// Options for Status filter
+const statusFilterOptions = [
+  { value: '', label: 'Semua Status' },
+  { value: 'Selesai', label: 'Selesai' },
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Ditolak', label: 'Ditolak' },
+  { value: 'Draft', label: 'Draft' },
+]
+const statusFilterSearchInput = ref('')
 
 const route = useRoute()
 const router = useRouter()

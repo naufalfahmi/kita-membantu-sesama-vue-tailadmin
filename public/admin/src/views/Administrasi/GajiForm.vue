@@ -71,15 +71,13 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Tipe
             </label>
-            <select
+            <SearchableSelect
               v-model="form.tipe"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            >
-              <option value="">Pilih tipe gaji</option>
-              <option value="bulanan">Bulanan</option>
-              <option value="tunjangan">Tunjangan</option>
-              <option value="bonus">Bonus</option>
-            </select>
+              :options="tipeOptions"
+              placeholder="Pilih tipe gaji"
+              :search-input="tipeSearchInput"
+              @update:search-input="tipeSearchInput = $event"
+            />
           </div>
 
           <div>

@@ -49,14 +49,13 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Status
             </label>
-            <select
+            <SearchableSelect
               v-model="filterStatus"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            >
-              <option value="">Semua Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+              :options="statusFilterOptions"
+              placeholder="Semua Status"
+              :search-input="statusFilterSearchInput"
+              @update:search-input="statusFilterSearchInput = $event"
+            />
           </div>
           <div class="flex items-end">
             <button
@@ -96,6 +95,15 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+
+// Options for Status filter
+const statusFilterOptions = [
+  { value: '', label: 'Semua Status' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]
+const statusFilterSearchInput = ref('')
 
 const route = useRoute()
 const router = useRouter()

@@ -195,7 +195,6 @@
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
-import { AllCommunityModule } from 'ag-grid-community'
 import type { IDatasource, IGetRowsParams } from 'ag-grid-community'
 import flatPickr from 'vue-flatpickr-component'
 import * as XLSX from 'xlsx'

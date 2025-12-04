@@ -70,16 +70,13 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Status
             </label>
-            <select
+            <SearchableSelect
               v-model="filterStatus"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            >
-              <option value="">Semua Status</option>
-              <option value="Disetujui">Disetujui</option>
-              <option value="Ditolak">Ditolak</option>
-              <option value="Pending">Pending</option>
-              <option value="Draft">Draft</option>
-            </select>
+              :options="statusFilterOptions"
+              placeholder="Semua Status"
+              :search-input="statusFilterSearchInput"
+              @update:search-input="statusFilterSearchInput = $event"
+            />
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
@@ -236,7 +233,18 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import { useToast } from 'vue-toastification'
+
+// Options for Status filter
+const statusFilterOptions = [
+  { value: '', label: 'Semua Status' },
+  { value: 'Disetujui', label: 'Disetujui' },
+  { value: 'Ditolak', label: 'Ditolak' },
+  { value: 'Pending', label: 'Pending' },
+  { value: 'Draft', label: 'Draft' },
+]
+const statusFilterSearchInput = ref('')
 
 interface PengajuanDanaRow {
   id: string

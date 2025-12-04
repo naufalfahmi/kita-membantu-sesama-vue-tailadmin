@@ -182,15 +182,13 @@
             >
               Status <span class="text-red-500">*</span>
             </label>
-            <select
+            <SearchableSelect
               v-model="formData.status"
-              required
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            >
-              <option value="">Pilih Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
+              :options="statusOptions"
+              placeholder="Pilih Status"
+              :search-input="statusSearchInput"
+              @update:search-input="statusSearchInput = $event"
+            />
             <p v-if="errors.status" class="mt-1 text-xs text-red-500">{{ errors.status }}</p>
           </div>
 
@@ -325,6 +323,14 @@ import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+
+// Options for Status dropdown
+const statusOptions = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+]
+const statusSearchInput = ref('')
 
 const route = useRoute()
 const router = useRouter()

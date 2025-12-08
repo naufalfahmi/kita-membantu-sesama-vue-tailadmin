@@ -26,7 +26,7 @@
               Nama Karyawan <span class="text-red-500">*</span>
             </label>
             <SearchableSelect
-              v-model="formData.namaKaryawan"
+              v-model="formData.karyawan_id"
               :options="karyawanList"
               placeholder="Pilih atau cari nama karyawan"
               :search-input="karyawanSearchInput"
@@ -154,50 +154,51 @@
 <script setup lang="ts">
 import { reactive, computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 
 const isEditMode = computed(() => route.params.id !== undefined && route.params.id !== 'new')
 const currentPageTitle = computed(() => {
   return isEditMode.value ? 'Edit Remunerasi' : 'Tambah Remunerasi'
 })
 
-// Options for select fields
-const karyawanList = [
-  { value: 'ahmad_hidayat', label: 'Ahmad Hidayat' },
-  { value: 'siti_nurhaliza', label: 'Siti Nurhaliza' },
-  { value: 'budi_santoso', label: 'Budi Santoso' },
-  { value: 'dewi_lestari', label: 'Dewi Lestari' },
-  { value: 'eko_prasetyo', label: 'Eko Prasetyo' },
-  { value: 'fitri_handayani', label: 'Fitri Handayani' },
-  { value: 'guntur_wibowo', label: 'Guntur Wibowo' },
-  { value: 'hesti_rahayu', label: 'Hesti Rahayu' },
-]
-
-const kantorCabangList = [
-  { value: 'jakarta', label: 'Jakarta' },
-  { value: 'bandung', label: 'Bandung' },
-  { value: 'surabaya', label: 'Surabaya' },
-  { value: 'yogyakarta', label: 'Yogyakarta' },
-  { value: 'medan', label: 'Medan' },
-  { value: 'makassar', label: 'Makassar' },
-  { value: 'semarang', label: 'Semarang' },
-  { value: 'palembang', label: 'Palembang' },
-  { value: 'denpasar', label: 'Denpasar' },
-  { value: 'batam', label: 'Batam' },
-]
+// Options for select fields (loaded from API)
+const karyawanList = ref([])
+const kantorCabangList = ref([])
 
 // Search input refs
 const karyawanSearchInput = ref('')
 const kantorCabangSearchInput = ref('')
 
+const loadOptions = async () => {
+  try {
+    // load karyawan
+    const r1 = await fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' })
+    if (r1.ok) {
+      const j1 = await r1.json()
+      karyawanList.value = (j1.data || []).map((k) => ({ value: String(k.id), label: k.name || k.nama || '-' }))
+    }
+
+    // load kantor cabang
+    const r2 = await fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' })
+    if (r2.ok) {
+      const j2 = await r2.json()
+      kantorCabangList.value = (j2.data || []).map((c) => ({ value: String(c.id), label: c.nama || c.name || '-' }))
+    }
+  } catch (e) {
+    console.error('Error loading options:', e)
+  }
+}
+
 // Form data
 const formData = reactive({
-  namaKaryawan: '',
+  karyawan_id: '',
   bulan: null as number | null,
   tahun: null as number | null,
   kantorCabang: '',
@@ -206,31 +207,29 @@ const formData = reactive({
 // Gaji data (will be loaded from API based on selected karyawan)
 const gajiPokok = ref(0)
 
-// Handle karyawan change - load gaji data
+// Handle karyawan change - load gaji data (if available)
 const handleKaryawanChange = () => {
-  // This will be called when v-model updates
   loadGajiPokok()
 }
 
 // Load gaji pokok based on selected karyawan
-const loadGajiPokok = () => {
-  // TODO: Load gaji pokok from API based on selected karyawan
-  // For now, using sample data
-  if (formData.namaKaryawan) {
-    // Simulate loading gaji pokok based on karyawan
-    const sampleGaji: Record<string, number> = {
-      'ahmad_hidayat': 12000000,
-      'siti_nurhaliza': 10000000,
-      'budi_santoso': 8000000,
-      'dewi_lestari': 7000000,
-      'eko_prasetyo': 9000000,
-      'fitri_handayani': 8500000,
-      'guntur_wibowo': 9500000,
-      'hesti_rahayu': 8800000,
+const loadGajiPokok = async () => {
+  // Try to load gaji from API if endpoint exists. Fallback to 0.
+  gajiPokok.value = 0
+  if (!formData.karyawan_id) return
+
+  try {
+    const res = await fetch(`/admin/api/gaji?karyawan_id=${formData.karyawan_id}&per_page=1`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const j = await res.json()
+    const items = j.data || []
+    if (items.length > 0) {
+      // assume the first item has gaji nominal in field `nominal` or similar
+      const g = items[0]
+      gajiPokok.value = g.nominal || g.gaji_pokok || 0
     }
-    gajiPokok.value = sampleGaji[formData.namaKaryawan] || 0
-  } else {
-    gajiPokok.value = 0
+  } catch (e) {
+    console.error('Error loading gaji pokok:', e)
   }
 }
 
@@ -253,10 +252,28 @@ const formatCurrency = (amount: number) => {
 
 // Load data if edit mode
 const loadData = async () => {
+  await loadOptions()
+
   if (isEditMode.value && route.params.id) {
     const id = route.params.id as string
-    // TODO: Load data from API
-    console.log('Loading data for ID:', id)
+    try {
+      const res = await fetch(`/admin/api/operasional/remunerasi/${id}`, { credentials: 'same-origin' })
+      if (!res.ok) throw new Error('Failed to load remunerasi')
+      const json = await res.json()
+      if (json && json.data) {
+        const d = json.data
+        formData.namaKaryawan = ''
+        formData.karyawan_id = d.karyawan_id ? String(d.karyawan_id) : ''
+        formData.bulan = d.bulan_remunerasi || null
+        formData.tahun = d.tahun_remunerasi || null
+        formData.kantorCabang = d.kantor_cabang_id ? String(d.kantor_cabang_id) : ''
+        gajiPokok.value = d.gaji_pokok || 0
+      }
+    } catch (e) {
+      console.error('Error loading data for edit:', e)
+    }
+  } else {
+    // not edit - still load options
   }
 }
 
@@ -267,43 +284,78 @@ const handleCancel = () => {
 
 // Handle save
 const handleSave = async () => {
-  if (!formData.namaKaryawan) {
-    alert('Nama Karyawan wajib diisi')
+  if (!formData.karyawan_id) {
+    toast.error('Nama Karyawan wajib diisi')
     return
   }
 
   if (!formData.bulan || formData.bulan < 1 || formData.bulan > 12) {
-    alert('Bulan harus antara 1-12')
+    toast.error('Bulan harus antara 1-12')
     return
   }
 
   if (!formData.tahun) {
-    alert('Tahun wajib diisi')
+    toast.error('Tahun wajib diisi')
     return
   }
 
   try {
-    // TODO: Save to API
-    if (isEditMode.value) {
-      console.log('Updating remunerasi:', formData)
-      // await updateRemunerasi(route.params.id, formData)
-      alert('Remunerasi berhasil diupdate')
-    } else {
-      console.log('Creating remunerasi:', formData)
-      // await createRemunerasi(formData)
-      alert('Remunerasi berhasil ditambahkan')
+    const t = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+    const tk = await t.json()
+
+    const payload = {
+      karyawan_id: formData.karyawan_id ? Number(formData.karyawan_id) : null,
+      bulan_remunerasi: formData.bulan,
+      tahun_remunerasi: formData.tahun,
+      gaji_pokok: gajiPokok.value || null,
+      take_home_pay: takeHomePay.value || 0,
+      tanggal: null,
+      kantor_cabang_id: formData.kantorCabang || null,
     }
-    
-    // Redirect to list
+
+    if (formData.tahun) payload.tanggal = `${formData.tahun}-${String(formData.bulan).padStart(2, '0')}-15`
+
+    let res
+    if (isEditMode.value) {
+      const id = route.params.id as string
+      res = await fetch(`/admin/api/operasional/remunerasi/${id}`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': tk.csrf_token,
+        },
+        body: JSON.stringify(payload),
+      })
+    } else {
+      res = await fetch('/admin/api/operasional/remunerasi', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': tk.csrf_token,
+        },
+        body: JSON.stringify(payload),
+      })
+    }
+
+    const json = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      const msg = (json && json.message) || 'Request gagal'
+      throw new Error(msg)
+    }
+
+    // success
+    toast.success(json.message || (isEditMode.value ? 'Remunerasi berhasil diupdate' : 'Remunerasi berhasil ditambahkan'))
     router.push('/operasional/remunerasi')
   } catch (error) {
     console.error('Error saving:', error)
-    alert('Terjadi kesalahan saat menyimpan data')
+    toast.error('Terjadi kesalahan saat menyimpan data')
   }
 }
 
-// Watch for namaKaryawan changes to load gaji pokok
-watch(() => formData.namaKaryawan, () => {
+// Watch for karyawan_id changes to load gaji pokok
+watch(() => formData.karyawan_id, () => {
   loadGajiPokok()
 })
 

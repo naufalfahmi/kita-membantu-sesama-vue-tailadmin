@@ -40,15 +40,13 @@
       </label>
       <div class="relative">
         <div class="absolute">
-          <select
+          <SearchableSelect
             v-model="selectedCountry"
-            @change="updatePhoneNumber"
-            class="appearance-none rounded-l-lg border-0 border-r border-gray-200 bg-transparent bg-none py-3 pl-3.5 pr-8 leading-tight text-gray-700 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:text-gray-400"
-          >
-            <option v-for="(code, country) in countryCodes" :key="country" :value="country">
-              {{ country }}
-            </option>
-          </select>
+            :options="countryOptions"
+            @update:search-input="() => {}"
+            placeholder=""
+            class="w-[120px]"
+          />
           <div
             class="absolute inset-y-0 flex items-center text-gray-700 pointer-events-none right-3 dark:text-gray-400"
           >
@@ -86,15 +84,13 @@
       </label>
       <div class="relative">
         <div class="absolute right-0">
-          <select
+          <SearchableSelect
             v-model="selectedCountry2"
-            @change="updatePhoneNumber2"
-            class="appearance-none rounded-r-lg border-0 border-l border-gray-200 bg-transparent bg-none py-3 pl-3.5 pr-8 leading-tight text-gray-700 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-800 dark:text-gray-400"
-          >
-            <option v-for="(code, country) in countryCodes" :key="country" :value="country">
-              {{ country }}
-            </option>
-          </select>
+            :options="countryOptions"
+            @update:search-input="() => {}"
+            placeholder=""
+            class="w-[120px]"
+          />
           <div
             class="absolute inset-y-0 flex items-center text-gray-700 pointer-events-none right-3 dark:text-gray-400"
           >
@@ -181,7 +177,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
+import SearchableSelect from '../SearchableSelect.vue'
 
 const email = ref('')
 const selectedCountry = ref('US')
@@ -199,13 +196,20 @@ const countryCodes = {
   AU: '+61',
 }
 
-const updatePhoneNumber = () => {
-  phoneNumber.value = countryCodes[selectedCountry.value as keyof typeof countryCodes]
+const countryOptions = computed(() =>
+  Object.entries(countryCodes).map(([country, code]) => ({ value: country, label: `${country} (${code})` }))
+)
+
+const updatePhoneNumber = (val: string) => {
+  phoneNumber.value = countryCodes[val as keyof typeof countryCodes] || ''
 }
 
-const updatePhoneNumber2 = () => {
-  phoneNumber2.value = countryCodes[selectedCountry2.value as keyof typeof countryCodes]
+const updatePhoneNumber2 = (val: string) => {
+  phoneNumber2.value = countryCodes[val as keyof typeof countryCodes] || ''
 }
+
+watch(selectedCountry, (val) => updatePhoneNumber(val))
+watch(selectedCountry2, (val) => updatePhoneNumber2(val))
 
 const copyWebsite = () => {
   navigator.clipboard.writeText(website.value)

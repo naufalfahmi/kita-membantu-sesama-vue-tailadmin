@@ -87,6 +87,8 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::apiResource('pangkat', \App\Http\Controllers\PangkatController::class);
     // Gaji API
     Route::apiResource('gaji', \App\Http\Controllers\GajiController::class);
+    // Remunerasi API
+    Route::apiResource('operasional/remunerasi', \App\Http\Controllers\Api\RemunerasiController::class);
     
     // Karyawan API
     Route::get('karyawan-next-no-induk', [\App\Http\Controllers\KaryawanController::class, 'getNextNoInduk'])->name('admin.api.karyawan.next-no-induk');

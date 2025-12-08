@@ -26,6 +26,7 @@ export default defineConfig({
     },
     publicDir: resolve(__dirname, 'public/admin/public'),
     build: {
+        chunkSizeWarningLimit: 1500,
         rollupOptions: {
             output: {
                 assetFileNames: 'assets/[name][extname]',

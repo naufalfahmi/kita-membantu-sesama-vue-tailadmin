@@ -353,76 +353,60 @@ const defaultColDef = {
   filter: true,
 }
 
-// Sample data
-const rowDataArray = [
-  {
-    id: '1',
-    namaKaryawan: 'Ahmad Hidayat',
-    bulanRemunerasi: 1,
-    tahunRemunerasi: 2024,
-    takeHomePay: 12000000,
-    tanggal: '2024-01-15',
-  },
-  {
-    id: '2',
-    namaKaryawan: 'Siti Nurhaliza',
-    bulanRemunerasi: 1,
-    tahunRemunerasi: 2024,
-    takeHomePay: 10000000,
-    tanggal: '2024-01-15',
-  },
-  {
-    id: '3',
-    namaKaryawan: 'Budi Santoso',
-    bulanRemunerasi: 2,
-    tahunRemunerasi: 2024,
-    takeHomePay: 8000000,
-    tanggal: '2024-02-15',
-  },
-  {
-    id: '4',
-    namaKaryawan: 'Dewi Lestari',
-    bulanRemunerasi: 2,
-    tahunRemunerasi: 2024,
-    takeHomePay: 7000000,
-    tanggal: '2024-02-15',
-  },
-  {
-    id: '5',
-    namaKaryawan: 'Eko Prasetyo',
-    bulanRemunerasi: 3,
-    tahunRemunerasi: 2024,
-    takeHomePay: 9000000,
-    tanggal: '2024-03-15',
-  },
-  {
-    id: '6',
-    namaKaryawan: 'Fitri Handayani',
-    bulanRemunerasi: 3,
-    tahunRemunerasi: 2024,
-    takeHomePay: 8500000,
-    tanggal: '2024-03-15',
-  },
-  {
-    id: '7',
-    namaKaryawan: 'Guntur Wibowo',
-    bulanRemunerasi: 4,
-    tahunRemunerasi: 2024,
-    takeHomePay: 9500000,
-    tanggal: '2024-04-15',
-  },
-  {
-    id: '8',
-    namaKaryawan: 'Hesti Rahayu',
-    bulanRemunerasi: 4,
-    tahunRemunerasi: 2024,
-    takeHomePay: 8800000,
-    tanggal: '2024-04-15',
-  },
-]
+// row data (loaded from API)
+const rowDataArray = ref([])
+const loading = ref(false)
 
-// Create ref for rowData
-const rowData = ref(rowDataArray)
+// pagination state (optional)
+const pagination = ref({ current_page: 1, per_page: 20, total: 0 })
+
+const buildQuery = () => {
+  const params = new URLSearchParams()
+  params.append('per_page', String(pagination.value.per_page || 1000))
+  // name filtering is done client-side against loaded data
+  if (filterBulan.value) params.append('bulan', filterBulan.value)
+  if (filterTahun.value) params.append('tahun', filterTahun.value)
+  if (filterTanggal.value) params.append('tanggal', filterTanggal.value)
+  if (filterTakeHomePayMin.value) params.append('min_take_home', filterTakeHomePayMin.value)
+  if (filterTakeHomePayMax.value) params.append('max_take_home', filterTakeHomePayMax.value)
+  if (filterKantorCabangId && filterKantorCabangId.value) params.append('kantor_cabang_id', filterKantorCabangId.value)
+  return params.toString()
+}
+
+const loadData = async () => {
+  loading.value = true
+  try {
+    const qs = buildQuery()
+    const url = `/admin/api/operasional/remunerasi?${qs}`
+    const res = await fetch(url, { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to load remunerasi')
+    const json = await res.json()
+    const items = json.data || []
+    // map to table shape (for backward compatibility)
+    rowDataArray.value = items.map((it) => ({
+      id: it.id,
+      namaKaryawan: it.karyawan ? (it.karyawan.name || '') : '',
+      bulanRemunerasi: it.bulan_remunerasi,
+      tahunRemunerasi: it.tahun_remunerasi,
+      takeHomePay: it.take_home_pay,
+      tanggal: it.tanggal,
+      raw: it,
+    }))
+    if (json.pagination) {
+      pagination.value.current_page = json.pagination.current_page || 1
+      pagination.value.per_page = json.pagination.per_page || pagination.value.per_page
+      pagination.value.total = json.pagination.total || 0
+    }
+  } catch (e) {
+    console.error('Error loading remunerasi:', e)
+    toast.error('Gagal memuat data remunerasi')
+  } finally {
+    loading.value = false
+  }
+}
+
+// optional filter: kantor cabang id (not in template yet, but keep)
+const filterKantorCabangId = ref('')
 
 // Handle add button - redirect to form page
 const handleAdd = () => {
@@ -445,14 +429,23 @@ const confirmDelete = async () => {
   if (!deleteId.value) return
 
   try {
-    // Remove from local data (since this is sample data)
-    const index = rowDataArray.findIndex(item => item.id === deleteId.value)
-    if (index > -1) {
-      rowDataArray.splice(index, 1)
-      toast.success('Remunerasi berhasil dihapus')
-    } else {
-      toast.error('Remunerasi tidak ditemukan')
-    }
+    // fetch CSRF token
+    const t = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+    const tk = await t.json()
+    const r = await fetch(`/admin/api/operasional/remunerasi/${deleteId.value}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      headers: {
+        'X-CSRF-TOKEN': tk.csrf_token,
+      },
+    })
+
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error((j && j.message) || 'Gagal menghapus remunerasi')
+
+    toast.success((j && j.message) || 'Remunerasi berhasil dihapus')
+    // reload
+    await loadData()
   } catch (error: any) {
     console.error('Error deleting remunerasi:', error)
     toast.error('Gagal menghapus remunerasi')
@@ -478,7 +471,7 @@ const filterTakeHomePayMax = ref('')
 
 // Filtered data for AG Grid
 const gridRowData = computed(() => {
-  let filtered = [...rowDataArray]
+  let filtered = [...rowDataArray.value]
   
   // Filter by nama karyawan
   if (filterNamaKaryawan.value) {
@@ -578,6 +571,9 @@ const handleExportExcel = () => {
   
   XLSX.writeFile(workbook, filename)
 }
+
+// load initial data after all refs/computed are declared to avoid TDZ issues
+loadData()
 </script>
 
 <style>

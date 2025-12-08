@@ -25,6 +25,6 @@ class DatabaseSeeder extends Seeder
         $this->call(PangkatSeeder::class);
         
         // Seed gaji
-        $this->call(GajiSeeder::class);
+        // $this->call(GajiSeeder::class);
     }
 }

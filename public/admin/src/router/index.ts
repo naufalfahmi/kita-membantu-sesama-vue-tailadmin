@@ -658,7 +658,7 @@ export const resetAuthState = () => {
 export { checkAuth }
 
 router.beforeEach(async (to, from, next) => {
-  document.title = `Vue.js ${to.meta.title} | TailAdmin - Vue.js Tailwind CSS Dashboard Template`
+  document.title = `Kita Membantu Sesama - Admin | ${to.meta.title}`
   
   // Public routes that don't require authentication
   const publicRoutes = ['/signin', '/signup']

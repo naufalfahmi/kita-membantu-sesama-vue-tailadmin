@@ -63,6 +63,12 @@ class DonaturController extends Controller
     {
         $query = Donatur::with(['kantorCabang:id,nama']);
 
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if ($user && ! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search) {
@@ -173,7 +179,15 @@ class DonaturController extends Controller
      */
     public function show(string $id)
     {
-        $donatur = Donatur::with(['kantorCabang:id,nama'])->find($id);
+        $query = Donatur::with(['kantorCabang:id,nama']);
+
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if ($user && ! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
+        $donatur = $query->find($id);
 
         if (! $donatur) {
             return response()->json([
@@ -193,7 +207,15 @@ class DonaturController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $donatur = Donatur::find($id);
+        $query = Donatur::query();
+
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if ($user && ! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
+        $donatur = $query->find($id);
 
         if (! $donatur) {
             return response()->json([
@@ -249,7 +271,15 @@ class DonaturController extends Controller
      */
     public function destroy(string $id)
     {
-        $donatur = Donatur::find($id);
+        $query = Donatur::query();
+
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if ($user && ! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
+        $donatur = $query->find($id);
 
         if (! $donatur) {
             return response()->json([

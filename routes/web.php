@@ -59,6 +59,23 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
         ]);
     })->name('admin.api.menu');
     
+    // Debug endpoint to check user permissions
+    Route::get('/debug-permissions', function () {
+        $user = auth()->user();
+        $user->load('roles.permissions');
+        
+        return response()->json([
+            'success' => true,
+            'user_id' => $user->id,
+            'user_name' => $user->name,
+            'roles' => $user->roles->pluck('name'),
+            'all_permissions' => $user->getAllPermissions()->pluck('name'),
+            'can_view_karyawan' => $user->can('view karyawan'),
+            'can_view_mitra' => $user->can('view mitra'),
+            'can_view_donatur' => $user->can('view donatur'),
+        ]);
+    })->name('admin.api.debug-permissions');
+    
     Route::post('/logout', [LoginController::class, 'logout'])->name('admin.api.logout');
     Route::get('/user', [LoginController::class, 'user'])->name('admin.api.user');
     Route::post('/user/avatar', [LoginController::class, 'avatar'])->name('admin.api.user.avatar');

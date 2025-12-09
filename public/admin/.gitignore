@@ -28,3 +28,8 @@ coverage
 
 *.tsbuildinfo
 .vercel
+
+# Development files - should not be deployed to production
+index.html
+index.dev.html
+dist/

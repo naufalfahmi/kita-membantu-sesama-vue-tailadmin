@@ -132,6 +132,11 @@ class TransaksiController extends Controller
             $data['kode'] = $this->generateKode();
             $data['status'] = $data['status'] ?? 'verified';
             $data['created_by'] = auth()->id();
+            
+            // Auto-set fundraiser_id to current user if not provided
+            if (empty($data['fundraiser_id'])) {
+                $data['fundraiser_id'] = auth()->id();
+            }
 
             $transaksi = Transaksi::create($data);
 
@@ -231,6 +236,11 @@ class TransaksiController extends Controller
         try {
             $data = $this->sanitizePayload($validator->validated());
             $data['updated_by'] = auth()->id();
+            
+            // Auto-set fundraiser_id to current user if not provided and transaksi doesn't have one
+            if (empty($data['fundraiser_id']) && empty($transaksi->fundraiser_id)) {
+                $data['fundraiser_id'] = auth()->id();
+            }
 
             $transaksi->update($data);
 

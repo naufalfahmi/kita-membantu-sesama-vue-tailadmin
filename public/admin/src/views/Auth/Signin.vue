@@ -14,7 +14,7 @@
                   Sign In
                 </h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400">
-                  Enter your email or No. Induk and password to sign in2!
+                  Enter your email or No. Induk and password to sign in!
                 </p>
               </div>
               <div>

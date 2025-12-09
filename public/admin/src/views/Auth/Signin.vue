@@ -14,7 +14,7 @@
                   Sign In
                 </h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400">
-                  Enter your email and password to sign in!
+                  Enter your email or No. Induk and password to sign in!
                 </p>
               </div>
               <div>
@@ -30,14 +30,14 @@
                         for="email"
                         class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
                       >
-                        Email<span class="text-error-500">*</span>
+                        Email or No. Induk<span class="text-error-500">*</span>
                       </label>
                       <input
                         v-model="email"
-                        type="email"
+                        type="text"
                         id="email"
                         name="email"
-                        placeholder="info@gmail.com"
+                        placeholder="email@example.com or 123456"
                         class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                       />
                     </div>
@@ -167,7 +167,7 @@
                 <img width="{231}" height="{48}" src="/images/logo/auth-logo.svg" alt="Logo" />
               </router-link>
               <p class="text-center text-gray-400 dark:text-white/60">
-                Free and Open-Source Tailwind CSS Admin Dashboard Template
+                Dashboard Kita Membantu Sesama
               </p>
             </div>
           </div>

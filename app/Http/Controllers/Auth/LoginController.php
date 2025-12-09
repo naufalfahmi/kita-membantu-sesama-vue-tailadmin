@@ -24,17 +24,37 @@ class LoginController extends Controller
             ]);
 
             $request->validate([
-                'email' => 'required|email',
+                // `email` field accepts either an email address or `no_induk` value
+                'email' => 'required|string',
                 'password' => 'required|string',
                 'remember' => 'boolean',
             ]);
 
-            $credentials = $request->only('email', 'password');
+            $identifier = $request->input('email');
+            $password = $request->input('password');
             $remember = $request->boolean('remember', false);
 
-            \Log::info('Attempting login', ['email' => $credentials['email']]);
+            \Log::info('Attempting login', ['identifier' => $identifier]);
 
-            if (Auth::attempt($credentials, $remember)) {
+            $authenticated = false;
+
+            // If identifier looks like an email, use the normal Auth::attempt
+            if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+                $credentials = ['email' => $identifier, 'password' => $password];
+                if (Auth::attempt($credentials, $remember)) {
+                    $authenticated = true;
+                }
+            } else {
+                // Otherwise treat identifier as no_induk (employee number)
+                $userModel = config('auth.providers.users.model');
+                $user = (new $userModel)::where('no_induk', $identifier)->first();
+                if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
+                    Auth::login($user, $remember);
+                    $authenticated = true;
+                }
+            }
+
+            if ($authenticated) {
                 $request->session()->regenerate();
 
                 $user = Auth::user();
@@ -60,7 +80,7 @@ class LoginController extends Controller
                 ]);
             }
 
-            \Log::warning('Login failed', ['email' => $credentials['email']]);
+            \Log::warning('Login failed', ['identifier' => $identifier]);
 
             return response()->json([
                 'success' => false,

@@ -345,13 +345,18 @@ const handleSave = async () => {
     const tokenJson = await tokenRes.json()
 
     // Prepare data for API
-    const payload = {
+    const payload: Record<string, any> = {
       kantor_cabang_id: formData.branchId,
       nominal: formData.nominal,
       donatur_id: formData.donorId,
       program_id: formData.programId,
       tanggal_transaksi: formData.transactionDate,
       keterangan: formData.notes || null,
+    }
+
+    // For Fundrising role, set fundraiser_id to current user
+    if (isFundrising.value && currentUser.value?.id) {
+      payload.fundraiser_id = currentUser.value.id
     }
 
     let res: Response

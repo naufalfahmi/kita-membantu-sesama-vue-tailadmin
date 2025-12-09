@@ -9,6 +9,7 @@
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
+    <base href="{{ url('/') }}/">
     
     @vite(['resources/js/admin.js'])
 </head>

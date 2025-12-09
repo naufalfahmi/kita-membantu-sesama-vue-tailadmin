@@ -130,9 +130,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/{any}', function () {
         return view('admin.index');
     })->where('any', '^(?!signin|signup).*$')->name('admin');
-    
-    // Root admin route (just /admin)
-    Route::get('/admin', function () {
-        return view('admin.index');
-    })->name('admin.root');
 });
+
+// Root admin route: if authenticated -> /admin/welcome, else -> /admin/signin
+Route::get('/admin', function () {
+    if (auth()->check()) {
+        return redirect('/admin/welcome');
+    }
+    return redirect('/admin/signin');
+})->name('admin.root');
+

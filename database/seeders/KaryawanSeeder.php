@@ -18,6 +18,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Abdul Hamid',
                 'email' => 'abdulhamidsumarjo@gmail.com',
+                'account_index_number' => '01-2025731-kms002-41',
                 'phone_number' => '6285288599925',
                 'bank_name' => 'bsi',
                 'bank_account_number' => '7066429894',
@@ -32,6 +33,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Divia Zahra Choirunnisa',
                 'email' => 'diviazahra63@gmail.com',
+                'account_index_number' => '01-202562-kms003-40',
                 'phone_number' => '628558858117',
                 'bank_name' => 'BSI',
                 'bank_account_number' => '7311270348',
@@ -46,6 +48,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Jivanti Zuleika khoirunnisa',
                 'email' => 'zuleikajivanti@gmail.com',
+                'account_index_number' => '01-202562-kms002-38',
                 'phone_number' => '6282112124504',
                 'bank_name' => 'bsi',
                 'bank_account_number' => '1190525249',
@@ -60,6 +63,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Fadli Darmadi',
                 'email' => 'abu.hafizha@gmail.com',
+                'account_index_number' => '01-2025114-kms003-32',
                 'phone_number' => '628988443187',
                 'bank_name' => 'BSI',
                 'bank_account_number' => '123456789',
@@ -74,6 +78,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Putrie Intan',
                 'email' => 'putrie.intannurh@gmail.com',
+                'account_index_number' => '01-2024823-kms003-27',
                 'phone_number' => '6287809961362',
                 'bank_name' => 'Seabank',
                 'bank_account_number' => '901773655292',
@@ -88,6 +93,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Haryadi kurniawan',
                 'email' => 'kurniawanyadi74@gmail.com',
+                'account_index_number' => '01-2024813-kms002-26',
                 'phone_number' => '6281219317355',
                 'bank_name' => 'BSI',
                 'bank_account_number' => '7002783503',
@@ -102,6 +108,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Aldi Lustandial',
                 'email' => 'bisnisaldi2@gmail.com',
+                'account_index_number' => '01-2024610-kms003-25',
                 'phone_number' => '6281297655877',
                 'bank_name' => 'Bca',
                 'bank_account_number' => '7360294107',
@@ -116,6 +123,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Ahmad Firdaus',
                 'email' => 'ahmadfirdausfirdaus56@gmail.com',
+                'account_index_number' => '01-202419-kms003-21',
                 'phone_number' => '6289688138283',
                 'bank_name' => 'b',
                 'bank_account_number' => '12345678',
@@ -130,6 +138,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Safina Hana Azizah',
                 'email' => 'finahana190@gmail.com',
+                'account_index_number' => '01-2023720-kms002-18',
                 'phone_number' => '6287779152412',
                 'bank_name' => 'BSI',
                 'bank_account_number' => '7174590952',
@@ -144,6 +153,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'ARYA BRAMANTYO',
                 'email' => 'aryabramantyo8781@gmail.com',
+                'account_index_number' => '01-202365-kms002-16',
                 'phone_number' => '6287771679152',
                 'bank_name' => 'BCA',
                 'bank_account_number' => '5500487145',
@@ -158,6 +168,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Isnah dayu wati',
                 'email' => 'isnahbramantyo@gmail.com',
+                'account_index_number' => '01-2023523-kms002-14',
                 'phone_number' => '6281316818713',
                 'bank_name' => 'bsi',
                 'bank_account_number' => '7258776407',
@@ -172,6 +183,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Rina Nurlaela',
                 'email' => 'rinanurlaela804@gmail.com',
+                'account_index_number' => '01-2023221-kms003-12',
                 'phone_number' => '6283811260406',
                 'bank_name' => 'Bsi',
                 'bank_account_number' => '1023468162',
@@ -186,6 +198,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Siti Mawadah',
                 'email' => 'symawadah05@gmail.com',
+                'account_index_number' => '01-202321-kms002-7',
                 'phone_number' => '6285715023645',
                 'bank_name' => 'BSI',
                 'bank_account_number' => '7898765',
@@ -200,6 +213,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Dian Jumardiansyah',
                 'email' => 'dede.zahrah212@gmail.com',
+                'account_index_number' => '01-2023131-kms003-4',
                 'phone_number' => '6281298723110',
                 'bank_name' => 'BSI',
                 'bank_account_number' => '98767890',
@@ -214,6 +228,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Helly Armiandri',
                 'email' => 'hellyarmiandri2401@gmail.com',
+                'account_index_number' => '01-2023131-kms002-3',
                 'phone_number' => '6281212856394',
                 'bank_name' => 'BSI',
                 'bank_account_number' => '12345432',
@@ -228,6 +243,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Agustari',
                 'email' => 'agussukses72@gmail.com',
+                'account_index_number' => '01-2023131-kms002-2',
                 'phone_number' => '6285214960961',
                 'bank_name' => 'BSI',
                 'bank_account_number' => '12341234',
@@ -242,6 +258,7 @@ class KaryawanSeeder extends Seeder
             [
                 'name' => 'Sugeng Riyadi',
                 'email' => 'suririyade@gmail.com',
+                'account_index_number' => '01-2023131-kms001-1',
                 'phone_number' => '6281311628088',
                 'bank_name' => '01-2023131-kms001-1',
                 'bank_account_number' => '1111111111',
@@ -257,6 +274,7 @@ class KaryawanSeeder extends Seeder
 
         foreach ($items as $it) {
             $data = [
+                'no_induk' => $it['account_index_number'] ?? null,
                 'name' => $it['name'],
                 'email' => $it['email'],
                 'password' => Hash::make('password123'),

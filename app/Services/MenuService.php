@@ -274,6 +274,12 @@ class MenuService
             return [];
         }
 
+        // Clear permission cache to ensure fresh permissions are used
+        app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        
+        // Reload user's permissions
+        $user->load('permissions', 'roles.permissions');
+
         // Filter menu based on permissions
         $filteredMenu = [];
         

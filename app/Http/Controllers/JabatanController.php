@@ -81,6 +81,9 @@ class JabatanController extends Controller
                 $role->syncPermissions($permissionModels);
             }
 
+            // Clear permission cache
+            app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Jabatan berhasil ditambahkan',
@@ -167,6 +170,9 @@ class JabatanController extends Controller
                 // If permissions array is empty, remove all permissions
                 $role->syncPermissions([]);
             }
+
+            // Clear permission cache
+            app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
             return response()->json([
                 'success' => true,

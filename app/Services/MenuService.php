@@ -287,14 +287,7 @@ class MenuService
             $filteredItems = [];
             
             foreach ($group['items'] as $item) {
-                // Check if user has permission for this item
-                $hasPermission = !isset($item['permission']) || $user->can($item['permission']);
-                
-                if (!$hasPermission) {
-                    continue;
-                }
-
-                // Filter subItems if they exist
+                // Filter subItems first if they exist
                 if (isset($item['subItems'])) {
                     $filteredSubItems = [];
                     
@@ -308,16 +301,22 @@ class MenuService
                         }
                     }
                     
-                    // Only add item if it has at least one subItem
+                    // Only add parent item if it has at least one accessible subItem
+                    // (This way, parent menu shows if user has permission to ANY child)
                     if (!empty($filteredSubItems)) {
                         $item['subItems'] = $filteredSubItems;
                         unset($item['permission']);
                         $filteredItems[] = $item;
                     }
                 } else {
-                    // Remove permission from response
-                    unset($item['permission']);
-                    $filteredItems[] = $item;
+                    // For items without subItems, check the item's own permission
+                    $hasPermission = !isset($item['permission']) || $user->can($item['permission']);
+                    
+                    if ($hasPermission) {
+                        // Remove permission from response
+                        unset($item['permission']);
+                        $filteredItems[] = $item;
+                    }
                 }
             }
             

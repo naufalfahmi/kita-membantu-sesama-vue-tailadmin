@@ -1,3 +1,15 @@
+<?php
+$dist = public_path('admin/dist/index.html');
+if (file_exists($dist)) {
+    $html = file_get_contents($dist);
+    $csrfMeta = '<meta name="csrf-token" content="' . csrf_token() . '">';
+    // inject CSRF meta tag just before closing </head>
+    $html = str_replace('</head>', $csrfMeta . "\n</head>", $html);
+    echo $html;
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>

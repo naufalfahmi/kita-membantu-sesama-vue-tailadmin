@@ -333,11 +333,12 @@ const handleSubmit = async (e?: Event) => {
       const authResult = await checkAuth(true)
       console.log('Auth check result:', authResult)
       
-      // Redirect to welcome page if first login, otherwise to dashboard
-      const redirectPath = data.is_first_login ? '/admin/welcome' : '/admin/'
+      // Always redirect to welcome page after successful login
+      const redirectPath = '/admin/welcome'
       
       // Use window.location for reliable redirect (bypasses router guard temporarily)
       // This ensures the redirect happens even if router guard hasn't updated yet
+      console.log('Redirecting to:', redirectPath)
       window.location.href = redirectPath
     } else {
       throw new Error(data.message || 'Login failed')

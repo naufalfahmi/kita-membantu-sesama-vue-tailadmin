@@ -125,18 +125,15 @@ Route::get('/admin/signup', function () {
 
 // Admin Vue Routes - Protected by auth middleware
 // Note: This route must come after /admin/signin and /admin/signup
-// The {any} parameter will match everything except signin/signup because they're defined first
 Route::middleware(['auth'])->group(function () {
+    // Handle /admin and /admin/ - show Vue app (Vue router will handle navigation)
+    Route::get('/admin', function () {
+        return view('admin.index');
+    })->name('admin.index');
+    
+    // The {any} parameter will match everything except signin/signup
     Route::get('/admin/{any}', function () {
         return view('admin.index');
-    })->where('any', '^(?!signin|signup).*$')->name('admin');
+    })->where('any', '^(?!signin$|signup$).+$')->name('admin');
 });
-
-// Root admin route: if authenticated -> /admin/welcome, else -> /admin/signin
-Route::get('/admin', function () {
-    if (auth()->check()) {
-        return redirect('/admin/welcome');
-    }
-    return redirect('/admin/signin');
-})->name('admin.root');
 

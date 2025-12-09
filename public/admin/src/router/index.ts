@@ -8,11 +8,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'Dashboard',
-      component: () => import('../views/Dashboard.vue'),
-      meta: {
-        title: 'Dashboard',
-      },
+      name: 'Home',
+      redirect: '/welcome',
     },
     {
       path: '/calendar',

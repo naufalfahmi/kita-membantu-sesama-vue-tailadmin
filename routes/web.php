@@ -61,6 +61,9 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     
     Route::post('/logout', [LoginController::class, 'logout'])->name('admin.api.logout');
     Route::get('/user', [LoginController::class, 'user'])->name('admin.api.user');
+    Route::post('/user/avatar', [LoginController::class, 'avatar'])->name('admin.api.user.avatar');
+    Route::post('/user/social', [LoginController::class, 'updateSocial'])->name('admin.api.user.social');
+    Route::post('/user/password', [LoginController::class, 'changePassword'])->name('admin.api.user.password');
     
     // Dashboard API
     Route::get('/dashboard/stats', [\App\Http\Controllers\DashboardController::class, 'stats'])->name('admin.api.dashboard.stats');

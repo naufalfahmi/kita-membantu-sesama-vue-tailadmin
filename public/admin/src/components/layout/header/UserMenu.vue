@@ -75,8 +75,8 @@ const imageError = ref(false)
 
 const menuItems = [
   { href: '/profile', icon: UserCircleIcon, text: 'Profile' },
-  { href: '/profile', icon: SettingsIcon, text: 'Account settings' },
-  { href: '/profile', icon: InfoCircleIcon, text: 'Support' },
+  { href: '/account/settings', icon: SettingsIcon, text: 'Account settings' },
+  { href: '/support', icon: InfoCircleIcon, text: 'Support' },
 ]
 
 const userAvatar = computed(() => {

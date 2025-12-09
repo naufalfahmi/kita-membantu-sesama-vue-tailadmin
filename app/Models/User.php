@@ -23,6 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
         'no_induk',
         'posisi',
         'pangkat_id',
@@ -39,6 +40,10 @@ class User extends Authenticatable
         'created_by',
         'updated_by',
         'deleted_by',
+        'facebook',
+        'twitter',
+        'linkedin',
+        'instagram',
     ];
 
     /**

@@ -31,6 +31,18 @@ const router = createRouter({
       },
     },
     {
+      path: '/account/settings',
+      name: 'Account Settings',
+      component: () => import('../views/Account/AccountSettings.vue'),
+      meta: { title: 'Account Settings' },
+    },
+    {
+      path: '/support',
+      name: 'Support',
+      component: () => import('../views/Support.vue'),
+      meta: { title: 'Support' },
+    },
+    {
       path: '/form-elements',
       name: 'Form Elements',
       component: () => import('../views/Forms/FormElements.vue'),

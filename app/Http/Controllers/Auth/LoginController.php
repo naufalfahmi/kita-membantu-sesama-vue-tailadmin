@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
@@ -118,15 +119,115 @@ class LoginController extends Controller
             ], 401);
         }
 
+        // Get karyawan data if exists
+        $karyawan = $user->karyawan;
+
         return response()->json([
             'success' => true,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'roles' => $user->getRoleNames()->toArray(),
-                'is_admin' => $user->hasRole('admin'),
+                'avatar' => $user->avatar,
+                'no_induk' => $karyawan?->no_induk,
+                'no_handphone' => $karyawan?->no_handphone,
+                'pendidikan' => $karyawan?->pendidikan,
+                'nama_bank' => $karyawan?->nama_bank,
+                'no_rekening' => $karyawan?->no_rekening,
+                'tanggal_lahir' => $karyawan?->tanggal_lahir,
+                'tanggal_masuk' => $karyawan?->tanggal_masuk,
+                'role' => $user->roles->first(),
+                'kantor_cabang' => $karyawan?->kantorCabang,
+                'jabatan' => $karyawan?->jabatan,
+                'pangkat' => $karyawan?->pangkat,
+                'tipe_absensi' => $karyawan?->tipeAbsensi,
+                'facebook' => $user->facebook,
+                'twitter' => $user->twitter,
+                'linkedin' => $user->linkedin,
+                'instagram' => $user->instagram,
             ],
+        ]);
+    }
+
+    public function avatar(Request $request)
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        $user = Auth::user();
+
+        if ($request->hasFile('avatar')) {
+            $file = $request->file('avatar');
+            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('avatars', $filename, 'public');
+
+            $user->avatar = '/storage/' . $path;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Avatar updated successfully',
+                'avatar' => $user->avatar,
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'No file uploaded',
+        ], 400);
+    }
+
+    public function updateSocial(Request $request)
+    {
+        $request->validate([
+            'facebook' => 'nullable|string|max:255',
+            'twitter' => 'nullable|string|max:255',
+            'linkedin' => 'nullable|string|max:255',
+            'instagram' => 'nullable|string|max:255',
+        ]);
+
+        $user = Auth::user();
+        $user->update($request->only(['facebook', 'twitter', 'linkedin', 'instagram']));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Social media information updated successfully',
+            'user' => [
+                'facebook' => $user->facebook,
+                'twitter' => $user->twitter,
+                'linkedin' => $user->linkedin,
+                'instagram' => $user->instagram,
+            ],
+        ]);
+    }
+
+    /**
+     * Change authenticated user's password
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->input('current_password'), $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Current password is incorrect',
+                'errors' => ['current_password' => ['Current password is incorrect']],
+            ], 422);
+        }
+
+        $user->password = Hash::make($request->input('new_password'));
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password changed successfully',
         ]);
     }
 }

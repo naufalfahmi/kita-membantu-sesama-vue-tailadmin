@@ -260,11 +260,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 
 // Menu structure based on MenuService
 const menuStructure = [
@@ -525,14 +527,14 @@ const saveJabatan = async () => {
     }
 
     if (data.success) {
-      alert(isEditMode.value ? 'Jabatan berhasil diupdate' : 'Jabatan berhasil ditambahkan')
+      toast.success(isEditMode.value ? 'Jabatan berhasil diupdate' : 'Jabatan berhasil ditambahkan')
       router.push('/administrasi/jabatan')
     } else {
       throw new Error(data.message || 'Failed to save')
     }
   } catch (error: any) {
     console.error('Error saving jabatan:', error)
-    alert(error.message || 'Gagal menyimpan jabatan')
+    toast.error(error.message || 'Gagal menyimpan jabatan')
   } finally {
     isSaving.value = false
   }
@@ -558,14 +560,14 @@ const cloneJabatan = async () => {
     const data = await response.json()
 
     if (data.success) {
-      alert('Jabatan berhasil diduplikasi')
+      toast.success('Jabatan berhasil diduplikasi')
       router.push('/administrasi/jabatan')
     } else {
       throw new Error(data.message || 'Failed to clone')
     }
   } catch (error: any) {
     console.error('Error cloning jabatan:', error)
-    alert(error.message || 'Gagal menduplikasi jabatan')
+    toast.error(error.message || 'Gagal menduplikasi jabatan')
   }
 }
 

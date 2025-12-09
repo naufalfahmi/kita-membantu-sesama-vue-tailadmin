@@ -16,6 +16,12 @@ class MitraController extends Controller
     {
         $query = Mitra::with(['kantorCabang:id,nama']);
 
+        // Filter berdasarkan user yang login (kecuali admin/superadmin)
+        $user = auth()->user();
+        if ($user && ! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $query->where('created_by', $user->id);
+        }
+
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search) {

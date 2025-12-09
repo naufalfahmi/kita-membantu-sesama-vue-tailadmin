@@ -2,26 +2,37 @@
 
 namespace Database\Seeders;
 
-use App\Models\Pangkat;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class PangkatSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     public function run(): void
     {
-        // Create some sample pangkat data
-        $pangkats = [
-            ['id' => (string) Str::uuid(), 'nama' => 'Pangkat I', 'created_by' => 1],
-            ['id' => (string) Str::uuid(), 'nama' => 'Pangkat II', 'created_by' => 1],
-            ['id' => (string) Str::uuid(), 'nama' => 'Pangkat III', 'created_by' => 1],
+        $data = [
+            [
+                'id' => 'e1b0d2b4-1b1e-4af1-a103-cf18fd740a33',
+                'nama' => 'Oficer',
+            ],
+            [
+                'id' => '62e4ab5a-38a3-4cbb-9c4f-469e9ba3903a',
+                'nama' => 'Supervisor',
+            ],
+            [
+                'id' => '624e2e7b-c5bd-4177-a915-440ebab13cf8',
+                'nama' => 'Manager',
+            ],
+            [
+                'id' => '62c21575-a5b3-452f-819b-7a666ab943f9',
+                'nama' => 'Direktur',
+            ],
         ];
 
-        foreach ($pangkats as $p) {
-            Pangkat::updateOrCreate(['id' => $p['id']], $p);
+        foreach ($data as $row) {
+            DB::table('pangkats')->updateOrInsert(
+                ['id' => $row['id']],
+                $row
+            );
         }
     }
 }

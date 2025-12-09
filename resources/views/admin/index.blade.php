@@ -9,12 +9,8 @@
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <base href="{{ url('/') }}/">
     
-        <!-- Use the prebuilt admin assets (served from /admin/assets) to ensure
-            dynamic imports resolve from the same base path and avoid 404/MIME issues. -->
-        <script type="module" src="/admin/assets/admin-DcHNUzMI.js" crossorigin></script>
-        <link rel="stylesheet" href="/admin/assets/admin.css" crossorigin>
+    @vite(['resources/js/admin.js'])
 </head>
 <body class="dark:bg-gray-900">
     <div id="app"></div>

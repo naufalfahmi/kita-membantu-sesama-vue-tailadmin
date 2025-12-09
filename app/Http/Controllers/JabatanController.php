@@ -51,7 +51,7 @@ class JabatanController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100|unique:roles,name',
             'permissions' => 'nullable|array',
-            'permissions.*' => 'string|exists:permissions,name',
+            'permissions.*' => 'string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -136,7 +136,7 @@ class JabatanController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100|unique:roles,name,' . $id,
             'permissions' => 'nullable|array',
-            'permissions.*' => 'string|exists:permissions,name',
+            'permissions.*' => 'string|max:255',
         ]);
 
         if ($validator->fails()) {

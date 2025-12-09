@@ -30,6 +30,9 @@ class DatabaseSeeder extends Seeder
         // Seed program
         $this->call(ProgramSeeder::class);
 
+        // Seed tipe donatur
+        $this->call(TipeDonaturSeeder::class);
+
         // Seed tipe absensi
         $this->call(TipeAbsensiSeeder::class);
         

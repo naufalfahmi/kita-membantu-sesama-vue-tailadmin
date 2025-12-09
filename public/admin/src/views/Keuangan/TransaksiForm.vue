@@ -28,6 +28,7 @@
               placeholder="Kantor Cabang"
               :search-input="kantorCabangSearchInput"
               @update:search-input="kantorCabangSearchInput = $event"
+              :disabled="isFundrising"
             />
           </div>
 
@@ -173,6 +174,13 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
+// User data for role-based field restrictions
+const currentUser = ref<any>(null)
+const isFundrising = computed(() => {
+  const roleName = currentUser.value?.role?.name?.toLowerCase()
+  return roleName === 'fundrising' || roleName === 'fundraising'
+})
+
 const isEditMode = computed(() => route.params.id !== undefined && route.params.id !== 'new')
 const currentPageTitle = computed(() => {
   return isEditMode.value ? 'Edit Transaksi' : 'Tambah Transaksi'
@@ -209,6 +217,21 @@ const formData = reactive({
   transactionDate: '',
   notes: '',
 })
+
+// Fetch current user data
+const fetchCurrentUser = async () => {
+  try {
+    const res = await fetch('/admin/api/user', { credentials: 'same-origin' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && json.user) {
+        currentUser.value = json.user
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching current user:', error)
+  }
+}
 
 // Fetch dropdown options from APIs
 const fetchOptions = async () => {
@@ -378,8 +401,16 @@ const handleSave = async () => {
 }
 
 onMounted(async () => {
+  await fetchCurrentUser()
   await fetchOptions()
   await loadData()
+
+  // For Fundrising role, auto-set Kantor Cabang from current user
+  if (isFundrising.value && !isEditMode.value) {
+    if (currentUser.value?.kantor_cabang?.id) {
+      formData.branchId = String(currentUser.value.kantor_cabang.id)
+    }
+  }
 })
 </script>
 

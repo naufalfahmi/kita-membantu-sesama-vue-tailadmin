@@ -51,6 +51,7 @@
               placeholder="Pilih PIC"
               :search-input="picSearchInput"
               @update:search-input="picSearchInput = $event"
+              :disabled="isFundrising"
             />
           </div>
 
@@ -134,6 +135,7 @@
               placeholder="Kantor Cabang"
               :search-input="kantorCabangSearchInput"
               @update:search-input="kantorCabangSearchInput = $event"
+              :disabled="isFundrising"
             />
           </div>
 
@@ -198,6 +200,13 @@ import SearchableMultiSelect from '@/components/forms/SearchableMultiSelect.vue'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+
+// User data for role-based field restrictions
+const currentUser = ref<any>(null)
+const isFundrising = computed(() => {
+  const roleName = currentUser.value?.role?.name?.toLowerCase()
+  return roleName === 'fundrising' || roleName === 'fundraising'
+})
 
 const isEditMode = computed(() => route.params.id !== undefined && route.params.id !== 'new')
 const currentPageTitle = computed(() => (isEditMode.value ? 'Edit Donatur' : 'Tambah Donatur'))
@@ -270,6 +279,20 @@ const formData = reactive({
   kantor_cabang_id: '',
   status: 'aktif',
 })
+
+const fetchCurrentUser = async () => {
+  try {
+    const res = await fetch('/admin/api/user', { credentials: 'same-origin' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && json.user) {
+        currentUser.value = json.user
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching current user:', error)
+  }
+}
 
 const fetchReferenceData = async () => {
   try {
@@ -427,10 +450,23 @@ const handleSave = async () => {
 }
 
 onMounted(async () => {
+  await fetchCurrentUser()
   await fetchReferenceData()
 
   if (isEditMode.value && route.params.id) {
     await loadData(route.params.id as string)
+  }
+
+  // For Fundrising role, auto-set PIC and Kantor Cabang from current user
+  if (isFundrising.value && !isEditMode.value) {
+    // Set PIC to current user's name
+    if (currentUser.value?.name) {
+      formData.pic = currentUser.value.name
+    }
+    // Set Kantor Cabang to current user's kantor_cabang
+    if (currentUser.value?.kantor_cabang?.id) {
+      formData.kantor_cabang_id = String(currentUser.value.kantor_cabang.id)
+    }
   }
 })
 </script>

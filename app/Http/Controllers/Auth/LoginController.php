@@ -139,8 +139,8 @@ class LoginController extends Controller
             ], 401);
         }
 
-        // Get karyawan data if exists
-        $karyawan = $user->karyawan;
+        // Load relationships
+        $user->load(['pangkat', 'tipeAbsensi', 'kantorCabang', 'roles']);
 
         return response()->json([
             'success' => true,
@@ -149,18 +149,18 @@ class LoginController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'avatar' => $user->avatar,
-                'no_induk' => $karyawan?->no_induk,
-                'no_handphone' => $karyawan?->no_handphone,
-                'pendidikan' => $karyawan?->pendidikan,
-                'nama_bank' => $karyawan?->nama_bank,
-                'no_rekening' => $karyawan?->no_rekening,
-                'tanggal_lahir' => $karyawan?->tanggal_lahir,
-                'tanggal_masuk' => $karyawan?->tanggal_masuk,
+                'no_induk' => $user->no_induk,
+                'no_handphone' => $user->no_handphone,
+                'pendidikan' => $user->pendidikan,
+                'nama_bank' => $user->nama_bank,
+                'no_rekening' => $user->no_rekening,
+                'tanggal_lahir' => $user->tanggal_lahir,
+                'tanggal_masuk' => $user->tanggal_masuk,
                 'role' => $user->roles->first(),
-                'kantor_cabang' => $karyawan?->kantorCabang,
-                'jabatan' => $karyawan?->jabatan,
-                'pangkat' => $karyawan?->pangkat,
-                'tipe_absensi' => $karyawan?->tipeAbsensi,
+                'kantor_cabang' => $user->kantorCabang,
+                'jabatan' => $user->posisi,
+                'pangkat' => $user->pangkat,
+                'tipe_absensi' => $user->tipeAbsensi,
                 'facebook' => $user->facebook,
                 'twitter' => $user->twitter,
                 'linkedin' => $user->linkedin,

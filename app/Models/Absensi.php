@@ -181,7 +181,7 @@ class Absensi extends Model
     /**
      * Get today's attendance for a user.
      */
-    public static function getTodayAttendance(int $userId): ?self
+    public static function getTodayAttendance(string $userId): ?self
     {
         return self::where('user_id', $userId)
             ->whereDate('jam_masuk', today())
@@ -191,7 +191,7 @@ class Absensi extends Model
     /**
      * Check if user already clocked in today.
      */
-    public static function hasClockInToday(int $userId): bool
+    public static function hasClockInToday(string $userId): bool
     {
         return self::where('user_id', $userId)
             ->whereDate('jam_masuk', today())
@@ -201,7 +201,7 @@ class Absensi extends Model
     /**
      * Check if user already clocked out today.
      */
-    public static function hasClockOutToday(int $userId): bool
+    public static function hasClockOutToday(string $userId): bool
     {
         return self::where('user_id', $userId)
             ->whereDate('jam_masuk', today())

@@ -130,7 +130,7 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Transaksi API
     Route::apiResource('transaksi', TransaksiController::class);
 
-    // Absensi API
+    // Absensi API - Custom routes MUST be defined BEFORE apiResource
     Route::get('absensi/today-status', [AbsensiController::class, 'todayStatus'])->name('admin.api.absensi.today-status');
     Route::post('absensi/clock-in', [AbsensiController::class, 'clockIn'])->name('admin.api.absensi.clock-in');
     Route::post('absensi/clock-out', [AbsensiController::class, 'clockOut'])->name('admin.api.absensi.clock-out');
@@ -156,9 +156,9 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.index');
     })->name('admin.index');
     
-    // The {any} parameter will match everything except signin/signup
+    // The {any} parameter will match everything except signin/signup and api/*
     Route::get('/admin/{any}', function () {
         return view('admin.index');
-    })->where('any', '^(?!signin$|signup$).+$')->name('admin');
+    })->where('any', '^(?!signin$|signup$|api($|/.*)).+$')->name('admin');
 });
 

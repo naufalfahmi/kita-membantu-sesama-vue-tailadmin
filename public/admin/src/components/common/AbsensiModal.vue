@@ -423,7 +423,7 @@ const fetchTodayStatus = async () => {
         'Accept': 'application/json',
         'X-CSRF-TOKEN': getCsrfToken(),
       },
-      credentials: 'same-origin',
+      credentials: 'include',
     })
 
     // Handle non-OK responses (like redirects converted to HTML)
@@ -618,7 +618,7 @@ const submitAttendance = async () => {
         'Accept': 'application/json',
         'X-CSRF-TOKEN': getCsrfToken(),
       },
-      credentials: 'same-origin',
+      credentials: 'include',
       body: JSON.stringify(payload),
     })
 

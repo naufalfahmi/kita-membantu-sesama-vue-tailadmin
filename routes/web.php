@@ -49,6 +49,15 @@ Route::middleware(['web'])->prefix('admin/api')->group(function () {
     })->name('admin.api.csrf-token');
     
     Route::post('/login', [LoginController::class, 'login'])->name('admin.api.login');
+    
+    // Debug endpoint to check auth status
+    Route::get('/debug-auth', function () {
+        return response()->json([
+            'authenticated' => auth()->check(),
+            'user_id' => auth()->id(),
+            'session_id' => session()->getId(),
+        ]);
+    });
 });
 
 // Admin API Routes - Protected

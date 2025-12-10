@@ -25,6 +25,7 @@ class KantorCabang extends Model
         'alamat',
         'latitude',
         'longitude',
+        'radius',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -33,6 +34,7 @@ class KantorCabang extends Model
     protected $casts = [
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
+        'radius' => 'integer',
     ];
 
     /**

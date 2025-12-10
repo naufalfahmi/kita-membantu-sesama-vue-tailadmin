@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DonaturController;
 use App\Http\Controllers\LandingKegiatanController;
@@ -128,6 +129,13 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
 
     // Transaksi API
     Route::apiResource('transaksi', TransaksiController::class);
+
+    // Absensi API
+    Route::get('absensi/today-status', [AbsensiController::class, 'todayStatus'])->name('admin.api.absensi.today-status');
+    Route::post('absensi/clock-in', [AbsensiController::class, 'clockIn'])->name('admin.api.absensi.clock-in');
+    Route::post('absensi/clock-out', [AbsensiController::class, 'clockOut'])->name('admin.api.absensi.clock-out');
+    Route::get('absensi/report', [AbsensiController::class, 'report'])->name('admin.api.absensi.report');
+    Route::apiResource('absensi', AbsensiController::class);
 });
 
 // Admin Signin Route - Public (no auth required, must be before protected routes)

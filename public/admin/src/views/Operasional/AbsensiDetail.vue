@@ -45,17 +45,23 @@
           <h4 class="mb-6 text-lg font-semibold text-gray-800 dark:text-white/90">
             Informasi Karyawan
           </h4>
-          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div>
               <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Nama</p>
               <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
-                {{ absensiData.nama }}
+                {{ absensiData.user?.name || '-' }}
               </p>
             </div>
             <div>
               <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">No Induk</p>
               <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
-                {{ absensiData.noInduk }}
+                {{ absensiData.user?.no_induk || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Kantor Cabang</p>
+              <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
+                {{ absensiData.kantor_cabang?.nama || '-' }}
               </p>
             </div>
           </div>
@@ -85,23 +91,23 @@
                 Absensi Masuk
               </h4>
             </div>
-            <div class="space-y-6">
+            <div class="space-y-4">
               <div>
-                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Tanggal</p>
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Waktu</p>
                 <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
-                  {{ formatDate(absensiData.tanggalAbsenMasuk) }}
+                  {{ formatDateTime(absensiData.jam_masuk) }}
                 </p>
               </div>
-              <div>
-                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Waktu</p>
-                <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
-                  {{ formatTime(absensiData.tanggalAbsenMasuk) }}
+              <div v-if="absensiData.latitude_masuk && absensiData.longitude_masuk">
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Koordinat</p>
+                <p class="text-sm text-gray-800 dark:text-white/90">
+                  {{ absensiData.latitude_masuk }}, {{ absensiData.longitude_masuk }}
                 </p>
               </div>
-              <div v-if="absensiData.lokasiMasuk">
-                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Lokasi</p>
-                <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
-                  {{ absensiData.lokasiMasuk }}
+              <div v-if="absensiData.jarak_masuk !== null">
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Jarak dari Kantor</p>
+                <p class="text-sm text-gray-800 dark:text-white/90">
+                  {{ absensiData.jarak_masuk }} meter
                 </p>
               </div>
             </div>
@@ -129,25 +135,28 @@
                 Absensi Keluar
               </h4>
             </div>
-            <div class="space-y-6">
+            <div v-if="absensiData.jam_keluar" class="space-y-4">
               <div>
-                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Tanggal</p>
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Waktu</p>
                 <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
-                  {{ formatDate(absensiData.tanggalAbsenKeluar) }}
+                  {{ formatDateTime(absensiData.jam_keluar) }}
                 </p>
               </div>
-              <div>
-                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Waktu</p>
-                <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
-                  {{ formatTime(absensiData.tanggalAbsenKeluar) }}
+              <div v-if="absensiData.latitude_keluar && absensiData.longitude_keluar">
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Koordinat</p>
+                <p class="text-sm text-gray-800 dark:text-white/90">
+                  {{ absensiData.latitude_keluar }}, {{ absensiData.longitude_keluar }}
                 </p>
               </div>
-              <div v-if="absensiData.lokasiKeluar">
-                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Lokasi</p>
-                <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
-                  {{ absensiData.lokasiKeluar }}
+              <div v-if="absensiData.jarak_keluar !== null">
+                <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Jarak dari Kantor</p>
+                <p class="text-sm text-gray-800 dark:text-white/90">
+                  {{ absensiData.jarak_keluar }} meter
                 </p>
               </div>
+            </div>
+            <div v-else class="text-center py-8 text-gray-500 dark:text-gray-400">
+              <p>Belum absen keluar</p>
             </div>
           </div>
         </div>
@@ -174,37 +183,54 @@
               Ringkasan
             </h4>
           </div>
-          <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div>
               <p class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">Total Jam Kerja</p>
               <p class="text-2xl font-bold text-brand-600 dark:text-brand-400">
-                {{ calculateTotalKerja() }}
+                {{ absensiData.total_jam_kerja !== null ? `${absensiData.total_jam_kerja} jam` : '-' }}
               </p>
             </div>
             <div>
               <p class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">Status</p>
               <span
-                :class="getStatusClass()"
+                :class="getStatusClass(absensiData.status)"
                 class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
               >
                 <span
-                  :class="getStatusDotClass()"
+                  :class="getStatusDotClass(absensiData.status)"
                   class="h-2 w-2 rounded-full"
                 ></span>
-                {{ getStatus() }}
+                {{ getStatusLabel(absensiData.status) }}
               </span>
+            </div>
+            <div>
+              <p class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">Tipe Absensi</p>
+              <p class="text-sm font-semibold text-gray-800 dark:text-white/90">
+                {{ absensiData.tipe_absensi?.nama || '-' }}
+              </p>
             </div>
           </div>
         </div>
 
-        <!-- Informasi Tambahan -->
-        <div v-if="absensiData.catatan" class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+        <!-- Catatan & Alasan -->
+        <div v-if="absensiData.catatan || absensiData.alasan" class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
           <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-            Catatan
+            Catatan & Alasan
           </h4>
-          <p class="text-sm text-gray-700 dark:text-gray-300">
-            {{ absensiData.catatan }}
-          </p>
+          <div class="space-y-4">
+            <div v-if="absensiData.catatan">
+              <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Catatan</p>
+              <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                {{ absensiData.catatan }}
+              </p>
+            </div>
+            <div v-if="absensiData.alasan">
+              <p class="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">Alasan</p>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                {{ absensiData.alasan }}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -237,7 +263,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
@@ -249,153 +275,95 @@ const currentPageTitle = computed(() => 'Detail Absensi')
 const loading = ref(true)
 const absensiData = ref<any>(null)
 
-// Sample data - in production, fetch from API
-const generateSampleData = () => {
-  const namas = [
-    'Ahmad Hidayat', 'Siti Nurhaliza', 'Budi Santoso', 'Dewi Lestari', 'Eko Prasetyo',
-    'Fitri Handayani', 'Guntur Wibowo', 'Hesti Rahayu', 'Indra Wijaya', 'Joko Susilo',
-    'Kartika Putri', 'Lukman Hakim', 'Maya Sari', 'Nanda Pratama', 'Olivia Wijaya',
-    'Putra Ramadhan', 'Qori Anisa', 'Rizky Pratama', 'Salsabila Putri', 'Taufik Hidayat',
-  ]
-  
-  const id = route.params.id as string
-  const idNum = parseInt(id) || 1
-  const namaIndex = (idNum - 1) % namas.length
-  
-  const date = new Date('2024-01-01')
-  date.setDate(date.getDate() + Math.floor((idNum - 1) / 20))
-  
-  // Random time between 7:00 - 9:00 for masuk
-  const masukHour = Math.floor(Math.random() * 2) + 7
-  const masukMinute = Math.floor(Math.random() * 60)
-  const masukDate = new Date(date)
-  masukDate.setHours(masukHour, masukMinute, 0, 0)
-  
-  // Random time between 16:00 - 18:00 for keluar
-  const keluarHour = Math.floor(Math.random() * 2) + 16
-  const keluarMinute = Math.floor(Math.random() * 60)
-  const keluarDate = new Date(date)
-  keluarDate.setHours(keluarHour, keluarMinute, 0, 0)
-  
-  // Ensure keluar is after masuk
-  if (keluarDate <= masukDate) {
-    keluarDate.setHours(masukHour + 8, masukMinute, 0, 0)
-  }
-  
-  return {
-    id: id,
-    nama: namas[namaIndex],
-    noInduk: `K${String(idNum).padStart(3, '0')}`,
-    tanggalAbsenMasuk: masukDate.toISOString(),
-    tanggalAbsenKeluar: keluarDate.toISOString(),
-    lokasiMasuk: 'Kantor Pusat - Jakarta',
-    lokasiKeluar: 'Kantor Pusat - Jakarta',
-    catatan: idNum % 3 === 0 ? 'Tidak ada catatan khusus' : null,
-  }
+// Get CSRF token
+const getCsrfToken = (): string => {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
 }
 
-// Load data
+// Load data from API
 const loadData = async () => {
   loading.value = true
   try {
-    // TODO: Fetch from API
-    // const response = await fetch(`/admin/api/absensi/${route.params.id}`)
-    // const data = await response.json()
-    // absensiData.value = data
-    
-    // For now, use sample data
-    setTimeout(() => {
-      absensiData.value = generateSampleData()
-      loading.value = false
-    }, 500)
+    const id = route.params.id as string
+    const response = await fetch(`/admin/api/absensi/${id}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+    })
+
+    const result = await response.json()
+    if (result.success) {
+      absensiData.value = result.data
+    } else {
+      console.error('Failed to load data:', result.message)
+      absensiData.value = null
+    }
   } catch (error) {
     console.error('Error loading absensi data:', error)
+    absensiData.value = null
+  } finally {
     loading.value = false
   }
 }
 
-// Format date
-const formatDate = (dateString: string) => {
+// Format datetime
+const formatDateTime = (dateString: string | null) => {
   if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('id-ID', {
+  return new Date(dateString).toLocaleString('id-ID', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  })
-}
-
-// Format time
-const formatTime = (dateString: string) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleTimeString('id-ID', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
   })
 }
 
-// Calculate total kerja
-const calculateTotalKerja = () => {
-  if (!absensiData.value?.tanggalAbsenMasuk || !absensiData.value?.tanggalAbsenKeluar) {
-    return '0 jam'
+// Get status label
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    hadir: 'Hadir',
+    terlambat: 'Terlambat',
+    pulang_awal: 'Pulang Awal',
+    tidak_hadir: 'Tidak Hadir',
+    izin: 'Izin',
+    sakit: 'Sakit',
+    cuti: 'Cuti',
   }
-  
-  const masuk = new Date(absensiData.value.tanggalAbsenMasuk).getTime()
-  const keluar = new Date(absensiData.value.tanggalAbsenKeluar).getTime()
-  const diff = keluar - masuk
-  const hours = diff / (1000 * 60 * 60)
-  const hoursInt = Math.floor(hours)
-  const minutes = Math.floor((hours - hoursInt) * 60)
-  
-  if (minutes > 0) {
-    return `${hoursInt} jam ${minutes} menit`
-  }
-  return `${hoursInt} jam`
-}
-
-// Get status
-const getStatus = () => {
-  if (!absensiData.value?.tanggalAbsenMasuk) {
-    return 'Belum Absen Masuk'
-  }
-  if (!absensiData.value?.tanggalAbsenKeluar) {
-    return 'Belum Absen Keluar'
-  }
-  
-  // Check if masuk is on time (before 9:00)
-  const masukDate = new Date(absensiData.value.tanggalAbsenMasuk)
-  const jamMasuk = masukDate.getHours()
-  const menitMasuk = masukDate.getMinutes()
-  
-  if (jamMasuk > 9 || (jamMasuk === 9 && menitMasuk > 0)) {
-    return 'Terlambat'
-  }
-  
-  return 'Hadir'
+  return labels[status] || status
 }
 
 // Get status class
-const getStatusClass = () => {
-  const status = getStatus()
-  if (status === 'Hadir') {
-    return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+const getStatusClass = (status: string) => {
+  const classes: Record<string, string> = {
+    hadir: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    terlambat: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    pulang_awal: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    tidak_hadir: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    izin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    sakit: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    cuti: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
   }
-  if (status === 'Terlambat') {
-    return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-  }
-  return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+  return classes[status] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
 }
 
 // Get status dot class
-const getStatusDotClass = () => {
-  const status = getStatus()
-  if (status === 'Hadir') {
-    return 'bg-green-500'
+const getStatusDotClass = (status: string) => {
+  const classes: Record<string, string> = {
+    hadir: 'bg-green-500',
+    terlambat: 'bg-orange-500',
+    pulang_awal: 'bg-yellow-500',
+    tidak_hadir: 'bg-red-500',
+    izin: 'bg-blue-500',
+    sakit: 'bg-purple-500',
+    cuti: 'bg-indigo-500',
   }
-  if (status === 'Terlambat') {
-    return 'bg-orange-500'
-  }
-  return 'bg-gray-500'
+  return classes[status] || 'bg-gray-500'
 }
 
 // Handle back
@@ -403,13 +371,7 @@ const handleBack = () => {
   router.push('/operasional/absensi')
 }
 
-// Load data on mount
 onMounted(() => {
   loadData()
 })
 </script>
-
-<style scoped>
-/* Custom styles if needed */
-</style>
-

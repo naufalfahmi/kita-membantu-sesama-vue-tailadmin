@@ -31,97 +31,55 @@
 
       <!-- Filter Section -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Nama / No Induk
             </label>
             <input
               type="text"
-              v-model="filterNama"
+              v-model="filterSearch"
               placeholder="Cari nama atau no induk..."
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Tanggal & Jam Masuk
+              Tanggal Dari
             </label>
-            <div class="relative">
-              <flat-pickr
-                v-model="filterTanggalMasuk"
-                :config="flatpickrDateTimeConfig"
-                class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                placeholder="Pilih tanggal & jam masuk"
-              />
-              <span
-                class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400"
-              >
-                <svg
-                  class="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 9.99999C18.3333 5.39762 14.6024 1.66666 10 1.66666C5.39763 1.66666 1.66667 5.39762 1.66667 9.99999C1.66667 14.6024 5.39763 18.3333 10 18.3333Z"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M10 5V10L13.3333 11.6667"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
+            <input
+              type="date"
+              v-model="filterDateFrom"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            />
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Tanggal & Jam Keluar
+              Tanggal Sampai
             </label>
-            <div class="relative">
-              <flat-pickr
-                v-model="filterTanggalKeluar"
-                :config="flatpickrDateTimeConfig"
-                class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                placeholder="Pilih tanggal & jam keluar"
-              />
-              <span
-                class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400"
-              >
-                <svg
-                  class="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 9.99999C18.3333 5.39762 14.6024 1.66666 10 1.66666C5.39763 1.66666 1.66667 5.39762 1.66667 9.99999C1.66667 14.6024 5.39763 18.3333 10 18.3333Z"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M10 5V10L13.3333 11.6667"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
+            <input
+              type="date"
+              v-model="filterDateTo"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Status
+            </label>
+            <select
+              v-model="filterStatus"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
+            >
+              <option value="">Semua Status</option>
+              <option value="hadir">Hadir</option>
+              <option value="terlambat">Terlambat</option>
+              <option value="pulang_awal">Pulang Awal</option>
+              <option value="tidak_hadir">Tidak Hadir</option>
+              <option value="izin">Izin</option>
+              <option value="sakit">Sakit</option>
+              <option value="cuti">Cuti</option>
+            </select>
           </div>
           <div class="flex items-end">
             <button
@@ -134,71 +92,60 @@
         </div>
       </div>
 
-      <div class="relative" style="width: 100%; height: 450px;">
-        <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 100%;">
-          <ag-grid-vue
-            ref="agGridRef"
-            class="ag-theme-alpine"
-            style="width: 100%; height: 100%;"
-            :columnDefs="columnDefs"
-            :defaultColDef="defaultColDef"
-            :rowModelType="'infinite'"
-            :datasource="dataSource"
-            :rowBuffer="10"
-            :cacheBlockSize="10"
-            :maxBlocksInCache="5"
-            :maxConcurrentDatasourceRequests="2"
-            :infiniteInitialRowCount="10"
-            :suppressSorting="false"
-            theme="legacy"
-            :animateRows="true"
-            :suppressHorizontalScroll="true"
-            @sortChanged="onSortChanged"
-          />
+      <!-- Loading State -->
+      <div v-if="loading" class="flex items-center justify-center py-20">
+        <div class="flex flex-col items-center gap-4">
+          <div class="h-12 w-12 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Memuat data absensi...</p>
         </div>
-        
-        <!-- Custom empty state overlay -->
-        <div
-          v-if="showEmptyState"
-          class="absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 rounded-lg z-50 pointer-events-none"
-          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"
-        >
-          <svg class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              v-if="filterNama || filterTanggalMasuk || filterTanggalKeluar"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            ></path>
-            <path
-              v-else
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            ></path>
-          </svg>
-          <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
-            {{ filterNama || filterTanggalMasuk || filterTanggalKeluar ? 'Tidak ada data ditemukan' : 'Tidak ada data' }}
-          </p>
-          <p class="text-gray-500 dark:text-gray-500 text-sm">
-            {{ filterNama || filterTanggalMasuk || filterTanggalKeluar ? 'Coba ubah filter pencarian Anda' : 'Belum ada data yang tersedia' }}
-          </p>
-        </div>
+      </div>
+
+      <!-- AG Grid -->
+      <div v-else class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
+        <ag-grid-vue
+          class="ag-theme-alpine"
+          style="width: 100%;"
+          :columnDefs="columnDefs"
+          :rowData="rowData"
+          :defaultColDef="defaultColDef"
+          :pagination="true"
+          :paginationPageSize="20"
+          theme="legacy"
+          :animateRows="true"
+          :suppressHorizontalScroll="true"
+          :domLayout="'autoHeight'"
+        />
+      </div>
+
+      <!-- Empty State -->
+      <div
+        v-if="!loading && rowData.length === 0"
+        class="flex flex-col items-center justify-center py-20"
+      >
+        <svg class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          ></path>
+        </svg>
+        <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
+          Tidak ada data absensi
+        </p>
+        <p class="text-gray-500 dark:text-gray-500 text-sm">
+          Belum ada data absensi yang tersedia
+        </p>
       </div>
     </div>
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
-import type { IDatasource, IGetRowsParams } from 'ag-grid-community'
-import flatPickr from 'vue-flatpickr-component'
 import * as XLSX from 'xlsx'
-import 'flatpickr/dist/flatpickr.css'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -207,100 +154,117 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 const route = useRoute()
 const router = useRouter()
 const currentPageTitle = ref(route.meta.title || 'Absensi')
-const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 
-// Flatpickr configuration for date and time
-const flatpickrDateTimeConfig = {
-  enableTime: true,
-  dateFormat: 'Y-m-d H:i',
-  altInput: true,
-  altFormat: 'd/m/Y H:i',
-  time_24hr: true,
-  minuteIncrement: 1,
-  wrap: false,
-}
+// State
+const loading = ref(false)
+const rowData = ref<any[]>([])
+
+// Filter state
+const filterSearch = ref('')
+const filterDateFrom = ref('')
+const filterDateTo = ref('')
+const filterStatus = ref('')
 
 // Column definitions
 const columnDefs = [
   {
     headerName: 'Nama',
-    field: 'nama',
+    field: 'user.name',
     sortable: true,
     filter: false,
     flex: 1,
+    valueGetter: (params: any) => params.data?.user?.name || '-',
   },
   {
     headerName: 'No Induk',
-    field: 'noInduk',
+    field: 'user.no_induk',
     sortable: true,
     filter: false,
     width: 120,
+    valueGetter: (params: any) => params.data?.user?.no_induk || '-',
   },
   {
-    headerName: 'Tanggal Absen Masuk',
-    field: 'tanggalAbsenMasuk',
-    sortable: true,
-    filter: false,
-    flex: 1,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Date(params.value).toLocaleString('id-ID', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      }
-      return ''
-    },
-  },
-  {
-    headerName: 'Tanggal Absen Keluar',
-    field: 'tanggalAbsenKeluar',
-    sortable: true,
-    filter: false,
-    flex: 1,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Date(params.value).toLocaleString('id-ID', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      }
-      return ''
-    },
-  },
-  {
-    headerName: 'Total Kerja',
-    field: 'totalKerja',
+    headerName: 'Kantor Cabang',
+    field: 'kantor_cabang.nama',
     sortable: true,
     filter: false,
     width: 150,
-    valueGetter: (params: any) => {
-      if (!params.data) return 0
-      if (params.data.tanggalAbsenMasuk && params.data.tanggalAbsenKeluar) {
-        const masuk = new Date(params.data.tanggalAbsenMasuk).getTime()
-        const keluar = new Date(params.data.tanggalAbsenKeluar).getTime()
-        const diff = keluar - masuk
-        const hours = diff / (1000 * 60 * 60)
-        return hours
-      }
-      return 0
-    },
+    valueGetter: (params: any) => params.data?.kantor_cabang?.nama || '-',
+  },
+  {
+    headerName: 'Jam Masuk',
+    field: 'jam_masuk',
+    sortable: true,
+    filter: false,
+    width: 180,
     valueFormatter: (params: any) => {
       if (params.value) {
-        const hours = Math.floor(params.value)
-        const minutes = Math.floor((params.value - hours) * 60)
-        if (minutes > 0) {
-          return `${hours} jam ${minutes} menit`
-        }
-        return `${hours} jam`
+        return new Date(params.value).toLocaleString('id-ID', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
       }
-      return '0 jam'
+      return '-'
+    },
+  },
+  {
+    headerName: 'Jam Keluar',
+    field: 'jam_keluar',
+    sortable: true,
+    filter: false,
+    width: 180,
+    valueFormatter: (params: any) => {
+      if (params.value) {
+        return new Date(params.value).toLocaleString('id-ID', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      }
+      return '-'
+    },
+  },
+  {
+    headerName: 'Total Jam',
+    field: 'total_jam_kerja',
+    sortable: true,
+    filter: false,
+    width: 100,
+    valueFormatter: (params: any) => {
+      if (params.value !== null && params.value !== undefined) {
+        return `${params.value} jam`
+      }
+      return '-'
+    },
+  },
+  {
+    headerName: 'Status',
+    field: 'status',
+    sortable: true,
+    filter: false,
+    width: 120,
+    cellRenderer: (params: any) => {
+      const status = params.value || 'hadir'
+      const statusConfig: Record<string, { label: string; class: string }> = {
+        hadir: { label: 'Hadir', class: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+        terlambat: { label: 'Terlambat', class: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
+        pulang_awal: { label: 'Pulang Awal', class: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+        tidak_hadir: { label: 'Tidak Hadir', class: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+        izin: { label: 'Izin', class: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+        sakit: { label: 'Sakit', class: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+        cuti: { label: 'Cuti', class: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
+      }
+      const config = statusConfig[status] || statusConfig.hadir
+      
+      const span = document.createElement('span')
+      span.className = `inline-flex px-2 py-1 rounded-full text-xs font-medium ${config.class}`
+      span.textContent = config.label
+      return span
     },
   },
   {
@@ -337,128 +301,49 @@ const defaultColDef = {
   filter: false,
 }
 
-// Sample data - generate 200 items for infinite scroll testing
-const generateRowData = () => {
-  const namas = [
-    'Ahmad Hidayat', 'Siti Nurhaliza', 'Budi Santoso', 'Dewi Lestari', 'Eko Prasetyo',
-    'Fitri Handayani', 'Guntur Wibowo', 'Hesti Rahayu', 'Indra Wijaya', 'Joko Susilo',
-    'Kartika Putri', 'Lukman Hakim', 'Maya Sari', 'Nanda Pratama', 'Olivia Wijaya',
-    'Putra Ramadhan', 'Qori Anisa', 'Rizky Pratama', 'Salsabila Putri', 'Taufik Hidayat',
-  ]
-  
-  const rowData: Array<{ id: string; nama: string; noInduk: string; tanggalAbsenMasuk: string; tanggalAbsenKeluar: string }> = []
-  const startDate = new Date('2024-01-01')
-  startDate.setHours(0, 0, 0, 0) // Set to midnight to avoid timezone issues
-  
-  for (let i = 1; i <= 200; i++) {
-    const namaIndex = (i - 1) % namas.length
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + Math.floor((i - 1) / 20)) // Same date for 20 entries
-    
-    // Random time between 7:00 - 9:00 for masuk
-    const masukHour = Math.floor(Math.random() * 2) + 7
-    const masukMinute = Math.floor(Math.random() * 60)
-    const masukDate = new Date(date)
-    masukDate.setHours(masukHour, masukMinute, 0, 0)
-    
-    // Random time between 16:00 - 18:00 for keluar (must be after masuk)
-    const keluarHour = Math.floor(Math.random() * 2) + 16
-    const keluarMinute = Math.floor(Math.random() * 60)
-    const keluarDate = new Date(date)
-    keluarDate.setHours(keluarHour, keluarMinute, 0, 0)
-    
-    // Ensure keluar is after masuk
-    if (keluarDate <= masukDate) {
-      keluarDate.setHours(masukHour + 8, masukMinute, 0, 0)
-    }
-    
-    rowData.push({
-      id: i.toString(),
-      nama: namas[namaIndex],
-      noInduk: `K${String(i).padStart(3, '0')}`,
-      tanggalAbsenMasuk: masukDate.toISOString(),
-      tanggalAbsenKeluar: keluarDate.toISOString(),
-    })
-  }
-  
-  return rowData
+// Get CSRF token
+const getCsrfToken = (): string => {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
 }
 
-const rowDataArray = generateRowData()
+// Fetch data from API
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const params = new URLSearchParams()
+    if (filterSearch.value) params.append('search', filterSearch.value)
+    if (filterDateFrom.value) params.append('date_from', filterDateFrom.value)
+    if (filterDateTo.value) params.append('date_to', filterDateTo.value)
+    if (filterStatus.value) params.append('status', filterStatus.value)
+    params.append('per_page', '100')
 
-// Filter state
-const filterNama = ref('')
-const filterTanggalMasuk = ref('')
-const filterTanggalKeluar = ref('')
-
-// Filtered data based on filter
-const filteredData = computed(() => {
-  let filtered = [...rowDataArray]
-  
-  // Filter by nama or no induk
-  if (filterNama.value) {
-    const searchTerm = filterNama.value.toLowerCase()
-    filtered = filtered.filter((item) =>
-      item.nama.toLowerCase().includes(searchTerm) ||
-      item.noInduk.toLowerCase().includes(searchTerm)
-    )
-  }
-  
-  // Filter by tanggal & jam masuk
-  if (filterTanggalMasuk.value) {
-    filtered = filtered.filter((item) => {
-      const itemDateTime = new Date(item.tanggalAbsenMasuk)
-      const filterDateTime = new Date(filterTanggalMasuk.value)
-      
-      // Compare date (year, month, day)
-      const sameDate = 
-        itemDateTime.getFullYear() === filterDateTime.getFullYear() &&
-        itemDateTime.getMonth() === filterDateTime.getMonth() &&
-        itemDateTime.getDate() === filterDateTime.getDate()
-      
-      if (!sameDate) return false
-      
-      // If time is specified (not midnight), compare hour and minute with 15 minutes tolerance
-      const hasTime = filterDateTime.getHours() !== 0 || filterDateTime.getMinutes() !== 0
-      if (hasTime) {
-        const timeDiff = Math.abs(itemDateTime.getTime() - filterDateTime.getTime())
-        return timeDiff < 15 * 60 * 1000 // Within 15 minutes
-      }
-      
-      return true // Same date, no specific time filter
+    const url = `/admin/api/absensi${params.toString() ? '?' + params.toString() : ''}`
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': getCsrfToken(),
+      },
+      credentials: 'same-origin',
     })
-  }
-  
-  // Filter by tanggal & jam keluar
-  if (filterTanggalKeluar.value) {
-    filtered = filtered.filter((item) => {
-      const itemDateTime = new Date(item.tanggalAbsenKeluar)
-      const filterDateTime = new Date(filterTanggalKeluar.value)
-      
-      // Compare date (year, month, day)
-      const sameDate = 
-        itemDateTime.getFullYear() === filterDateTime.getFullYear() &&
-        itemDateTime.getMonth() === filterDateTime.getMonth() &&
-        itemDateTime.getDate() === filterDateTime.getDate()
-      
-      if (!sameDate) return false
-      
-      // If time is specified (not midnight), compare hour and minute with 15 minutes tolerance
-      const hasTime = filterDateTime.getHours() !== 0 || filterDateTime.getMinutes() !== 0
-      if (hasTime) {
-        const timeDiff = Math.abs(itemDateTime.getTime() - filterDateTime.getTime())
-        return timeDiff < 15 * 60 * 1000 // Within 15 minutes
-      }
-      
-      return true // Same date, no specific time filter
-    })
-  }
-  
-  return filtered
-})
 
-// Show empty state when filtered data is empty
-const showEmptyState = computed(() => filteredData.value.length === 0)
+    const result = await response.json()
+    if (result.success) {
+      rowData.value = result.data || []
+    } else {
+      console.error('Failed to fetch data:', result.message)
+      rowData.value = []
+    }
+  } catch (error) {
+    console.error('Error fetching data:', error)
+    rowData.value = []
+  } finally {
+    loading.value = false
+  }
+}
 
 // Handle detail
 const handleDetail = (id: string) => {
@@ -467,224 +352,52 @@ const handleDetail = (id: string) => {
 
 // Handle export to Excel
 const handleExportExcel = () => {
-  // Get all filtered data
-  const dataToExport = filteredData.value.map((item) => {
-    const masukDate = new Date(item.tanggalAbsenMasuk)
-    const keluarDate = new Date(item.tanggalAbsenKeluar)
-    
-    // Calculate total kerja
-    let totalKerja = '0 jam'
-    if (item.tanggalAbsenMasuk && item.tanggalAbsenKeluar) {
-      const masuk = masukDate.getTime()
-      const keluar = keluarDate.getTime()
-      const diff = keluar - masuk
-      const hours = diff / (1000 * 60 * 60)
-      const hoursInt = Math.floor(hours)
-      const minutes = Math.floor((hours - hoursInt) * 60)
-      if (minutes > 0) {
-        totalKerja = `${hoursInt} jam ${minutes} menit`
-      } else {
-        totalKerja = `${hoursInt} jam`
-      }
-    }
-    
+  const dataToExport = rowData.value.map((item) => {
     return {
-      'Nama': item.nama,
-      'No Induk': item.noInduk,
-      'Tanggal Absen Masuk': masukDate.toLocaleString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      'Tanggal Absen Keluar': keluarDate.toLocaleString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      'Total Kerja': totalKerja,
+      'Nama': item.user?.name || '-',
+      'No Induk': item.user?.no_induk || '-',
+      'Kantor Cabang': item.kantor_cabang?.nama || '-',
+      'Jam Masuk': item.jam_masuk ? new Date(item.jam_masuk).toLocaleString('id-ID') : '-',
+      'Jam Keluar': item.jam_keluar ? new Date(item.jam_keluar).toLocaleString('id-ID') : '-',
+      'Total Jam Kerja': item.total_jam_kerja ? `${item.total_jam_kerja} jam` : '-',
+      'Status': item.status || '-',
+      'Catatan': item.catatan || '-',
     }
   })
   
-  // Create workbook and worksheet
   const worksheet = XLSX.utils.json_to_sheet(dataToExport)
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Absensi')
   
-  // Generate filename with current date
   const now = new Date()
   const filename = `Absensi_${now.toISOString().split('T')[0]}.xlsx`
   
-  // Write file and download
   XLSX.writeFile(workbook, filename)
 }
 
-// Helper function to sort data
-const sortData = (data: Array<any>, sortModel: any[]) => {
-  if (!sortModel || sortModel.length === 0) {
-    return data
-  }
-  
-  const sortedData = [...data]
-  sortModel.forEach((sort) => {
-    const { colId, sort: sortDirection } = sort
-    sortedData.sort((a, b) => {
-      let aValue = a[colId]
-      let bValue = b[colId]
-      
-      // Handle date/time sorting
-      if (colId === 'tanggalAbsenMasuk' || colId === 'tanggalAbsenKeluar') {
-        aValue = new Date(aValue).getTime()
-        bValue = new Date(bValue).getTime()
-      } else if (colId === 'totalKerja') {
-        // Calculate total kerja for sorting
-        if (a.tanggalAbsenMasuk && a.tanggalAbsenKeluar) {
-          const masuk = new Date(a.tanggalAbsenMasuk).getTime()
-          const keluar = new Date(a.tanggalAbsenKeluar).getTime()
-          aValue = (keluar - masuk) / (1000 * 60 * 60)
-        } else {
-          aValue = 0
-        }
-        if (b.tanggalAbsenMasuk && b.tanggalAbsenKeluar) {
-          const masuk = new Date(b.tanggalAbsenMasuk).getTime()
-          const keluar = new Date(b.tanggalAbsenKeluar).getTime()
-          bValue = (keluar - masuk) / (1000 * 60 * 60)
-        } else {
-          bValue = 0
-        }
-      } else if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase()
-        bValue = bValue.toLowerCase()
-      }
-      
-      if (aValue < bValue) {
-        return sortDirection === 'asc' ? -1 : 1
-      }
-      if (aValue > bValue) {
-        return sortDirection === 'asc' ? 1 : -1
-      }
-      return 0
-    })
-  })
-  
-  return sortedData
-}
-
-// Create datasource function for infinite scroll
-const createDataSource = (): IDatasource => {
-  return {
-    getRows: (params: IGetRowsParams) => {
-      setTimeout(() => {
-        const start = params.startRow ?? 0
-        const end = params.endRow ?? (start + 10) // Default to 10 items if endRow not provided
-        
-        // Get filtered data
-        let allData = filteredData.value
-        
-        // Apply sorting if sortModel is provided
-        if (params.sortModel && params.sortModel.length > 0) {
-          allData = sortData(allData, params.sortModel)
-        }
-        
-        // Get the chunk of data for this page
-        const rowsThisPage = allData.slice(start, end)
-        
-        // Check if there's more data
-        let lastRow: number | undefined
-        if (allData.length === 0) {
-          lastRow = 0
-        } else if (allData.length <= end) {
-          lastRow = allData.length
-        } else {
-          lastRow = undefined
-        }
-        
-        // Provide data to AG Grid
-        params.successCallback(rowsThisPage, lastRow)
-      }, 50)
-    },
-  }
-}
-
-// Infinite scroll datasource - create as ref for reactivity
-const dataSource = ref<IDatasource>(createDataSource())
-
-// Set datasource after component is mounted
-onMounted(() => {
-  console.log('Component mounted, datasource:', dataSource.value)
-  console.log('Total data:', rowDataArray.length)
-})
-
-// Clear debounce timer on component unmount
-onUnmounted(() => {
-  if (filterDebounceTimer) {
-    clearTimeout(filterDebounceTimer)
-  }
-})
-
-// Handle sort changes
-const onSortChanged = () => {
-  if (agGridRef.value && agGridRef.value.api) {
-    // Update datasource to include new sort
-    const newDataSource = createDataSource()
-    dataSource.value.getRows = newDataSource.getRows
-    
-    // Refresh cache immediately - animation will be handled by AG Grid
-    try {
-      agGridRef.value.api.refreshInfiniteCache()
-    } catch (error) {
-      console.error('Error refreshing cache on sort:', error)
-    }
-  }
-}
-
-// Debounce timer for filter
-let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null
-
-// Watch for filter changes and refresh grid with debounce
-watch([filterNama, filterTanggalMasuk, filterTanggalKeluar], () => {
-  // Clear existing timer
-  if (filterDebounceTimer) {
-    clearTimeout(filterDebounceTimer)
-  }
-  
-  // Debounce filter update to prevent flickering
-  filterDebounceTimer = setTimeout(() => {
-    // Recreate datasource with new filter
-    const newDataSource = createDataSource()
-    dataSource.value.getRows = newDataSource.getRows
-    
-    // Refresh grid smoothly without multiple setTimeout
-    nextTick(() => {
-      if (agGridRef.value && agGridRef.value.api) {
-        try {
-          // Purge cache and refresh in one smooth operation
-          agGridRef.value.api.purgeInfiniteCache()
-          agGridRef.value.api.refreshInfiniteCache()
-          
-          // Scroll to top after a brief delay
-          setTimeout(() => {
-            if (agGridRef.value && agGridRef.value.api) {
-              agGridRef.value.api.ensureIndexVisible(0, 'top')
-            }
-          }, 100)
-        } catch (error) {
-          console.error('Error refreshing cache:', error)
-        }
-      }
-    })
-  }, 300) // 300ms debounce delay to prevent flickering
-})
-
 // Reset filter
 const resetFilter = () => {
-  filterNama.value = ''
-  filterTanggalMasuk.value = ''
-  filterTanggalKeluar.value = ''
+  filterSearch.value = ''
+  filterDateFrom.value = ''
+  filterDateTo.value = ''
+  filterStatus.value = ''
+  fetchData()
 }
+
+// Watch filter changes with debounce
+let filterTimeout: ReturnType<typeof setTimeout> | null = null
+watch([filterSearch, filterDateFrom, filterDateTo, filterStatus], () => {
+  if (filterTimeout) {
+    clearTimeout(filterTimeout)
+  }
+  filterTimeout = setTimeout(() => {
+    fetchData()
+  }, 500)
+})
+
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style>
@@ -695,20 +408,14 @@ const resetFilter = () => {
   --ag-row-hover-color: #f3f4f6;
 }
 
-.ag-theme-alpine-dark {
+.dark .ag-theme-alpine {
   --ag-header-background-color: #1f2937;
   --ag-header-foreground-color: #f9fafb;
   --ag-border-color: #374151;
   --ag-row-hover-color: #374151;
+  --ag-background-color: #111827;
+  --ag-odd-row-background-color: #1f2937;
+  --ag-row-background-color: #111827;
+  --ag-foreground-color: #f9fafb;
 }
-
-/* Ensure row animations work for sorting */
-.ag-theme-alpine .ag-row {
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.ag-theme-alpine-dark .ag-row {
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
 </style>

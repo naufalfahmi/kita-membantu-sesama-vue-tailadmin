@@ -20,5 +20,9 @@ export default defineConfig({
         manualChunks: undefined,
       },
     },
+    // Output directly into public/admin so /admin/assets is the same location
+    outDir: './',
+    assetsDir: 'assets',
+    emptyOutDir: true,
   },
 })

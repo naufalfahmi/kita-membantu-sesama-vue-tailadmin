@@ -426,6 +426,30 @@ const fetchTodayStatus = async () => {
       credentials: 'same-origin',
     })
 
+    // Handle non-OK responses (like redirects converted to HTML)
+    if (!response.ok) {
+      if (response.status === 401) {
+        error.value = 'Sesi telah berakhir. Silakan login ulang.'
+        // Redirect to login after 2 seconds
+        setTimeout(() => {
+          window.location.href = '/admin/signin'
+        }, 2000)
+        return
+      }
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      // Response is not JSON (probably HTML redirect page)
+      error.value = 'Sesi telah berakhir. Silakan login ulang.'
+      setTimeout(() => {
+        window.location.href = '/admin/signin'
+      }, 2000)
+      return
+    }
+
     const result = await response.json()
     if (result.success) {
       todayStatus.value = result.data

@@ -75,24 +75,39 @@ class AbsensiController extends Controller
      */
     public function todayStatus(Request $request)
     {
-        $user = auth()->user();
-        $userId = $request->filled('user_id') ? $request->user_id : $user->id;
+        try {
+            $user = auth()->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated',
+                ], 401);
+            }
+            
+            $userId = $request->filled('user_id') ? $request->user_id : $user->id;
 
-        $todayAttendance = Absensi::getTodayAttendance($userId);
+            $todayAttendance = Absensi::getTodayAttendance($userId);
 
-        // Get user's tipe absensi and kantor cabang
-        $userWithRelations = \App\Models\User::with(['tipeAbsensi', 'kantorCabang'])->find($userId);
+            // Get user's tipe absensi and kantor cabang
+            $userWithRelations = \App\Models\User::with(['tipeAbsensi', 'kantorCabang'])->find($userId);
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'has_clock_in' => $todayAttendance !== null,
-                'has_clock_out' => $todayAttendance && $todayAttendance->jam_keluar !== null,
-                'attendance' => $todayAttendance,
-                'tipe_absensi' => $userWithRelations->tipeAbsensi,
-                'kantor_cabang' => $userWithRelations->kantorCabang,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'has_clock_in' => $todayAttendance !== null,
+                    'has_clock_out' => $todayAttendance && $todayAttendance->jam_keluar !== null,
+                    'attendance' => $todayAttendance,
+                    'tipe_absensi' => $userWithRelations?->tipeAbsensi,
+                    'kantor_cabang' => $userWithRelations?->kantorCabang,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

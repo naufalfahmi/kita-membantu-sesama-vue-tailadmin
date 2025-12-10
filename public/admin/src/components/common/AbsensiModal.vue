@@ -415,39 +415,14 @@ const fetchTodayStatus = async () => {
   error.value = null
 
   try {
-    const response = await fetch('/admin/api/absensi/today-status', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-        'X-CSRF-TOKEN': getCsrfToken(),
-      },
-      credentials: 'include',
-    })
+    const response = await fetch('/admin/api/absensi/today-status', { credentials: 'same-origin' })
 
-    // Handle non-OK responses (like redirects converted to HTML)
     if (!response.ok) {
       if (response.status === 401) {
         error.value = 'Sesi telah berakhir. Silakan login ulang.'
-        // Redirect to login after 2 seconds
-        setTimeout(() => {
-          window.location.href = '/admin/signin'
-        }, 2000)
         return
       }
       throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    // Check if response is JSON
-    const contentType = response.headers.get('content-type')
-    if (!contentType || !contentType.includes('application/json')) {
-      // Response is not JSON (probably HTML redirect page)
-      error.value = 'Sesi telah berakhir. Silakan login ulang.'
-      setTimeout(() => {
-        window.location.href = '/admin/signin'
-      }, 2000)
-      return
     }
 
     const result = await response.json()
@@ -593,6 +568,10 @@ const submitAttendance = async () => {
   error.value = null
 
   try {
+    // Get CSRF token first
+    const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+    const tokenJson = await tokenRes.json()
+
     const endpoint = attendanceType.value === 'masuk' 
       ? '/admin/api/absensi/clock-in' 
       : '/admin/api/absensi/clock-out'
@@ -614,11 +593,9 @@ const submitAttendance = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-        'X-CSRF-TOKEN': getCsrfToken(),
+        'X-CSRF-TOKEN': tokenJson.csrf_token,
       },
-      credentials: 'include',
+      credentials: 'same-origin',
       body: JSON.stringify(payload),
     })
 

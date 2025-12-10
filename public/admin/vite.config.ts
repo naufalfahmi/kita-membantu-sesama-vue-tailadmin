@@ -16,12 +16,13 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
+      input: 'index.dev.html',
       output: {
         manualChunks: undefined,
       },
     },
-    // Output directly into public/admin so /admin/assets is the same location
-    outDir: './',
+    // Build output goes to `dist` to avoid overriding source files
+    outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
   },

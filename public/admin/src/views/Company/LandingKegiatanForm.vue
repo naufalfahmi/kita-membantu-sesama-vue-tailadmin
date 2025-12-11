@@ -318,6 +318,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
 import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
@@ -343,6 +344,7 @@ const currentPageTitle = computed(() => {
 })
 
 const loading = ref(false)
+const toast = useToast()
 
 // Date picker config
 const datePickerConfig = {
@@ -422,7 +424,7 @@ const handleFileSelect = (event: Event) => {
     })
     
     if (invalidFiles.length > 0) {
-      alert(`File berikut tidak valid:\n${invalidFiles.join('\n')}`)
+          toast.error(`File berikut tidak valid:\n${invalidFiles.join('\n')}`)
     }
     
     // Add valid files to selected files
@@ -571,12 +573,12 @@ const loadData = async () => {
           }
         }
       } else {
-        alert(result.message || 'Gagal memuat data')
+        toast.error(result.message || 'Gagal memuat data')
         router.push('/company/landing-kegiatan')
       }
     } catch (error) {
       console.error('Error loading data:', error)
-      alert('Terjadi kesalahan saat memuat data')
+      toast.error('Terjadi kesalahan saat memuat data')
       router.push('/company/landing-kegiatan')
     } finally {
       loading.value = false
@@ -672,7 +674,7 @@ const handleSave = async () => {
     const result = await response.json()
     
     if (result.success) {
-      alert(isEditMode.value ? 'Kegiatan berhasil diupdate' : 'Kegiatan berhasil ditambahkan')
+      toast.success(isEditMode.value ? 'Kegiatan berhasil diupdate' : 'Kegiatan berhasil ditambahkan')
       router.push('/company/landing-kegiatan')
     } else {
       // Handle validation errors
@@ -685,11 +687,11 @@ const handleSave = async () => {
           }
         })
       }
-      alert(result.message || 'Gagal menyimpan data')
+      toast.error(result.message || 'Gagal menyimpan data')
     }
   } catch (error) {
     console.error('Error saving:', error)
-    alert('Terjadi kesalahan saat menyimpan data')
+    toast.error('Terjadi kesalahan saat menyimpan data')
   } finally {
     loading.value = false
   }

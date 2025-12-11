@@ -251,6 +251,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import { useToast } from 'vue-toastification'
 
 const route = useRoute()
 const router = useRouter()
@@ -259,6 +260,7 @@ const isEditMode = computed(() => route.params.id !== undefined && route.params.
 const currentPageTitle = computed(() => {
   return isEditMode.value ? 'Edit Landing Program' : 'Tambah Landing Program'
 })
+const toast = useToast()
 
 // Options for select fields
 const statusOptions = [
@@ -423,7 +425,7 @@ const handleFileSelect = (event: Event) => {
     // Check max 5 images limit
     const remainingSlots = 5 - (selectedFiles.value.length + existingImages.value.length)
     if (files.length > remainingSlots) {
-      alert(`Maksimal 5 gambar. Anda sudah memiliki ${selectedFiles.value.length + existingImages.value.length} gambar. Hanya ${remainingSlots} gambar yang akan ditambahkan.`)
+      toast.warning(`Maksimal 5 gambar. Anda sudah memiliki ${selectedFiles.value.length + existingImages.value.length} gambar. Hanya ${remainingSlots} gambar yang akan ditambahkan.`)
       files.splice(remainingSlots)
     }
 
@@ -451,7 +453,7 @@ const handleFileSelect = (event: Event) => {
     })
     
     if (invalidFiles.length > 0) {
-      alert(`File berikut tidak valid:\n${invalidFiles.join('\n')}`)
+      toast.error(`File berikut tidak valid:\n${invalidFiles.join('\n')}`)
     }
     
     // Add valid files to selected files
@@ -650,8 +652,9 @@ const handleSave = async () => {
         })
         const result = await res.json()
         if (result.success) {
-          alert('Landing program berhasil diupdate')
+          toast.success('Landing program berhasil diupdate')
         } else {
+          toast.error(result.message || 'Validation failed')
           throw new Error(result.message || 'Validation failed')
         }
       } else {
@@ -663,14 +666,15 @@ const handleSave = async () => {
         })
         const result = await res.json()
         if (result.success) {
-          alert('Landing program berhasil dibuat')
+          toast.success('Landing program berhasil dibuat')
         } else {
+          toast.error(result.message || 'Validation failed')
           throw new Error(result.message || 'Validation failed')
         }
       }
     } catch (e) {
       console.error('Save error:', e)
-      alert('Terjadi kesalahan saat menyimpan data: ' + (e.message || ''))
+      toast.error('Terjadi kesalahan saat menyimpan data: ' + (e.message || ''))
       return
     }
     
@@ -678,7 +682,7 @@ const handleSave = async () => {
     router.push('/company/landing-program')
   } catch (error) {
     console.error('Error saving:', error)
-    alert('Terjadi kesalahan saat menyimpan data')
+    toast.error('Terjadi kesalahan saat menyimpan data')
   }
 }
 

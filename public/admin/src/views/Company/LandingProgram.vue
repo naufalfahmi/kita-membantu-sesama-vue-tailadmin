@@ -71,6 +71,15 @@
           :domLayout="'autoHeight'"
         />
       </div>
+      <ConfirmModal
+        :isOpen="showDeleteModalProgram"
+        title="Hapus Program"
+        message="Apakah Anda yakin ingin menghapus program ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Hapus"
+        confirmButtonClass="bg-red-500 hover:bg-red-600"
+        @confirm="confirmDeleteProgram"
+        @cancel="cancelDeleteProgram"
+      />
     </div>
   </AdminLayout>
 </template>
@@ -233,12 +242,65 @@ const handleEdit = (id: string) => {
   router.push(`/company/landing-program/${id}/edit`)
 }
 
-// Handle delete
+// Delete modal handling
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { ref as vueRef } from 'vue'
+
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
+const showDeleteModalProgram = vueRef(false)
+const deleteTargetProgramId = vueRef<string | null>(null)
+
 const handleDelete = (id: string) => {
-  console.log('Delete landing program:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus landing program ini?')) {
-    alert(`Landing program dengan ID: ${id} akan dihapus`)
+  deleteTargetProgramId.value = id
+  showDeleteModalProgram.value = true
+}
+
+const confirmDeleteProgram = async () => {
+  if (!deleteTargetProgramId.value) return
+  try {
+    const getCsrfToken = (): string => {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    }
+
+    let token = getCsrfToken()
+    if (!token) {
+      try {
+        const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+        if (tokenRes.ok) {
+          const tokenJson = await tokenRes.json()
+          token = tokenJson.csrf_token || token
+        }
+      } catch (e) {}
+    }
+    const res = await fetch(`/admin/api/landing-program/${deleteTargetProgramId.value}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+      },
+      credentials: 'same-origin',
+    })
+    const json = await res.json().catch(() => ({}))
+    if (res.ok && json.success) {
+      fetchData()
+      toast.success('Landing program berhasil dihapus')
+    } else {
+      toast.error(json.message || 'Gagal menghapus program')
+    }
+  } catch (e) {
+    console.error('Delete failed', e)
+  } finally {
+    showDeleteModalProgram.value = false
+    deleteTargetProgramId.value = null
   }
+}
+
+const cancelDeleteProgram = () => {
+  showDeleteModalProgram.value = false
+  deleteTargetProgramId.value = null
 }
 
 // Filter state

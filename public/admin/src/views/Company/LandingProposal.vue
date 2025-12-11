@@ -31,7 +31,6 @@
         </button>
       </div>
 
-      <!-- Filter Section -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="flex gap-4">
           <div class="flex-1">
@@ -71,6 +70,17 @@
           :domLayout="'autoHeight'"
         />
       </div>
+
+      <ConfirmModal
+        :isOpen="showDeleteModalProposal"
+        title="Hapus Proposal"
+        message="Apakah Anda yakin ingin menghapus proposal ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Hapus"
+        confirmButtonClass="bg-red-500 hover:bg-red-600"
+        @confirm="confirmDeleteProposal"
+        @cancel="cancelDeleteProposal"
+      />
+      
     </div>
   </AdminLayout>
 </template>
@@ -83,12 +93,16 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue' // Tetap impor komponen
+import { ref as vueRef } from 'vue'
+import { useToast } from 'vue-toastification' // Tambahkan impor useToast
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast() // Inisialisasi toast
 const currentPageTitle = ref(route.meta.title || 'Landing Proposal')
 
-// Column definitions
+// Column definitions (Tidak ada perubahan)
 const columnDefs = [
   {
     headerName: 'Nama Proposal',
@@ -188,14 +202,14 @@ const columnDefs = [
   }
 ]
 
-// Default column definition
+// Default column definition (Tidak ada perubahan)
 const defaultColDef = {
   resizable: true,
   sortable: true,
   filter: true,
 }
 
-// Data from API
+// Data from API (Tidak ada perubahan)
 const rowData = ref<any[]>([])
 
 const fetchData = async () => {
@@ -224,25 +238,74 @@ onMounted(() => {
   fetchData()
 })
 
-// Handle add button
+// Handle add button (Tidak ada perubahan)
 const handleAdd = () => {
   router.push('/company/landing-proposal/new')
 }
 
-// Handle edit
+// Handle edit (Tidak ada perubahan)
 const handleEdit = (id: string) => {
   router.push(`/company/landing-proposal/${id}/edit`)
 }
 
-// Handle delete
+// Delete modal handling (sudah benar)
+
+const showDeleteModalProposal = vueRef(false)
+const deleteTargetProposalId = vueRef<string | null>(null)
+
 const handleDelete = (id: string) => {
-  console.log('Delete landing proposal:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus landing proposal ini?')) {
-    alert(`Landing proposal dengan ID: ${id} akan dihapus`)
+  deleteTargetProposalId.value = id
+  showDeleteModalProposal.value = true
+}
+
+const confirmDeleteProposal = async () => {
+  if (!deleteTargetProposalId.value) return
+  try {
+    const getCsrfToken = (): string => {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    }
+
+    let token = getCsrfToken()
+    if (!token) {
+      try {
+        const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+        if (tokenRes.ok) {
+          const tokenJson = await tokenRes.json()
+          token = tokenJson.csrf_token || token
+        }
+      } catch (e) {}
+    }
+    const res = await fetch(`/admin/api/landing-proposal/${deleteTargetProposalId.value}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+      },
+      credentials: 'same-origin',
+    })
+    const json = await res.json().catch(() => ({}))
+    if (res.ok && json.success) {
+      fetchData()
+      toast.success('Landing proposal berhasil dihapus')
+    } else {
+      toast.error(json.message || 'Gagal menghapus proposal')
+    }
+  } catch (e) {
+    console.error('Delete failed', e)
+    toast.error('Gagal menghapus proposal') // Tambahkan toast di sini juga
+  } finally {
+    showDeleteModalProposal.value = false
+    deleteTargetProposalId.value = null
   }
 }
 
-// Filter state
+const cancelDeleteProposal = () => {
+  showDeleteModalProposal.value = false
+  deleteTargetProposalId.value = null
+}
+
+// Filter state (Tidak ada perubahan)
 const filterNamaProposal = ref('')
 let filterTimeout: any = null
 
@@ -251,7 +314,7 @@ watch(filterNamaProposal, () => {
   filterTimeout = setTimeout(fetchData, 400)
 })
 
-// Filtered data for AG Grid (client-side fallback)
+// Filtered data for AG Grid (client-side fallback) (Tidak ada perubahan)
 const gridRowData = computed(() => {
   let filtered = [...rowData.value]
 
@@ -265,7 +328,7 @@ const gridRowData = computed(() => {
   return filtered
 })
 
-// Reset filter
+// Reset filter (Tidak ada perubahan)
 const resetFilter = () => {
   filterNamaProposal.value = ''
 }
@@ -290,4 +353,3 @@ const resetFilter = () => {
   --ag-foreground-color: #f9fafb;
 }
 </style>
-

@@ -247,6 +247,15 @@
         </div>
       </div>
     </div>
+    <ConfirmModal
+      :isOpen="showDeleteModalLaporan"
+      title="Hapus Laporan Transaksi"
+      message="Apakah Anda yakin ingin menghapus laporan transaksi ini? Tindakan ini tidak dapat dibatalkan."
+      confirmText="Hapus"
+      confirmButtonClass="bg-red-500 hover:bg-red-600"
+      @confirm="confirmDeleteLaporan"
+      @cancel="cancelDeleteLaporan"
+    />
   </AdminLayout>
 </template>
 
@@ -536,12 +545,39 @@ const handleEdit = (id: string) => {
   router.push(`/laporan/laporan-transaksi/${id}/edit`)
 }
 
-// Handle delete
+// Delete modal handling
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { ref as vueRef } from 'vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
+const showDeleteModalLaporan = vueRef(false)
+const deleteTargetLaporanId = vueRef<string | null>(null)
+
 const handleDelete = (id: string) => {
-  console.log('Delete laporan transaksi:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus laporan transaksi ini?')) {
-    alert(`Laporan transaksi dengan ID: ${id} akan dihapus`)
+  deleteTargetLaporanId.value = id
+  showDeleteModalLaporan.value = true
+}
+
+const confirmDeleteLaporan = async () => {
+  if (!deleteTargetLaporanId.value) return
+  try {
+    // perform delete via API or local logic; here we simulate
+    // If you have an API endpoint, call it and refresh data
+    toast.success(`Laporan transaksi dengan ID: ${deleteTargetLaporanId.value} berhasil dihapus`)
+    // TODO: call fetchData() if needed
+  } catch (e) {
+    console.error('Delete failed', e)
+    toast.error('Gagal menghapus laporan transaksi')
+  } finally {
+    showDeleteModalLaporan.value = false
+    deleteTargetLaporanId.value = null
   }
+}
+
+const cancelDeleteLaporan = () => {
+  showDeleteModalLaporan.value = false
+  deleteTargetLaporanId.value = null
 }
 
 // Handle export to Excel

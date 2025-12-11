@@ -282,7 +282,7 @@ const handleSubmit = async () => {
     const data = await response.json()
     
     if (data.success) {
-      alert('Pesan berhasil dikirim')
+      toast.success('Pesan berhasil dikirim')
       // Reset form setelah berhasil
       handleCancel()
       // Bisa redirect ke inbox atau halaman lain jika diperlukan
@@ -292,7 +292,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('Error sending message:', error)
-    alert(error instanceof Error ? error.message : 'Terjadi kesalahan saat mengirim pesan')
+    toast.error(error instanceof Error ? error.message : 'Terjadi kesalahan saat mengirim pesan')
   } finally {
     isSubmitting.value = false
   }

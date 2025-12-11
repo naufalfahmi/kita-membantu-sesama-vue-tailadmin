@@ -418,7 +418,10 @@ const handleCancel = () => {
   router.push('/laporan/laporan-transaksi')
 }
 
+import { useToast } from 'vue-toastification'
+
 // Handle save
+const toast = useToast()
 const handleSave = async () => {
   if (!validateForm()) {
     return
@@ -444,18 +447,18 @@ const handleSave = async () => {
     if (isEditMode.value) {
       console.log('Updating laporan transaksi:', payload)
       // await updateLaporanTransaksi(route.params.id, payload)
-      alert('Laporan transaksi berhasil diupdate')
+      toast.success('Laporan transaksi berhasil diupdate')
     } else {
       console.log('Creating laporan transaksi:', payload)
       // await createLaporanTransaksi(payload)
-      alert('Laporan transaksi berhasil ditambahkan')
+      toast.success('Laporan transaksi berhasil ditambahkan')
     }
     
     // Redirect to list
     router.push('/laporan/laporan-transaksi')
   } catch (error) {
     console.error('Error saving:', error)
-    alert('Terjadi kesalahan saat menyimpan data')
+    toast.error('Terjadi kesalahan saat menyimpan data')
   }
 }
 

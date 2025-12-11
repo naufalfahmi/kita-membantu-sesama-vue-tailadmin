@@ -308,6 +308,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
@@ -326,6 +327,7 @@ const formData = reactive({
 
 // Validation errors
 const errors = ref<Record<string, string>>({})
+const toast = useToast()
 
 // Counter for unique IDs
 let bankIdCounter = 0
@@ -395,7 +397,7 @@ const hasDuplicateAccountNumbers = (): boolean => {
   const accountNumbers = formData.banks
     .map((bank) => bank.account_number.trim())
     .filter((num) => num !== '')
-  return new Set(accountNumbers).size !== accountNumbers.length
+    return new Set(accountNumbers).size !== accountNumbers.length
 }
 
 // Validate form
@@ -497,7 +499,7 @@ const handleSave = async () => {
     const json = await res.json().catch(() => ({}))
 
     if (res.ok && json.success) {
-      alert('Data berhasil disimpan')
+      toast.success('Data berhasil disimpan')
       await loadData()
     } else {
       if (json.errors) {
@@ -508,9 +510,9 @@ const handleSave = async () => {
       }
       throw new Error(json.message || 'Gagal menyimpan data')
     }
-  } catch (error) {
+    } catch (error) {
     console.error('Error saving:', error)
-    alert(error.message || 'Terjadi kesalahan saat menyimpan data')
+    toast.error(error.message || 'Terjadi kesalahan saat menyimpan data')
   }
 }
 

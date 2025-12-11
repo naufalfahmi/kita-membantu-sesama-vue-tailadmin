@@ -83,12 +83,23 @@
           :domLayout="'autoHeight'"
         />
       </div>
+
+      <ConfirmModal
+        :isOpen="showDeleteModal"
+        title="Hapus Kegiatan"
+        message="Apakah Anda yakin ingin menghapus kegiatan ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Hapus"
+        confirmButtonClass="bg-red-500 hover:bg-red-600"
+        @confirm="confirmDelete"
+        @cancel="cancelDelete"
+      />
     </div>
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
@@ -96,6 +107,7 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 // Options for Status filter
 const statusFilterOptions = [
@@ -294,33 +306,67 @@ const handleEdit = (id: string | number) => {
 }
 
 // Handle delete
+const showDeleteModal = ref(false)
+const deleteTargetId = ref<string | null>(null)
+const toast = useToast()
+
 const handleDelete = async (id: string | number) => {
-  if (!confirm('Apakah Anda yakin ingin menghapus kegiatan ini?')) {
-    return
-  }
+  // Debug log to confirm click handler is invoked
+  // console.log is intentional for quick browser debugging; remove after verification
+  console.log('handleDelete called for id:', id)
+  deleteTargetId.value = String(id)
+  showDeleteModal.value = true
+}
+
+// Confirm delete handler (include CSRF token)
+const confirmDelete = async () => {
+  if (!deleteTargetId.value) return
 
   try {
-    const response = await fetch(`/admin/api/landing-kegiatan/${id}`, {
+    const getCsrfToken = (): string => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+
+    let token = getCsrfToken()
+    if (!token) {
+      try {
+        const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+        if (tokenRes.ok) {
+          const tokenJson = await tokenRes.json()
+          token = tokenJson.csrf_token || token
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    const res = await fetch(`/admin/api/landing-kegiatan/${deleteTargetId.value}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json',
+        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
       },
       credentials: 'same-origin',
     })
 
-    const result = await response.json()
-    if (result.success) {
-      alert('Kegiatan berhasil dihapus')
+    const json = await res.json().catch(() => ({}))
+    if (res.ok && json.success) {
+      toast.success(json.message || 'Kegiatan berhasil dihapus')
       await fetchData()
     } else {
-      alert(result.message || 'Gagal menghapus kegiatan')
+      toast.error(json.message || 'Gagal menghapus kegiatan')
     }
   } catch (error) {
-    console.error('Error deleting:', error)
-    alert('Terjadi kesalahan saat menghapus kegiatan')
+    console.error('Error deleting kegiatan:', error)
+    toast.error('Gagal menghapus kegiatan')
+  } finally {
+    showDeleteModal.value = false
+    deleteTargetId.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  deleteTargetId.value = null
 }
 
 // Reset filter

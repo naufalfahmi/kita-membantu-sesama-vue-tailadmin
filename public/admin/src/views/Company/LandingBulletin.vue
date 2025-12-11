@@ -31,7 +31,6 @@
         </button>
       </div>
 
-      <!-- Filter Section -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
         <div class="flex gap-4">
           <div class="flex-1">
@@ -71,10 +70,35 @@
           :domLayout="'autoHeight'"
         />
       </div>
+      <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
+        <ag-grid-vue
+          class="ag-theme-alpine"
+          style="width: 100%;"
+          :columnDefs="columnDefs"
+          :rowData="gridRowData"
+          :defaultColDef="defaultColDef"
+          :pagination="true"
+          :paginationPageSize="20"
+          theme="legacy"
+          :animateRows="true"
+          :suppressHorizontalScroll="true"
+          :domLayout="'autoHeight'"
+        />
+      </div>
+
+      <ConfirmModal
+        :isOpen="showDeleteModal"
+        title="Hapus Bulletin"
+        message="Apakah Anda yakin ingin menghapus bulletin ini? Tindakan ini tidak dapat dibatalkan."
+        confirmText="Hapus"
+        confirmButtonClass="bg-red-500 hover:bg-red-600"
+        @confirm="confirmDelete"
+        @cancel="cancelDelete"
+      />
+
     </div>
   </AdminLayout>
 </template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -232,12 +256,68 @@ const handleEdit = (id: string) => {
   router.push(`/company/landing-bulletin/${id}/edit`)
 }
 
-// Handle delete
+// Delete modal handling
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { ref as vueRef } from 'vue'
+import { useToast } from 'vue-toastification'
+
+const toast = useToast()
+const showDeleteModal = vueRef(false)
+const deleteTargetId = vueRef<string | null>(null)
+
 const handleDelete = (id: string) => {
-  console.log('Delete landing bulletin:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus landing bulletin ini?')) {
-    alert(`Landing bulletin dengan ID: ${id} akan dihapus`)
+  deleteTargetId.value = id
+  showDeleteModal.value = true
+}
+
+const confirmDelete = async () => {
+  if (!deleteTargetId.value) return
+  try {
+    // Get CSRF token (meta tag fallback to API)
+    const getCsrfToken = (): string => {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    }
+
+    let token = getCsrfToken()
+    if (!token) {
+      try {
+        const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+        if (tokenRes.ok) {
+          const tokenJson = await tokenRes.json()
+          token = tokenJson.csrf_token || token
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    const res = await fetch(`/admin/api/landing-bulletin/${deleteTargetId.value}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
+      },
+      credentials: 'same-origin',
+    })
+    const json = await res.json().catch(() => ({}))
+    if (res.ok && json.success) {
+      await fetchData()
+      toast.success('Landing bulletin berhasil dihapus')
+    } else {
+      toast.error(json.message || 'Gagal menghapus bulletin')
+    }
+  } catch (e) {
+    console.error('Delete failed', e)
+    toast.error('Gagal menghapus bulletin')
+  } finally {
+    showDeleteModal.value = false
+    deleteTargetId.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteModal.value = false
+  deleteTargetId.value = null
 }
 
 // Filter state
@@ -267,6 +347,18 @@ const gridRowData = computed(() => {
 const resetFilter = () => {
   filterNamaBulletin.value = ''
 }
+
+// Insert ConfirmModal component into template
+const templateInsert = `
+<ConfirmModal
+  :isOpen="showDeleteModal"
+  title="Hapus Bulletin"
+  message="Apakah Anda yakin ingin menghapus bulletin ini? Tindakan ini tidak dapat dibatalkan."
+  confirmText="Hapus"
+  confirmButtonClass="bg-red-500 hover:bg-red-600"
+  @confirm="confirmDelete"
+  @cancel="cancelDelete"
+/>`
 </script>
 
 <style>

@@ -487,13 +487,13 @@ const fetchJabatanDetail = async (id: string) => {
     }
   } catch (error) {
     console.error('Error fetching jabatan detail:', error)
-    alert('Gagal memuat data jabatan')
+    toast.error('Gagal memuat data jabatan')
   }
 }
 
 const saveJabatan = async () => {
   if (!formData.value.name.trim()) {
-    alert('Nama jabatan wajib diisi')
+    toast.error('Nama jabatan wajib diisi')
     return
   }
 

@@ -19,9 +19,7 @@
           <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
             <!-- Email -->
             <div class="lg:col-span-1">
-              <label
-                class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-              >
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                 Email <span class="text-red-500">*</span>
               </label>
               <input
@@ -36,8 +34,6 @@
                 {{ errors.email }}
               </p>
             </div>
-
-            <!-- No. Handphone -->
             <div class="lg:col-span-1">
               <label
                 class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
@@ -463,54 +459,88 @@ const handleSave = async () => {
   if (!validateForm()) {
     return
   }
-
   try {
-    // Prepare data for submission
+    // Prepare data for submission (convert to backend field names)
     const submitData = {
       email: formData.email,
       phone_number: formData.phone_number,
-      banks: formData.banks.map((bank) => ({
-        bank_name: bank.bank_name.trim(),
-        account_number: bank.account_number.trim(),
+      bank_account_1: formData.banks.map((bank) => ({
+        label: bank.bank_name.trim(),
+        value: bank.account_number.trim(),
       })),
-      addresses: formData.addresses.map((address) => ({
-        name: address.name.trim(),
-        address: address.address.trim(),
-        is_primary: address.is_primary,
+      address: formData.addresses.map((address) => ({
+        label: address.name.trim(),
+        value: address.address.trim(),
+        is_primary: !!address.is_primary,
       })),
     }
 
-    // TODO: Save to API
-    console.log('Saving landing profile:', submitData)
-    // await saveLandingProfile(submitData)
-    
-    alert('Data berhasil disimpan')
-    
-    // Optionally redirect or reload data
-    // router.push('/company/landing-profile')
+    // Fetch CSRF token
+    const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+    if (!tokenRes.ok) throw new Error('Failed to fetch CSRF token')
+    const tokenJson = await tokenRes.json()
+
+    // Determine whether to create or update (exists if GET returned data)
+    const method = existingProfile.value ? 'PUT' : 'POST'
+    const url = '/admin/api/company/landing-profile'
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': tokenJson.csrf_token,
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(submitData),
+    })
+
+    const json = await res.json().catch(() => ({}))
+
+    if (res.ok && json.success) {
+      alert('Data berhasil disimpan')
+      await loadData()
+    } else {
+      if (json.errors) {
+        // Map validation errors to UI
+        Object.keys(json.errors).forEach((key) => {
+          errors.value[key] = json.errors[key][0]
+        })
+      }
+      throw new Error(json.message || 'Gagal menyimpan data')
+    }
   } catch (error) {
     console.error('Error saving:', error)
-    alert('Terjadi kesalahan saat menyimpan data')
+    alert(error.message || 'Terjadi kesalahan saat menyimpan data')
   }
 }
 
 // Load existing data (if editing)
 const loadData = async () => {
   try {
-    // TODO: Load data from API
-    // const response = await fetchLandingProfile()
-    // if (response) {
-    //   formData.email = response.email || ''
-    //   formData.phone_number = response.phone_number || ''
-    //   formData.banks = response.banks || []
-    //   formData.addresses = response.addresses || []
-    // }
+    const res = await fetch('/admin/api/company/landing-profile', { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to load landing profile')
+    const json = await res.json()
+    if (json.success && json.data) {
+      const data = json.data
+      existingProfile.value = data
+      formData.email = data.email || ''
+      formData.phone_number = data.phone_number || ''
+      formData.banks = Array.isArray(data.bank_account_1)
+        ? data.bank_account_1.map((b: any, i: number) => ({ id: ++bankIdCounter, bank_name: b.label || b.bank_name || '', account_number: String(b.value || ''), }))
+        : []
+      formData.addresses = Array.isArray(data.address)
+        ? data.address.map((a: any, i: number) => ({ id: ++addressIdCounter, name: a.label || a.name || '', address: a.value || '', is_primary: !!a.is_primary }))
+        : []
+    }
   } catch (error) {
     console.error('Error loading data:', error)
   }
 }
 
 // Initialize: Load data on mount
+// Track whether a profile already exists (used to pick POST vs PUT)
+const existingProfile = ref(null as any)
+
 loadData()
 </script>
 

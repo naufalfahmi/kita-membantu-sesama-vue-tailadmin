@@ -470,20 +470,33 @@ const loadData = async () => {
         },
         credentials: 'same-origin',
       })
-      
+
+      if (response.status === 404) {
+        alert('Bulletin tidak ditemukan')
+        router.push('/company/landing-bulletin')
+        return
+      }
+
       const result = await response.json()
       if (result.success && result.data) {
         const data = result.data
         formData.name = data.name || ''
         formData.slug = data.slug || ''
-        formData.bulletin_date = data.bulletin_date || ''
+        // backend uses 'date' field
+        formData.bulletin_date = data.date || data.bulletin_date || ''
+        // If slug is missing (backend doesn't store slug), auto-generate from name
+        if (!formData.slug && formData.name) {
+          generateSlug()
+        }
         formData.is_published = data.is_published !== undefined ? data.is_published : true
         
         // Load existing file
         if (data.file) {
-          const fileUrl = data.file_url || data.file
-          const isPdf = fileUrl.toLowerCase().endsWith('.pdf') || data.file_type === 'application/pdf'
-          
+          // Normalize file URL: if it's absolute (http[s]...) use as-is, otherwise assume it's a storage path and prefix with /storage/
+          const raw = data.file_url || data.file
+          const fileUrl = raw && String(raw).startsWith('http') ? raw : (raw ? `/storage/${raw}` : null)
+          const isPdf = typeof fileUrl === 'string' && fileUrl.toLowerCase().endsWith('.pdf') || data.file_type === 'application/pdf'
+
           existingFile.value = {
             name: data.file_name || 'File Bulletin',
             url: fileUrl,
@@ -534,10 +547,10 @@ const handleSave = async () => {
       formData.slug = generateSlug()
     }
     
-    // Add form fields
+    // Add form fields (use keys expected by backend)
     formDataToSend.append('name', formData.name)
     formDataToSend.append('slug', formData.slug || '')
-    formDataToSend.append('bulletin_date', formData.bulletin_date)
+    formDataToSend.append('date', formData.bulletin_date)
     formDataToSend.append('is_published', formData.is_published ? '1' : '0')
     
     // Add file if new file is selected
@@ -548,17 +561,46 @@ const handleSave = async () => {
     // If editing and no new file selected, keep existing file
     // (backend should handle this)
 
+    // Ensure CSRF token is included for FormData requests
+    const getCsrfToken = (): string => {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    }
+
+    let token = getCsrfToken()
+    if (!token) {
+      try {
+        const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+        if (tokenRes.ok) {
+          const tokenJson = await tokenRes.json()
+          token = tokenJson.csrf_token || token
+        }
+      } catch (e) {
+        // ignore; request may fail later with CSRF mismatch
+      }
+    }
+
+    if (token) {
+      formDataToSend.append('_token', token)
+    }
+
     const url = isEditMode.value
       ? `/admin/api/landing-bulletin/${route.params.id}`
       : '/admin/api/landing-bulletin'
-    
+
     const method = isEditMode.value ? 'PUT' : 'POST'
 
+    // For multipart + method override: use POST with _method=PUT when updating
+    const fetchMethod = method === 'PUT' ? 'POST' : method
+    if (method === 'PUT') {
+      formDataToSend.append('_method', 'PUT')
+    }
+
     const response = await fetch(url, {
-      method,
+      method: fetchMethod,
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json',
+        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
       },
       credentials: 'same-origin',
       body: formDataToSend,
@@ -578,8 +620,10 @@ const handleSave = async () => {
       // Handle validation errors
       if (result.errors) {
         Object.keys(result.errors).forEach(key => {
-          if (errors.hasOwnProperty(key)) {
-            errors[key as keyof typeof errors] = Array.isArray(result.errors[key])
+          // Map backend 'date' to frontend 'bulletin_date'
+          const targetKey = key === 'date' ? 'bulletin_date' : key
+          if (errors.hasOwnProperty(targetKey)) {
+            errors[targetKey as keyof typeof errors] = Array.isArray(result.errors[key])
               ? result.errors[key][0]
               : result.errors[key]
           }

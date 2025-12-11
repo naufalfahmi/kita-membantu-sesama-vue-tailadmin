@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
@@ -113,6 +113,24 @@ const columnDefs = [
       const span = document.createElement('span')
       span.className = `px-2 py-1 rounded-full text-xs font-medium ${colorClass}`
       span.textContent = status
+      return span
+    },
+  },
+  {
+    headerName: 'Highlight',
+    field: 'highlight',
+    sortable: true,
+    width: 120,
+    cellRenderer: (params: any) => {
+      const val = params.value
+      const span = document.createElement('span')
+      if (val === 'Ya') {
+        span.className = 'px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+        span.textContent = 'Highlighted'
+      } else {
+        span.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+        span.textContent = '—'
+      }
       return span
     },
   },
@@ -179,60 +197,31 @@ const defaultColDef = {
   filter: true,
 }
 
-// Sample data
-const rowDataArray = [
-  {
-    id: '1',
-    namaProgram: 'Program Beasiswa Pendidikan',
-    status: 'Aktif',
-    tanggal: '2024-01-15',
-  },
-  {
-    id: '2',
-    namaProgram: 'Program Kesehatan Masyarakat',
-    status: 'Aktif',
-    tanggal: '2024-02-20',
-  },
-  {
-    id: '3',
-    namaProgram: 'Program Pemberdayaan Ekonomi',
-    status: 'Draft',
-    tanggal: '2024-03-10',
-  },
-  {
-    id: '4',
-    namaProgram: 'Program Bantuan Pangan',
-    status: 'Aktif',
-    tanggal: '2024-04-05',
-  },
-  {
-    id: '5',
-    namaProgram: 'Program Pengembangan SDM',
-    status: 'Tidak Aktif',
-    tanggal: '2024-05-12',
-  },
-  {
-    id: '6',
-    namaProgram: 'Program Lingkungan Hidup',
-    status: 'Aktif',
-    tanggal: '2024-06-18',
-  },
-  {
-    id: '7',
-    namaProgram: 'Program Sosial Budaya',
-    status: 'Aktif',
-    tanggal: '2024-07-25',
-  },
-  {
-    id: '8',
-    namaProgram: 'Program Infrastruktur',
-    status: 'Draft',
-    tanggal: '2024-08-30',
-  },
-]
+// Fetch data from API
+const rowData = ref<any[]>([])
+const fetchData = async () => {
+  try {
+    const res = await fetch('/admin/api/landing-program', { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const json = await res.json()
+    if (json.success) {
+      rowData.value = (json.data || []).map((item: any) => ({
+        id: item.id,
+        namaProgram: item.name,
+        status: item.is_active ? 'Aktif' : 'Tidak Aktif',
+        highlight: item.is_highlight ? 'Ya' : 'Tidak',
+        tanggal: item.created_at,
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching landing programs:', err)
+    rowData.value = []
+  }
+}
 
-// Create ref for rowData
-const rowData = ref(rowDataArray)
+onMounted(() => {
+  fetchData()
+})
 
 // Handle add button
 const handleAdd = () => {
@@ -257,7 +246,7 @@ const filterNamaProgram = ref('')
 
 // Filtered data for AG Grid
 const gridRowData = computed(() => {
-  let filtered = [...rowDataArray]
+  let filtered = [...rowData.value]
   
   // Filter by nama program
   if (filterNamaProgram.value) {

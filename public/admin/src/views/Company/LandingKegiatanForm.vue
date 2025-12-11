@@ -624,17 +624,46 @@ const handleSave = async () => {
       formDataToSend.append('images_to_delete', JSON.stringify(imagesToDelete.value))
     }
 
+    // Ensure CSRF token is included for FormData requests
+    const getCsrfToken = (): string => {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    }
+
+    let token = getCsrfToken()
+    if (!token) {
+      try {
+        const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+        if (tokenRes.ok) {
+          const tokenJson = await tokenRes.json()
+          token = tokenJson.csrf_token || token
+        }
+      } catch (e) {
+        // ignore; request may fail later with CSRF mismatch
+      }
+    }
+
+    if (token) {
+      formDataToSend.append('_token', token)
+    }
+
     const url = isEditMode.value
       ? `/admin/api/landing-kegiatan/${route.params.id}`
       : '/admin/api/landing-kegiatan'
     
     const method = isEditMode.value ? 'PUT' : 'POST'
 
+    // For multipart + method override: use POST with _method=PUT when updating
+    const fetchMethod = method === 'PUT' ? 'POST' : method
+    if (method === 'PUT') {
+      formDataToSend.append('_method', 'PUT')
+    }
+
     const response = await fetch(url, {
-      method,
+      method: fetchMethod,
       headers: {
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json',
+        ...(token ? { 'X-CSRF-TOKEN': token } : {}),
       },
       credentials: 'same-origin',
       body: formDataToSend,

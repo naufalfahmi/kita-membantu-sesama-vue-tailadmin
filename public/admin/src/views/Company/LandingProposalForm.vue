@@ -349,7 +349,7 @@ const loadData = async () => {
         if (data.file) {
           existingFile.value = {
             name: data.file_name || 'File Proposal',
-            url: data.file_url || data.file,
+            url: data.file_url || (String(data.file).startsWith('http') ? data.file : `/storage/${data.file}`),
             size: data.file_size || undefined,
           }
         }
@@ -396,18 +396,40 @@ const handleSave = async () => {
     // If editing and no new file selected, keep existing file
     // (backend should handle this)
 
-    const url = isEditMode.value
-      ? `/admin/api/landing-proposal/${route.params.id}`
-      : '/admin/api/landing-proposal'
-    
-    const method = isEditMode.value ? 'PUT' : 'POST'
+    // CSRF handling: prefer meta tag, fallback to API endpoint
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    let csrfToken = metaToken || ''
+    if (!csrfToken) {
+      try {
+        const tokenRes = await fetch('/admin/api/csrf-token')
+        const tokenJson = await tokenRes.json()
+        csrfToken = tokenJson?.csrf_token || tokenJson?.token || ''
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // Append CSRF token to form for multipart requests
+    if (csrfToken) {
+      formDataToSend.append('_token', csrfToken)
+    }
+
+    // For multipart/form-data updates, Laravel expects POST + _method=PUT
+    const url = isEditMode.value ? `/admin/api/landing-proposal/${route.params.id}` : '/admin/api/landing-proposal'
+    // Always send as POST (multipart), use method override for update
+    if (isEditMode.value) {
+      formDataToSend.append('_method', 'PUT')
+    }
+
+    const headers: Record<string, string> = {
+      'X-Requested-With': 'XMLHttpRequest',
+      'Accept': 'application/json',
+    }
+    if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken
 
     const response = await fetch(url, {
-      method,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-      },
+      method: 'POST',
+      headers,
       credentials: 'same-origin',
       body: formDataToSend,
     })

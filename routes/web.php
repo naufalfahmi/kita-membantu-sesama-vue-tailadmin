@@ -5,6 +5,8 @@ use App\Http\Controllers\AbsensiController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DonaturController;
 use App\Http\Controllers\LandingKegiatanController;
+use App\Http\Controllers\LandingProposalController;
+use App\Http\Controllers\LandingBulletinController;
 use App\Http\Controllers\JabatanController;
 use App\Http\Controllers\KantorCabangController;
 use App\Http\Controllers\ProgramController;
@@ -97,6 +99,10 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     
     // Landing Kegiatan API
     Route::apiResource('landing-kegiatan', LandingKegiatanController::class);
+    // Landing Program API
+    Route::apiResource('landing-program', \App\Http\Controllers\LandingProgramController::class);
+        Route::apiResource('landing-proposal', LandingProposalController::class);
+    Route::apiResource('landing-bulletin', LandingBulletinController::class);
     
     // Jabatan API
     Route::apiResource('jabatan', JabatanController::class);
@@ -138,6 +144,11 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
 
     // Transaksi API
     Route::apiResource('transaksi', TransaksiController::class);
+
+    // Landing Profile API (single resource endpoints)
+    Route::get('company/landing-profile', [\App\Http\Controllers\LandingProfileController::class, 'index']);
+    Route::post('company/landing-profile', [\App\Http\Controllers\LandingProfileController::class, 'store']);
+    Route::put('company/landing-profile', [\App\Http\Controllers\LandingProfileController::class, 'update']);
 
     // Absensi API - Custom routes MUST be defined BEFORE apiResource
     Route::get('absensi/today-status', [AbsensiController::class, 'todayStatus'])->name('admin.api.absensi.today-status');

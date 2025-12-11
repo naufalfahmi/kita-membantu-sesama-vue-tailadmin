@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
@@ -129,6 +129,26 @@ const columnDefs = [
     },
   },
   {
+    headerName: 'File',
+    field: 'file',
+    sortable: false,
+    filter: false,
+    width: 140,
+    cellRenderer: (params: any) => {
+      const url = params.data?.fileUrl
+      const name = params.data?.fileName || 'File'
+      if (url) {
+        const a = document.createElement('a')
+        a.href = url
+        a.target = '_blank'
+        a.className = 'text-xs text-brand-500 hover:underline'
+        a.textContent = 'Lihat'
+        return a
+      }
+      return document.createTextNode('-')
+    },
+  },
+  {
     headerName: 'Actions',
     field: 'actions',
     sortable: false,
@@ -165,7 +185,7 @@ const columnDefs = [
       
       return div
     },
-  },
+  }
 ]
 
 // Default column definition
@@ -175,60 +195,34 @@ const defaultColDef = {
   filter: true,
 }
 
-// Sample data
-const rowDataArray = [
-  {
-    id: '1',
-    namaProposal: 'Proposal Program Pendidikan',
-    tanggalProposal: '2024-01-15',
-    tanggal: '2024-01-10',
-  },
-  {
-    id: '2',
-    namaProposal: 'Proposal Bantuan Kesehatan',
-    tanggalProposal: '2024-02-20',
-    tanggal: '2024-02-15',
-  },
-  {
-    id: '3',
-    namaProposal: 'Proposal Pemberdayaan Ekonomi',
-    tanggalProposal: '2024-03-10',
-    tanggal: '2024-03-05',
-  },
-  {
-    id: '4',
-    namaProposal: 'Proposal Infrastruktur Desa',
-    tanggalProposal: '2024-04-05',
-    tanggal: '2024-04-01',
-  },
-  {
-    id: '5',
-    namaProposal: 'Proposal Pelatihan SDM',
-    tanggalProposal: '2024-05-12',
-    tanggal: '2024-05-08',
-  },
-  {
-    id: '6',
-    namaProposal: 'Proposal Konservasi Lingkungan',
-    tanggalProposal: '2024-06-18',
-    tanggal: '2024-06-14',
-  },
-  {
-    id: '7',
-    namaProposal: 'Proposal Festival Budaya',
-    tanggalProposal: '2024-07-25',
-    tanggal: '2024-07-20',
-  },
-  {
-    id: '8',
-    namaProposal: 'Proposal Bantuan Bencana',
-    tanggalProposal: '2024-08-30',
-    tanggal: '2024-08-25',
-  },
-]
+// Data from API
+const rowData = ref<any[]>([])
 
-// Create ref for rowData
-const rowData = ref(rowDataArray)
+const fetchData = async () => {
+  try {
+    const url = `/admin/api/landing-proposal${filterNamaProposal.value ? '?search=' + encodeURIComponent(filterNamaProposal.value) : ''}`
+    const res = await fetch(url, { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const json = await res.json()
+    if (json.success) {
+      rowData.value = (json.data || []).map((item: any) => ({
+        id: item.id,
+        namaProposal: item.name,
+        tanggalProposal: item.proposal_date,
+        tanggal: item.created_at,
+        fileUrl: item.file && String(item.file).startsWith('http') ? item.file : (item.file ? `/storage/${item.file}` : null),
+        fileName: item.file_name || 'File Proposal',
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching landing proposals:', err)
+    rowData.value = []
+  }
+}
+
+onMounted(() => {
+  fetchData()
+})
 
 // Handle add button
 const handleAdd = () => {
@@ -250,18 +244,24 @@ const handleDelete = (id: string) => {
 
 // Filter state
 const filterNamaProposal = ref('')
+let filterTimeout: any = null
 
-// Filtered data for AG Grid
+watch(filterNamaProposal, () => {
+  clearTimeout(filterTimeout)
+  filterTimeout = setTimeout(fetchData, 400)
+})
+
+// Filtered data for AG Grid (client-side fallback)
 const gridRowData = computed(() => {
-  let filtered = [...rowDataArray]
-  
+  let filtered = [...rowData.value]
+
   // Filter by nama proposal
   if (filterNamaProposal.value) {
     filtered = filtered.filter((item) =>
-      item.namaProposal.toLowerCase().includes(filterNamaProposal.value.toLowerCase())
+      (item.namaProposal || '').toLowerCase().includes(filterNamaProposal.value.toLowerCase())
     )
   }
-  
+
   return filtered
 })
 

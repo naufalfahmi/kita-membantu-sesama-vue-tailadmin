@@ -201,8 +201,7 @@
               </div>
             </div>
           </div>
-
-          <!-- Deskripsi -->
+            <!-- Deskripsi -->
           <div class="lg:col-span-2">
             <label
               class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
@@ -211,7 +210,7 @@
             </label>
             <div
               ref="quillEditorRef"
-              class="min-h-[300px] rounded-lg border border-gray-300 dark:border-gray-700"
+              class="min-h-[180px] rounded-lg border border-gray-300 dark:border-gray-700"
               :class="{ 'border-red-300 dark:border-red-500': errors.description }"
             ></div>
             <span v-if="errors.description" class="mt-1 block text-xs text-red-500">{{ errors.description }}</span>
@@ -219,6 +218,11 @@
               Gunakan editor untuk memformat deskripsi program. Konten akan disanitasi untuk keamanan.
             </p>
           </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mt-16 flex items-center gap-3 lg:justify-end">
+          
         </div>
 
         <div class="flex items-center gap-3 mt-6 lg:justify-end">
@@ -529,7 +533,29 @@ const loadData = async () => {
   if (isEditMode.value && route.params.id) {
     const id = route.params.id as string
     // TODO: Load data from API
-    console.log('Loading data for ID:', id)
+    try {
+      const res = await fetch(`/admin/api/landing-program/${id}`, {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+      })
+      const json = await res.json()
+      if (json.success && json.data) {
+        const data = json.data
+        formData.name = data.name || ''
+        formData.status = data.is_active ? 'active' : 'inactive'
+        formData.highlight = data.is_highlight ? 'yes' : 'no'
+        formData.description = data.description || ''
+        if (data.image_url) {
+          const url = data.image_url.startsWith('http') ? data.image_url : `/storage/${data.image_url}`
+          existingImages.value = [{ url, name: data.name }]
+        }
+      }
+    } catch (e) {
+      // ignore load errors for now
+      console.error('Failed to load landing program', e)
+    }
     
     // Sample data for testing (uncomment to test)
     // formData.name = 'Program Beasiswa Pendidikan'
@@ -576,28 +602,76 @@ const handleSave = async () => {
     // Add form fields
     formDataToSend.append('name', formData.name.trim())
     formDataToSend.append('status', formData.status)
+    // Map highlight selection to boolean field expected by backend
     if (formData.highlight) {
-      formDataToSend.append('highlight', formData.highlight)
+      const isHighlight = formData.highlight === 'yes' ? '1' : '0'
+      formDataToSend.append('is_highlight', isHighlight)
     }
     formDataToSend.append('description', sanitizedDescription)
     
-    // Add new files
-    selectedFiles.value.forEach((file, index) => {
-      formDataToSend.append(`images[${index}]`, file)
-    })
+    // Add new files (send only the first selected file as 'image')
+    if (selectedFiles.value.length > 0) {
+      formDataToSend.append('image', selectedFiles.value[0])
+    }
+
+    // Add CSRF token (meta tag preferred, fallback to API) and include as form field
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    let csrfToken = metaToken || ''
+    if (!csrfToken) {
+      // fallback: fetch from API
+      try {
+        const res = await fetch('/admin/api/csrf-token')
+        const json = await res.json()
+        csrfToken = json?.token || ''
+      } catch (e) {
+        // ignore
+      }
+    }
+    if (csrfToken) {
+      formDataToSend.append('_token', csrfToken)
+    }
 
     // Add existing images to keep (you might want to track which ones to keep)
     // formDataToSend.append('existing_images', JSON.stringify(existingImages.value.map(img => img.url)))
 
-    // TODO: Save to API
-    if (isEditMode.value) {
-      console.log('Updating landing program:', formData)
-      // await updateLandingProgram(route.params.id, formDataToSend)
-      alert('Landing program berhasil diupdate')
-    } else {
-      console.log('Creating landing program:', formData)
-      // await createLandingProgram(formDataToSend)
-      alert('Landing program berhasil dibuat')
+    // Save to API
+    try {
+      const headers = {}
+      if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken
+
+      if (isEditMode.value) {
+        // Use method override for PUT when sending multipart/form-data
+        formDataToSend.append('_method', 'PUT')
+        const res = await fetch(`/admin/api/landing-program/${route.params.id}`, {
+          method: 'POST', // POST + _method=PUT for multipart
+          headers,
+          body: formDataToSend,
+          credentials: 'same-origin',
+        })
+        const result = await res.json()
+        if (result.success) {
+          alert('Landing program berhasil diupdate')
+        } else {
+          throw new Error(result.message || 'Validation failed')
+        }
+      } else {
+        const res = await fetch('/admin/api/landing-program', {
+          method: 'POST',
+          headers,
+          body: formDataToSend,
+          credentials: 'same-origin',
+        })
+        const result = await res.json()
+        if (result.success) {
+          alert('Landing program berhasil dibuat')
+        } else {
+          throw new Error(result.message || 'Validation failed')
+        }
+      }
+    } catch (e) {
+      console.error('Save error:', e)
+      alert('Terjadi kesalahan saat menyimpan data: ' + (e.message || ''))
+      return
     }
     
     // Redirect to list
@@ -607,6 +681,8 @@ const handleSave = async () => {
     alert('Terjadi kesalahan saat menyimpan data')
   }
 }
+
+// Action Buttons are placed at the end of the form template (rendered below)
 
 onMounted(async () => {
   await loadData()
@@ -641,7 +717,9 @@ onBeforeUnmount(() => {
 }
 
 .ql-editor {
-  min-height: 250px;
+  min-height: 180px;
+  max-height: 420px;
+  overflow-y: auto;
 }
 
 .ql-snow .ql-toolbar {

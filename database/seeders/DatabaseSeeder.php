@@ -45,5 +45,17 @@ class DatabaseSeeder extends Seeder
         // Seed karyawan
         $this->call(KaryawanSeeder::class);
         
+        // Seed landing kegiatan
+        $this->call(LandingKegiatanSeeder::class);
+
+        // Seed landing program
+        $this->call(LandingProgramSeeder::class);
+        
+        // Seed landing proposal
+        $this->call(LandingProposalSeeder::class);
+        
+        // Seed landing profile
+        $this->call(\Database\Seeders\LandingProfileSeeder::class);
+        
     }
 }

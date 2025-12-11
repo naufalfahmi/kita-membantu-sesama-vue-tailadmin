@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
@@ -129,6 +129,25 @@ const columnDefs = [
     },
   },
   {
+    headerName: 'File',
+    field: 'file',
+    sortable: false,
+    filter: false,
+    width: 140,
+    cellRenderer: (params: any) => {
+      const url = params.data?.fileUrl
+      if (url) {
+        const a = document.createElement('a')
+        a.href = url
+        a.target = '_blank'
+        a.className = 'text-xs text-brand-500 hover:underline'
+        a.textContent = 'Lihat'
+        return a
+      }
+      return document.createTextNode('-')
+    },
+  },
+  {
     headerName: 'Actions',
     field: 'actions',
     sortable: false,
@@ -175,60 +194,33 @@ const defaultColDef = {
   filter: true,
 }
 
-// Sample data
-const rowDataArray = [
-  {
-    id: '1',
-    namaBulletin: 'Bulletin Bulanan Januari 2024',
-    tanggalBulletin: '2024-01-15',
-    tanggal: '2024-01-10',
-  },
-  {
-    id: '2',
-    namaBulletin: 'Bulletin Bulanan Februari 2024',
-    tanggalBulletin: '2024-02-20',
-    tanggal: '2024-02-15',
-  },
-  {
-    id: '3',
-    namaBulletin: 'Bulletin Bulanan Maret 2024',
-    tanggalBulletin: '2024-03-10',
-    tanggal: '2024-03-05',
-  },
-  {
-    id: '4',
-    namaBulletin: 'Bulletin Bulanan April 2024',
-    tanggalBulletin: '2024-04-05',
-    tanggal: '2024-04-01',
-  },
-  {
-    id: '5',
-    namaBulletin: 'Bulletin Bulanan Mei 2024',
-    tanggalBulletin: '2024-05-12',
-    tanggal: '2024-05-08',
-  },
-  {
-    id: '6',
-    namaBulletin: 'Bulletin Bulanan Juni 2024',
-    tanggalBulletin: '2024-06-18',
-    tanggal: '2024-06-14',
-  },
-  {
-    id: '7',
-    namaBulletin: 'Bulletin Bulanan Juli 2024',
-    tanggalBulletin: '2024-07-25',
-    tanggal: '2024-07-20',
-  },
-  {
-    id: '8',
-    namaBulletin: 'Bulletin Bulanan Agustus 2024',
-    tanggalBulletin: '2024-08-30',
-    tanggal: '2024-08-25',
-  },
-]
+// Data from API
+const rowData = ref<any[]>([])
 
-// Create ref for rowData
-const rowData = ref(rowDataArray)
+const fetchData = async () => {
+  try {
+    const url = `/admin/api/landing-bulletin${filterNamaBulletin.value ? '?search=' + encodeURIComponent(filterNamaBulletin.value) : ''}`
+    const res = await fetch(url, { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const json = await res.json()
+    if (json.success) {
+      rowData.value = (json.data || []).map((item: any) => ({
+        id: item.id,
+        namaBulletin: item.name,
+        tanggalBulletin: item.date,
+        tanggal: item.created_at,
+        fileUrl: item.file && String(item.file).startsWith('http') ? item.file : (item.file ? `/storage/${item.file}` : null),
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching landing bulletins:', err)
+    rowData.value = []
+  }
+}
+
+onMounted(() => {
+  fetchData()
+})
 
 // Handle add button
 const handleAdd = () => {
@@ -250,18 +242,24 @@ const handleDelete = (id: string) => {
 
 // Filter state
 const filterNamaBulletin = ref('')
+let filterTimeout: any = null
 
-// Filtered data for AG Grid
+watch(filterNamaBulletin, () => {
+  clearTimeout(filterTimeout)
+  filterTimeout = setTimeout(fetchData, 400)
+})
+
+// Filtered data for AG Grid (client-side fallback)
 const gridRowData = computed(() => {
-  let filtered = [...rowDataArray]
-  
+  let filtered = [...rowData.value]
+
   // Filter by nama bulletin
   if (filterNamaBulletin.value) {
     filtered = filtered.filter((item) =>
-      item.namaBulletin.toLowerCase().includes(filterNamaBulletin.value.toLowerCase())
+      (item.namaBulletin || '').toLowerCase().includes(filterNamaBulletin.value.toLowerCase())
     )
   }
-  
+
   return filtered
 })
 

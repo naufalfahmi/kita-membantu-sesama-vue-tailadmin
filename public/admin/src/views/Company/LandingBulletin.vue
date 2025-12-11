@@ -55,21 +55,7 @@
         </div>
       </div>
 
-      <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
-        <ag-grid-vue
-          class="ag-theme-alpine"
-          style="width: 100%;"
-          :columnDefs="columnDefs"
-          :rowData="gridRowData"
-          :defaultColDef="defaultColDef"
-          :pagination="true"
-          :paginationPageSize="20"
-          theme="legacy"
-          :animateRows="true"
-          :suppressHorizontalScroll="true"
-          :domLayout="'autoHeight'"
-        />
-      </div>
+      <!-- single AG Grid instance above -->
       <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
         <ag-grid-vue
           class="ag-theme-alpine"
@@ -348,17 +334,7 @@ const resetFilter = () => {
   filterNamaBulletin.value = ''
 }
 
-// Insert ConfirmModal component into template
-const templateInsert = `
-<ConfirmModal
-  :isOpen="showDeleteModal"
-  title="Hapus Bulletin"
-  message="Apakah Anda yakin ingin menghapus bulletin ini? Tindakan ini tidak dapat dibatalkan."
-  confirmText="Hapus"
-  confirmButtonClass="bg-red-500 hover:bg-red-600"
-  @confirm="confirmDelete"
-  @cancel="cancelDelete"
-/>`
+// ConfirmModal is already present in the template above
 </script>
 
 <style>

@@ -115,6 +115,19 @@
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Kantor Cabang
+            </label>
+            <SearchableSelect
+              v-model="filterKantorCabang"
+              :options="kantorCabangOptions"
+              placeholder="Semua Kantor Cabang"
+              :search-input="kantorCabangSearchInput"
+              @update:search-input="kantorCabangSearchInput = $event"
+              @update:model-value="fetchData"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Fundraiser
             </label>
             <SearchableSelect
@@ -193,6 +206,7 @@ interface TransaksiRow {
   donatur: string | null
   fundraiser: string | null
   program: string | null
+  kantor_cabang: string | null
   nominal: number
   nominal_formatted: string
   tanggal_transaksi: string | null
@@ -212,6 +226,7 @@ const filterTanggal = ref('')
 const filterDonatur = ref('')
 const filterProgram = ref('')
 const filterFundraiser = ref('')
+const filterKantorCabang = ref('')
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
@@ -220,11 +235,13 @@ let debounceTimer: ReturnType<typeof setTimeout> | undefined
 const donaturList = ref<any[]>([])
 const programList = ref<any[]>([])
 const fundraiserList = ref<any[]>([])
+const kantorCabangList = ref<any[]>([])
 
 // Search inputs for SearchableSelect
 const donaturSearchInput = ref('')
 const programSearchInput = ref('')
 const fundraiserSearchInput = ref('')
+const kantorCabangSearchInput = ref('')
 
 // Computed options for SearchableSelect
 const donaturOptions = computed(() =>
@@ -248,6 +265,13 @@ const fundraiserOptions = computed(() =>
   }))
 )
 
+const kantorCabangOptions = computed(() =>
+  kantorCabangList.value.map((item) => ({
+    value: item.id,
+    label: item.nama || '-',
+  }))
+)
+
 
 const flatpickrDateConfig = {
   dateFormat: 'Y-m-d',
@@ -267,6 +291,13 @@ const columnDefs = [
   {
     headerName: 'Donatur',
     field: 'donatur',
+    sortable: true,
+    flex: 1,
+    valueFormatter: (params: any) => params.value || '-',
+  },
+  {
+    headerName: 'Kantor Cabang',
+    field: 'kantor_cabang',
     sortable: true,
     flex: 1,
     valueFormatter: (params: any) => params.value || '-',
@@ -355,11 +386,19 @@ const defaultColDef = {
 
 const fetchFilterOptions = async () => {
   try {
-    const [donaturRes, programRes, fundraiserRes] = await Promise.all([
+    const [kantorRes, donaturRes, programRes, fundraiserRes] = await Promise.all([
+      fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' }),
       fetch('/admin/api/donatur?per_page=1000', { credentials: 'same-origin' }),
       fetch('/admin/api/program?per_page=1000', { credentials: 'same-origin' }),
       fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
     ])
+
+    if (kantorRes.ok) {
+      const json = await kantorRes.json()
+      if (json.success) {
+        kantorCabangList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
+      }
+    }
 
     if (donaturRes.ok) {
       const json = await donaturRes.json()
@@ -409,6 +448,10 @@ const fetchData = async () => {
       params.append('program_id', filterProgram.value)
     }
 
+    if (filterKantorCabang.value) {
+      params.append('kantor_cabang_id', filterKantorCabang.value)
+    }
+
     if (filterFundraiser.value) {
       params.append('fundraiser_id', filterFundraiser.value)
     }
@@ -426,6 +469,7 @@ const fetchData = async () => {
         id: item.id,
         kode: item.kode,
         donatur: item.donatur?.nama || null,
+        kantor_cabang: item.kantor_cabang?.nama || null,
         fundraiser: item.fundraiser?.nama || null,
         program: item.program?.nama || null,
         nominal: item.nominal,
@@ -453,6 +497,7 @@ const resetFilter = () => {
   filterTanggal.value = ''
   filterDonatur.value = ''
   filterProgram.value = ''
+  filterKantorCabang.value = ''
   filterFundraiser.value = ''
   fetchData()
 }
@@ -512,6 +557,7 @@ const handleExportExcel = () => {
   const dataToExport = rowData.value.map((item) => ({
     'Kode': item.kode || '-',
     'Donatur': item.donatur || '-',
+    'Kantor Cabang': item.kantor_cabang || '-',
     'Fundraiser': item.fundraiser || '-',
     'Program': item.program || '-',
     'Nominal': item.nominal_formatted,

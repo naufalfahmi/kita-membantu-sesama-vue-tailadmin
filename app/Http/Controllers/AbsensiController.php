@@ -32,12 +32,16 @@ class AbsensiController extends Controller
             $query->where('user_id', $request->user_id);
         }
 
-        // Filter by date range (jam_masuk)
-        if ($request->filled('date_from')) {
-            $query->whereDate('jam_masuk', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('jam_masuk', '<=', $request->date_to);
+        // Filter by single date or range (jam_masuk)
+        if ($request->filled('date')) {
+            $query->whereDate('jam_masuk', $request->date);
+        } else {
+            if ($request->filled('date_from')) {
+                $query->whereDate('jam_masuk', '>=', $request->date_from);
+            }
+            if ($request->filled('date_to')) {
+                $query->whereDate('jam_masuk', '<=', $request->date_to);
+            }
         }
 
         // Filter by status
@@ -55,8 +59,27 @@ class AbsensiController extends Controller
             $query->where('tipe_absensi_id', $request->tipe_absensi_id);
         }
 
+        // Support both classic pagination and infinite scroll (start/limit)
+        if ($request->filled('start') && $request->filled('limit')) {
+            $start = max(0, intval($request->start));
+            $limit = max(1, intval($request->limit));
+
+            $total = $query->count();
+
+            $items = $query->orderBy('jam_masuk', 'desc')
+                           ->skip($start)
+                           ->take($limit)
+                           ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+                'total' => $total,
+            ]);
+        }
+
         $absensi = $query->orderBy('jam_masuk', 'desc')
-                         ->paginate($request->get('per_page', 20));
+                 ->paginate($request->get('per_page', 10));
 
         return response()->json([
             'success' => true,

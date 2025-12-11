@@ -44,6 +44,12 @@ class DatabaseSeeder extends Seeder
         
         // Seed karyawan
         $this->call(KaryawanSeeder::class);
+
+        // Seed absensi for karyawan
+        $this->call(AbsensiSeeder::class);
+
+        // Seed transaksi (prefer fundraiser as fundraiser_id)
+        $this->call(TransaksiSeeder::class);
         
         // Seed landing kegiatan
         $this->call(LandingKegiatanSeeder::class);

@@ -45,41 +45,55 @@
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Tanggal Dari
+              Tanggal (Range)
             </label>
-            <input
-              type="date"
-              v-model="filterDateFrom"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Tanggal Sampai
-            </label>
-            <input
-              type="date"
-              v-model="filterDateTo"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
+            <div class="relative">
+              <FlatPickr
+                v-model="filterTanggal"
+                :config="flatpickrDateConfigRange"
+                @on-change="() => { if (filterTimeout) clearTimeout(filterTimeout); filterTimeout = setTimeout(() => { if (gridApi.value) gridApi.value.purgeInfiniteCache(); else fetchData() }, 400) }"
+                class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                placeholder="Pilih rentang tanggal"
+              />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
+                <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M6.66659 1.5415C7.0808 1.5415 7.41658 1.87729 7.41658 2.2915V2.99984H12.5833V2.2915C12.5833 1.87729 12.919 1.5415 13.3333 1.5415C13.7475 1.5415 14.0833 1.87729 14.0833 2.2915V2.99984L15.4166 2.99984C16.5212 2.99984 17.4166 3.89527 17.4166 4.99984V7.49984V15.8332C17.4166 16.2754 17.3244 16.6993 17.0118 17.0118C16.6993 17.3244 16.2754 17.5 15.8333 17.5H4.58325C3.47868 17.5 2.58325 16.9377 2.58325 15.8332V7.49984V4.99984C2.58325 3.89527 3.47868 2.99984 4.58325 2.99984L5.91659 2.99984V2.2915C5.91659 1.87729 6.25237 1.5415 6.66659 1.5415ZM6.66659 4.49984H4.58325C4.30711 4.49984 4.08325 4.7237 4.08325 4.99984V6.74984H15.9166V4.99984C15.9166 4.7237 15.6927 4.49984 15.4166 4.49984H13.3333H6.66659ZM15.9166 8.24984H4.08325V15.8332C4.08325 16.1093 4.30711 16.3332 4.58325 16.3332H15.4166C15.6927 16.3332 15.9166 16.1093 15.9166 15.8332V8.24984Z" fill="currentColor"/>
+                </svg>
+              </span>
+            </div>
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Status
             </label>
-            <select
+            <SearchableSelect
               v-model="filterStatus"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
-            >
-              <option value="">Semua Status</option>
-              <option value="hadir">Hadir</option>
-              <option value="terlambat">Terlambat</option>
-              <option value="pulang_awal">Pulang Awal</option>
-              <option value="tidak_hadir">Tidak Hadir</option>
-              <option value="izin">Izin</option>
-              <option value="sakit">Sakit</option>
-              <option value="cuti">Cuti</option>
-            </select>
+              :options="statusOptions"
+              placeholder="Semua Status"
+              @update:model-value="() => { if (gridApi.value) gridApi.value.purgeInfiniteCache(); else fetchData() }"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Kantor Cabang
+            </label>
+            <SearchableSelect
+              v-model="filterKantorCabang"
+              :options="kantorCabangList"
+              placeholder="Semua Kantor Cabang"
+              @update:model-value="() => { if (gridApi.value) gridApi.value.purgeInfiniteCache(); else fetchData() }"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Tipe Absensi
+            </label>
+            <SearchableSelect
+              v-model="filterTipeAbsensi"
+              :options="tipeAbsensiList"
+              placeholder="Semua Tipe Absensi"
+              @update:model-value="() => { if (gridApi.value) gridApi.value.purgeInfiniteCache(); else fetchData() }"
+            />
           </div>
           <div class="flex items-end">
             <button
@@ -90,6 +104,8 @@
             </button>
           </div>
         </div>
+        <div v-if="errorMessage" class="mt-3 text-sm text-red-600">{{ errorMessage }}</div>
+        
       </div>
 
       <!-- Loading State -->
@@ -101,48 +117,38 @@
       </div>
 
       <!-- AG Grid -->
-      <div v-else class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
+      <div v-else>
+        <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
         <ag-grid-vue
+          ref="agGridRef"
           class="ag-theme-alpine"
-          style="width: 100%;"
+          style="width: 100%; height: 480px; min-height: 300px;"
           :columnDefs="columnDefs"
-          :rowData="rowData"
           :defaultColDef="defaultColDef"
-          :pagination="true"
-          :paginationPageSize="20"
+          :rowModelType="'infinite'"
+          :datasource="dataSourceRef"
+          :rowBuffer="1"
+          :cacheBlockSize="10"
+          :infiniteInitialRowCount="10"
+          :maxBlocksInCache="20"
           theme="legacy"
           :animateRows="true"
           :suppressHorizontalScroll="true"
-          :domLayout="'autoHeight'"
+          @grid-ready="onGridReady"
         />
+        </div>
       </div>
 
-      <!-- Empty State -->
-      <div
-        v-if="!loading && rowData.length === 0"
-        class="flex flex-col items-center justify-center py-20"
-      >
-        <svg class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-          ></path>
-        </svg>
-        <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
-          Tidak ada data absensi
-        </p>
-        <p class="text-gray-500 dark:text-gray-500 text-sm">
-          Belum ada data absensi yang tersedia
-        </p>
-      </div>
+      <!-- Empty state is handled by AG Grid overlay for infinite row model -->
     </div>
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import FlatPickr from 'vue-flatpickr-component'
+import 'flatpickr/dist/flatpickr.css'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import * as XLSX from 'xlsx'
@@ -158,12 +164,206 @@ const currentPageTitle = ref(route.meta.title || 'Absensi')
 // State
 const loading = ref(false)
 const rowData = ref<any[]>([])
+const gridApi = ref<any | null>(null)
+const errorMessage = ref('')
+// debug panel removed
+
+// Build query params for infinite datasource
+const buildQueryParams = (start: number, limit: number) => {
+  const params = new URLSearchParams()
+  params.append('start', String(start))
+  params.append('limit', String(limit))
+  if (filterSearch.value) params.append('search', filterSearch.value)
+
+  // Date range handling: support array of Dates, 'from to to' string, or single date
+  if (filterTanggal.value) {
+    const val: any = filterTanggal.value
+    if (Array.isArray(val)) {
+      if (val[0]) params.append('date_from', formatDateString(val[0]))
+      if (val[1]) params.append('date_to', formatDateString(val[1]))
+    } else if (typeof val === 'string') {
+      if (val.includes(' to ')) {
+        const [from, to] = val.split(' to ').map((s) => s.trim())
+        if (from) params.append('date_from', from)
+        if (to) params.append('date_to', to)
+      } else if (val.includes(' - ')) {
+        const [from, to] = val.split(' - ').map((s) => s.trim())
+        if (from) params.append('date_from', from)
+        if (to) params.append('date_to', to)
+      } else {
+        params.append('date', val)
+      }
+    }
+  }
+
+  if (filterKantorCabang.value) params.append('kantor_cabang_id', filterKantorCabang.value)
+  if (filterTipeAbsensi.value) params.append('tipe_absensi_id', filterTipeAbsensi.value)
+
+  if (filterStatus.value) params.append('status', filterStatus.value)
+  params.append('per_page', '10')
+  return params.toString()
+}
+
+// helper to format Date or string to YYYY-MM-DD
+const formatDateString = (d: any) => {
+  try {
+    if (typeof d === 'string') return d
+    const dt = new Date(d)
+    const yyyy = dt.getFullYear()
+    const mm = String(dt.getMonth() + 1).padStart(2, '0')
+    const dd = String(dt.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  } catch (e) {
+    return String(d)
+  }
+}
+
+// AG Grid infinite datasource - created via factory so we can rebind easily like Keuangan
+// This datasource implements a simple client-side block cache and in-flight request deduping
+// so blocks already fetched won't be requested again (reduces load on backend while scrolling).
+const createDataSource = () => {
+  const blockCache = new Map<number, any[]>()
+  const inFlight = new Map<number, Promise<any>>()
+  let lastTotal: number | null = null
+
+  return {
+    getRows: async (params: any) => {
+      const start = params.startRow
+      const end = params.endRow
+      const limit = Math.max(1, end - start)
+      const blockKey = start
+
+      try {
+        // If we already have this block cached on client, return it immediately
+        if (blockCache.has(blockKey)) {
+          const cached = blockCache.get(blockKey) || []
+          params.successCallback(cached, lastTotal)
+          return
+        }
+
+        // If there's an in-flight request for this same block, await it
+        if (inFlight.has(blockKey)) {
+          await inFlight.get(blockKey)
+          const cached = blockCache.get(blockKey) || []
+          params.successCallback(cached, lastTotal)
+          return
+        }
+
+        console.log('Absensi dataSource.getRows', { start, end, limit })
+        const url = `/admin/api/absensi?${buildQueryParams(start, limit)}`
+        console.log('Absensi getRows fetching', url)
+
+        const p = (async () => {
+          const res = await fetch(url, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': getCsrfToken(),
+            },
+            credentials: 'same-origin',
+          })
+
+          console.log('Absensi getRows response ok?', res.ok, 'status', res.status)
+          if (!res.ok) throw new Error('Failed to fetch')
+          const json = await res.json()
+          console.log('Absensi getRows json', json)
+
+          if (json.success) {
+            errorMessage.value = ''
+            lastTotal = typeof json.total === 'number' ? json.total : (json.data ? json.data.length : null)
+            const data = json.data || []
+            // cache by start index
+            blockCache.set(blockKey, data)
+            params.successCallback(data, lastTotal ?? null)
+            if (!data || data.length === 0) {
+              errorMessage.value = 'Tidak ada data pada rentang/ filter ini.'
+            }
+          } else {
+            errorMessage.value = json.message || 'Gagal memuat data absensi'
+            params.successCallback([], 0)
+          }
+        })()
+
+        inFlight.set(blockKey, p)
+        try {
+          await p
+        } finally {
+          inFlight.delete(blockKey)
+        }
+      } catch (error) {
+        console.error('Infinite getRows error:', error)
+        errorMessage.value = error?.message || String(error)
+        params.failCallback()
+      }
+    },
+
+    // expose cache for debugging/testing if needed
+    _blockCache: blockCache,
+  }
+}
+
+const dataSourceRef = ref(createDataSource())
+
+const onGridReady = (params: any) => {
+  gridApi.value = params.api
+  console.log('Absensi onGridReady called')
+  // Bind the reactive datasource to AG Grid (use .value on the ref)
+  try {
+    params.api.setDatasource(dataSourceRef.value)
+  } catch (e) {
+    console.error('Error setting datasource on grid ready:', e)
+  }
+}
 
 // Filter state
 const filterSearch = ref('')
-const filterDateFrom = ref('')
-const filterDateTo = ref('')
+const filterTanggal = ref('') // will hold range string or array in range mode
 const filterStatus = ref('')
+const filterKantorCabang = ref('')
+const filterTipeAbsensi = ref('')
+
+const kantorCabangList = ref<any[]>([{ value: '', label: 'Semua Kantor Cabang' }])
+const tipeAbsensiList = ref<any[]>([{ value: '', label: 'Semua Tipe Absensi' }])
+
+const flatpickrDateConfig = { dateFormat: 'Y-m-d', allowInput: true }
+const flatpickrDateConfigRange = { mode: 'range', dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', wrap: false }
+
+const loadOptions = async () => {
+  try {
+    const r = await fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' })
+    if (r.ok) {
+      const j = await r.json()
+      const mapped = (j.data || []).map((c: any) => ({ value: String(c.id), label: c.nama || c.name || '-' }))
+      kantorCabangList.value = [{ value: '', label: 'Semua Kantor Cabang' }, ...mapped]
+    }
+    // load tipe absensi
+    try {
+      const rt = await fetch('/admin/api/tipe-absensi?per_page=1000', { credentials: 'same-origin' })
+      if (rt.ok) {
+        const jt = await rt.json()
+        const mapped = (jt.data || []).map((t: any) => ({ value: String(t.id), label: t.nama || t.name || t.label || '-' }))
+        tipeAbsensiList.value = [{ value: '', label: 'Semua Tipe Absensi' }, ...mapped]
+      }
+    } catch (e) {
+      console.error('Error loading tipe absensi list:', e)
+    }
+  } catch (e) {
+    console.error('Error loading kantor cabang list:', e)
+  }
+}
+
+const statusOptions = [
+  { value: '', label: 'Semua Status' },
+  { value: 'hadir', label: 'Hadir' },
+  { value: 'terlambat', label: 'Terlambat' },
+  { value: 'pulang_awal', label: 'Pulang Awal' },
+  { value: 'tidak_hadir', label: 'Tidak Hadir' },
+  { value: 'izin', label: 'Izin' },
+  { value: 'sakit', label: 'Sakit' },
+  { value: 'cuti', label: 'Cuti' },
+]
 
 // Column definitions
 const columnDefs = [
@@ -308,14 +508,15 @@ const getCsrfToken = (): string => {
 
 // Fetch data from API
 const fetchData = async () => {
+  // Keep for export and fallback; infinite grid will use dataSource instead
+  console.log('fetchData: loading absensi data...')
   loading.value = true
   try {
     const params = new URLSearchParams()
     if (filterSearch.value) params.append('search', filterSearch.value)
-    if (filterDateFrom.value) params.append('date_from', filterDateFrom.value)
-    if (filterDateTo.value) params.append('date_to', filterDateTo.value)
+    if (filterTanggal.value) params.append('date', filterTanggal.value)
     if (filterStatus.value) params.append('status', filterStatus.value)
-    params.append('per_page', '100')
+    params.append('per_page', '10')
 
     const url = `/admin/api/absensi${params.toString() ? '?' + params.toString() : ''}`
     
@@ -350,52 +551,135 @@ const handleDetail = (id: string) => {
   router.push(`/operasional/absensi/${id}`)
 }
 
-// Handle export to Excel
-const handleExportExcel = () => {
-  const dataToExport = rowData.value.map((item) => {
-    return {
+// Handle export to Excel — we fetch all matching rows (per_page=1000) to respect current filters
+const handleExportExcel = async () => {
+  try {
+    const exportParams = new URLSearchParams()
+    if (filterSearch.value) exportParams.append('search', filterSearch.value)
+    if (filterTanggal.value) {
+      const val: any = filterTanggal.value
+      if (Array.isArray(val)) {
+        if (val[0]) exportParams.append('date_from', formatDateString(val[0]))
+        if (val[1]) exportParams.append('date_to', formatDateString(val[1]))
+      } else if (typeof val === 'string') {
+        if (val.includes(' to ')) {
+          const [from, to] = val.split(' to ').map((s) => s.trim())
+          if (from) exportParams.append('date_from', from)
+          if (to) exportParams.append('date_to', to)
+        } else if (val.includes(' - ')) {
+          const [from, to] = val.split(' - ').map((s) => s.trim())
+          if (from) exportParams.append('date_from', from)
+          if (to) exportParams.append('date_to', to)
+        } else {
+          exportParams.append('date', val)
+        }
+      }
+    }
+    if (filterKantorCabang.value) exportParams.append('kantor_cabang_id', filterKantorCabang.value)
+    if (filterTipeAbsensi.value) exportParams.append('tipe_absensi_id', filterTipeAbsensi.value)
+    if (filterStatus.value) exportParams.append('status', filterStatus.value)
+    // fetch up to 1000 rows for export
+    exportParams.append('per_page', '1000')
+
+    const url = `/admin/api/absensi?${exportParams.toString()}`
+    const res = await fetch(url, { method: 'GET', credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch export data')
+    const json = await res.json()
+    const data = json.success ? (json.data || []) : rowData.value
+
+    const dataToExport = data.map((item: any) => {
+      return {
+        'Nama': item.user?.name || '-',
+        'No Induk': item.user?.no_induk || '-',
+        'Kantor Cabang': item.kantor_cabang?.nama || '-',
+        'Tipe Absensi': item.tipe_absensi?.nama || item.tipe_absensi?.label || '-',
+        'Jam Masuk': item.jam_masuk ? new Date(item.jam_masuk).toLocaleString('id-ID') : '-',
+        'Jam Keluar': item.jam_keluar ? new Date(item.jam_keluar).toLocaleString('id-ID') : '-',
+        'Total Jam Kerja': item.total_jam_kerja ? `${item.total_jam_kerja} jam` : '-',
+        'Status': item.status || '-',
+        'Catatan': item.catatan || '-',
+      }
+    })
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Absensi')
+
+    const now = new Date()
+    const filename = `Absensi_${now.toISOString().split('T')[0]}.xlsx`
+
+    XLSX.writeFile(workbook, filename)
+  } catch (e) {
+    console.error('Export failed:', e)
+    // fallback to local rowData export
+    const dataToExport = rowData.value.map((item) => ({
       'Nama': item.user?.name || '-',
       'No Induk': item.user?.no_induk || '-',
       'Kantor Cabang': item.kantor_cabang?.nama || '-',
+      'Tipe Absensi': item.tipe_absensi?.nama || item.tipe_absensi?.label || '-',
       'Jam Masuk': item.jam_masuk ? new Date(item.jam_masuk).toLocaleString('id-ID') : '-',
       'Jam Keluar': item.jam_keluar ? new Date(item.jam_keluar).toLocaleString('id-ID') : '-',
       'Total Jam Kerja': item.total_jam_kerja ? `${item.total_jam_kerja} jam` : '-',
       'Status': item.status || '-',
       'Catatan': item.catatan || '-',
-    }
-  })
-  
-  const worksheet = XLSX.utils.json_to_sheet(dataToExport)
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Absensi')
-  
-  const now = new Date()
-  const filename = `Absensi_${now.toISOString().split('T')[0]}.xlsx`
-  
-  XLSX.writeFile(workbook, filename)
+    }))
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Absensi')
+    const now = new Date()
+    const filename = `Absensi_${now.toISOString().split('T')[0]}.xlsx`
+    XLSX.writeFile(workbook, filename)
+  }
 }
 
 // Reset filter
 const resetFilter = () => {
   filterSearch.value = ''
-  filterDateFrom.value = ''
-  filterDateTo.value = ''
+  filterTanggal.value = ''
   filterStatus.value = ''
-  fetchData()
+  filterKantorCabang.value = ''
+  filterTipeAbsensi.value = ''
+  // Recreate datasource and refresh the grid so filters reset
+  dataSourceRef.value = createDataSource()
+  if (gridApi.value) {
+    try {
+      gridApi.value.purgeInfiniteCache()
+    } catch (e) {
+      fetchData()
+    }
+  } else {
+    fetchData()
+  }
 }
 
 // Watch filter changes with debounce
 let filterTimeout: ReturnType<typeof setTimeout> | null = null
-watch([filterSearch, filterDateFrom, filterDateTo, filterStatus], () => {
+watch([filterSearch, filterTanggal, filterStatus, filterKantorCabang, filterTipeAbsensi], () => {
   if (filterTimeout) {
     clearTimeout(filterTimeout)
   }
   filterTimeout = setTimeout(() => {
-    fetchData()
+    // Recreate datasource and refresh cache so filters apply
+    dataSourceRef.value = createDataSource()
+    if (gridApi.value) {
+      try {
+        // Purge cache so filter changes will cause fresh loads. Do not call refreshInfiniteCache
+        // here because it will trigger immediate re-requests for blocks; AG Grid will request
+        // blocks as needed which keeps network load lower.
+        gridApi.value.purgeInfiniteCache()
+      } catch (e) {
+        // fallback to fetchData
+        fetchData()
+      }
+    } else {
+      fetchData()
+    }
   }, 500)
 })
 
 onMounted(() => {
+  console.log('Absensi component mounted')
+  loadOptions()
   fetchData()
 })
 </script>

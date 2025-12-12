@@ -272,6 +272,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useAuth } from '@/composables/useAuth'
 import Modal from './Modal.vue';
 
 const userData = ref({});
@@ -280,21 +281,18 @@ const isPhotoModal = ref(false);
 const selectedFile = ref(null);
 const previewImage = ref('');
 
+const { fetchUser, user: authUser } = useAuth()
+
 const loadUserData = async () => {
   try {
-    const response = await fetch('/admin/api/user', {
-      credentials: 'same-origin'
-    });
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.user) {
-        userData.value = data.user;
-      }
+    await fetchUser()
+    if (authUser.value) {
+      userData.value = authUser.value
     }
   } catch (error) {
-    console.error('Error loading user data:', error);
+    console.error('Error loading user data:', error)
   }
-};
+}
 
 const handleFileChange = (event) => {
   const target = event.target;
@@ -364,6 +362,6 @@ const saveProfile = async () => {
 };
 
 onMounted(() => {
-  loadUserData();
+  loadUserData()
 });
 </script>

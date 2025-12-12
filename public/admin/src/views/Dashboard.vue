@@ -202,6 +202,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import {
   PageIcon,
@@ -266,28 +267,7 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
-const fetchUser = async () => {
-  try {
-    const response = await fetch('/admin/api/user', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-      },
-      credentials: 'same-origin',
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success && data.user) {
-        userRole.value = data.user.is_admin ? 'admin' : 'user'
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching user:', error)
-  }
-}
+const { fetchUser, user: authUser } = useAuth()
 
 const fetchDashboardStats = async () => {
   loading.value = true
@@ -316,8 +296,11 @@ const fetchDashboardStats = async () => {
   }
 }
 
-onMounted(() => {
-  fetchUser()
+onMounted(async () => {
+  await fetchUser()
+  if (authUser.value) {
+    userRole.value = authUser.value?.is_admin ? 'admin' : 'user'
+  }
   fetchDashboardStats()
 })
 </script>

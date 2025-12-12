@@ -93,10 +93,13 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
 const currentPageTitle = ref(route.meta.title || 'Landing Bulletin')
+const { fetchUser, hasPermission } = useAuth()
+const canCreate = computed(() => hasPermission('create landing bulletin'))
 
 // Column definitions
 const columnDefs = [
@@ -337,7 +340,7 @@ const resetFilter = () => {
 // ConfirmModal is already present in the template above
 </script>
 
-<style>
+          v-if="canCreate"
 .ag-theme-alpine {
   --ag-header-background-color: #f9fafb;
   --ag-header-foreground-color: #374151;

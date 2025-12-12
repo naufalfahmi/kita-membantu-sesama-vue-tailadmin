@@ -30,6 +30,10 @@
           Tambah Bulletin
         </button>
       </div>
+      <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Data ditampilkan dari <strong>Company &rarr; Landing Bulletin</strong> (read-only).
+        Untuk menambah/mengubah, gunakan menu <strong>Company &rarr; Landing Bulletin</strong>.
+      </div>
 
       <!-- Filter Section -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -76,8 +80,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -86,6 +90,7 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 
 
 const route = useRoute()
+const router = useRouter()
 const currentPageTitle = ref(route.meta.title || 'Bulletin Data')
 
 // Column definitions
@@ -175,97 +180,71 @@ const defaultColDef = {
   filter: true,
 }
 
-// Sample data
-const rowDataArray = [
-  {
-    id: '1',
-    namaBulletin: 'Bulletin Bulanan Januari 2024',
-    tanggalBulletin: '2024-01-15',
-    tanggal: '2024-01-10',
-  },
-  {
-    id: '2',
-    namaBulletin: 'Bulletin Bulanan Februari 2024',
-    tanggalBulletin: '2024-02-20',
-    tanggal: '2024-02-15',
-  },
-  {
-    id: '3',
-    namaBulletin: 'Bulletin Bulanan Maret 2024',
-    tanggalBulletin: '2024-03-10',
-    tanggal: '2024-03-05',
-  },
-  {
-    id: '4',
-    namaBulletin: 'Bulletin Bulanan April 2024',
-    tanggalBulletin: '2024-04-05',
-    tanggal: '2024-04-01',
-  },
-  {
-    id: '5',
-    namaBulletin: 'Bulletin Bulanan Mei 2024',
-    tanggalBulletin: '2024-05-12',
-    tanggal: '2024-05-08',
-  },
-  {
-    id: '6',
-    namaBulletin: 'Bulletin Bulanan Juni 2024',
-    tanggalBulletin: '2024-06-18',
-    tanggal: '2024-06-14',
-  },
-  {
-    id: '7',
-    namaBulletin: 'Bulletin Bulanan Juli 2024',
-    tanggalBulletin: '2024-07-25',
-    tanggal: '2024-07-20',
-  },
-  {
-    id: '8',
-    namaBulletin: 'Bulletin Bulanan Agustus 2024',
-    tanggalBulletin: '2024-08-30',
-    tanggal: '2024-08-25',
-  },
-]
+// Data from API
+const rowData = ref<any[]>([])
 
-// Create ref for rowData
-const rowData = ref(rowDataArray)
+const fetchData = async () => {
+  try {
+    const url = `/admin/api/landing-bulletin${filterNamaBulletin.value ? '?search=' + encodeURIComponent(filterNamaBulletin.value) : ''}`
+    const res = await fetch(url, { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const json = await res.json()
+    if (json.success) {
+      rowData.value = (json.data || []).map((item: any) => ({
+        id: item.id,
+        namaBulletin: item.name,
+        tanggalBulletin: item.date,
+        tanggal: item.created_at,
+        fileUrl: item.file && String(item.file).startsWith('http') ? item.file : (item.file ? `/storage/${item.file}` : null),
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching landing bulletins:', err)
+    rowData.value = []
+  }
+}
 
 // Handle add button
 const handleAdd = () => {
-  console.log('Add new bulletin')
-  alert('Fungsi tambah bulletin akan diimplementasikan')
+  router.push('/company/landing-bulletin/new')
 }
 
 // Handle edit
 const handleEdit = (id: string) => {
-  console.log('Edit bulletin:', id)
-  alert(`Edit bulletin dengan ID: ${id}`)
+  router.push(`/company/landing-bulletin/${id}/edit`)
 }
 
 // Handle delete
+// Deletion is handled in company pages; Konten view is read-only but keeps delete handler for potential future use
 const handleDelete = (id: string) => {
-  console.log('Delete bulletin:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus bulletin ini?')) {
-    alert(`Bulletin dengan ID: ${id} akan dihapus`)
-  }
+  // If user wants to remove from landing content, redirect to company edit/delete tools
+  router.push(`/company/landing-bulletin/${id}/edit`)
 }
 
 // Filter state
 const filterNamaBulletin = ref('')
+let filterTimeout: any = null
+
+watch(filterNamaBulletin, () => {
+  clearTimeout(filterTimeout)
+  filterTimeout = setTimeout(fetchData, 400)
+})
 
 // Filtered data for AG Grid
 const gridRowData = computed(() => {
-  let filtered = [...rowDataArray]
+  let filtered = [...rowData.value]
   
-  // Filter by nama bulletin
+  // Filter by nama bulletin (client-side fallback)
   if (filterNamaBulletin.value) {
     filtered = filtered.filter((item) =>
-      item.namaBulletin.toLowerCase().includes(filterNamaBulletin.value.toLowerCase())
+      (item.namaBulletin || '').toLowerCase().includes(filterNamaBulletin.value.toLowerCase())
     )
   }
   
   return filtered
 })
+
+onMounted(fetchData)
 
 // Reset filter
 const resetFilter = () => {

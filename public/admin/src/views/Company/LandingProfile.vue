@@ -63,6 +63,7 @@
               List Bank
             </h4>
             <button
+              v-if="canEdit"
               type="button"
               @click="addBank"
               class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
@@ -172,6 +173,7 @@
               List Alamat
             </h4>
             <button
+              v-if="canEdit"
               type="button"
               @click="addAddress"
               class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
@@ -312,10 +314,13 @@ import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Landing Profile')
+const { fetchUser, hasPermission } = useAuth()
+const canEdit = computed(() => hasPermission('landing profile'))
 
 // Form data
 const formData = reactive({
@@ -543,6 +548,7 @@ const loadData = async () => {
 // Track whether a profile already exists (used to pick POST vs PUT)
 const existingProfile = ref(null as any)
 
+fetchUser()
 loadData()
 </script>
 

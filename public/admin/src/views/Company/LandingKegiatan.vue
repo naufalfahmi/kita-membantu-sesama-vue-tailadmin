@@ -9,13 +9,14 @@
           {{ currentPageTitle }}
         </h3>
         <button
+      const editBtn = document.createElement('button')
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
           <svg
             class="fill-current"
             width="20"
-            height="20"
+      if (canUpdate.value) editBtn.addEventListener('click', () => handleEdit(params.data.id))
             viewBox="0 0 20 20"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -28,7 +29,7 @@
             />
           </svg>
           Tambah Kegiatan
-        </button>
+      if (canDelete.value) deleteBtn.addEventListener('click', () => handleDelete(params.data.id))
       </div>
 
       <!-- Filter Section -->
@@ -101,6 +102,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -119,7 +121,11 @@ const statusFilterSearchInput = ref('')
 
 const route = useRoute()
 const router = useRouter()
+const { fetchUser, hasPermission } = useAuth()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Landing Kegiatan')
+const canCreate = computed(() => hasPermission('create landing kegiatan'))
+const canUpdate = computed(() => hasPermission('update landing kegiatan'))
+const canDelete = computed(() => hasPermission('delete landing kegiatan'))
 
 // Data
 const rowData = ref<any[]>([])
@@ -227,10 +233,10 @@ const columnDefs = [
           <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
       `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
+      if (canDelete.value) deleteBtn.addEventListener('click', () => handleDelete(params.data.id))
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) div.appendChild(editBtn)
+      if (canDelete.value) div.appendChild(deleteBtn)
       
       return div
     },
@@ -376,6 +382,7 @@ const resetFilter = () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 </script>

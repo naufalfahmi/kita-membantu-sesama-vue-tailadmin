@@ -9,6 +9,10 @@
           {{ currentPageTitle }}
         </h3>
       </div>
+      <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Data ditampilkan dari <strong>Company &rarr; Landing Program</strong> (read-only).
+        Untuk menambah/mengubah, gunakan menu <strong>Company &rarr; Landing Program</strong>.
+      </div>
 
       <!-- Grid Cards -->
       <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -91,77 +95,53 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import Badge from '@/components/ui/Badge.vue'
 
 const route = useRoute()
+const router = useRouter()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Program Kami')
 
-// Program data structure
+// Program data structure and list (loaded from API)
 interface Program {
   id: string
   namaProgram: string
-  image: string
+  image?: string | null
   status?: string // Optional status badge (e.g., "New", "Popular", etc.)
 }
 
-// Sample program data
-// Note: Replace these with actual image paths from your server
-const programList = ref<Program[]>([
-  {
-    id: '1',
-    namaProgram: 'Program Pendidikan Anak',
-    image: '/images/program/pendidikan.jpg',
-    status: 'New',
-  },
-  {
-    id: '2',
-    namaProgram: 'Program Kesehatan Masyarakat',
-    image: '/images/program/kesehatan.jpg',
-    status: 'Popular',
-  },
-  {
-    id: '3',
-    namaProgram: 'Program Pemberdayaan Ekonomi',
-    image: '/images/program/ekonomi.jpg',
-  },
-  {
-    id: '4',
-    namaProgram: 'Program Bantuan Bencana',
-    image: '/images/program/bencana.jpg',
-    status: 'New',
-  },
-  {
-    id: '5',
-    namaProgram: 'Program Pelatihan Keterampilan',
-    image: '/images/program/pelatihan.jpg',
-  },
-  {
-    id: '6',
-    namaProgram: 'Program Konservasi Lingkungan',
-    image: '/images/program/lingkungan.jpg',
-    status: 'Popular',
-  },
-  {
-    id: '7',
-    namaProgram: 'Program Festival Budaya',
-    image: '/images/program/budaya.jpg',
-  },
-  {
-    id: '8',
-    namaProgram: 'Program Infrastruktur Desa',
-    image: '/images/program/infrastruktur.jpg',
-    status: 'New',
-  },
-])
+const programList = ref<Program[]>([])
+
+const fetchPrograms = async () => {
+  try {
+    const res = await fetch('/admin/api/landing-program', { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const json = await res.json()
+    if (json.success) {
+      programList.value = (json.data || []).map((item: any) => ({
+        id: item.id,
+        namaProgram: item.name || item.title || item.nama_program || '-',
+        image: item.image || item.cover || null,
+        status: item.is_active ? 'Aktif' : (item.status || ''),
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching landing programs:', err)
+    programList.value = []
+  }
+}
+
+onMounted(() => {
+  fetchPrograms()
+})
 
 // Handle program card click
 const handleProgramClick = (programId: string) => {
-  // TODO: Navigate to program detail page or open modal
-  // router.push(`/konten/program-kami/${programId}`)
+  // For Konten view, redirect to company landing program detail (read-only in konten)
+  router.push(`/company/landing-program/${programId}/edit`)
 }
 
 // Track images that have errored by program ID to prevent infinite loops

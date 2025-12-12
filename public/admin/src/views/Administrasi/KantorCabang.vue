@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -89,6 +90,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -100,7 +102,12 @@ import { useToast } from 'vue-toastification'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const currentPageTitle = computed(() => (route.meta.title as string) || 'Kantor Cabang')
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const currentPageTitle = ref<string>(String(route.meta.title || 'Kantor Cabang'))
+const canCreate = computed(() => isAdmin() || hasPermission('create kantor cabang'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update kantor cabang'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete kantor cabang'))
+const canView = computed(() => isAdmin() || hasPermission('view kantor cabang'))
 const loading = ref(false)
 
 // Delete modal state
@@ -181,8 +188,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -325,6 +336,7 @@ const resetFilter = () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 </script>

@@ -165,6 +165,10 @@ class LoginController extends Controller
                 'twitter' => $user->twitter,
                 'linkedin' => $user->linkedin,
                 'instagram' => $user->instagram,
+                // Include whether the user is an admin (role named 'admin')
+                'is_admin' => $user->hasRole('admin'),
+                // Include permission names for client-side checks
+                'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
             ],
         ]);
     }

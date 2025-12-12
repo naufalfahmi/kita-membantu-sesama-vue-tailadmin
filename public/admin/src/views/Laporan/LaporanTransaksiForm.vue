@@ -293,16 +293,16 @@ const currentPageTitle = computed(() => {
 })
 
 // Flatpickr configuration for date range
-const flatpickrRangeConfig = {
+const flatpickrRangeConfig = ({
   mode: 'range',
   dateFormat: 'Y-m-d',
   altInput: true,
   altFormat: 'd F Y',
-  locale: 'id',
+  locale: 'id' as any,
   wrap: true,
   clickOpens: true,
   allowInput: false,
-}
+} as any)
 
 // Kantor Cabang options
 const kantorCabangList = [

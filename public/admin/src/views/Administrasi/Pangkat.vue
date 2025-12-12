@@ -10,6 +10,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -96,11 +97,17 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Pangkat')
 const toast = useToast()
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create pangkat'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update pangkat'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete pangkat'))
+const canView = computed(() => isAdmin() || hasPermission('view pangkat'))
 
 // Column definitions
 const columnDefs = [
@@ -158,8 +165,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -312,6 +323,7 @@ watch(filterNamaPangkat, () => {
 })
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 </script>

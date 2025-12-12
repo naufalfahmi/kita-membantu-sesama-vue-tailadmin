@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class MenuPermissionSeeder extends Seeder
 {
@@ -12,54 +13,44 @@ class MenuPermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        // Company permissions
-        Permission::firstOrCreate(['name' => 'view landing profile']);
-        Permission::firstOrCreate(['name' => 'view landing kegiatan']);
-        Permission::firstOrCreate(['name' => 'view landing program']);
-        Permission::firstOrCreate(['name' => 'view landing proposal']);
-        Permission::firstOrCreate(['name' => 'view landing bulletin']);
+        // Define modules and actions to generate permissions for
+        $modules = [
+            // Company
+            'landing profile', 'landing kegiatan', 'landing program', 'landing proposal', 'landing bulletin',
+            // Administrasi
+            'kantor cabang', 'program', 'jabatan', 'pangkat', 'tipe absensi', 'gaji', 'tipe donatur', 'form pesan', 'kelembagaan', 'sop', 'aturan kepegawaian',
+            // Konten & Publikasi
+            'program kami', 'profile kami', 'proposal data', 'bulletin data',
+            // User & Kepegawaian
+            'user', 'karyawan', 'mitra', 'donatur',
+            // Operasional
+            'absensi', 'remunerasi',
+            // Keuangan
+            'finansial', 'transaksi', 'penyaluran', 'pengajuan dana', 'keuangan',
+            // Laporan
+            'laporan transaksi', 'laporan keuangan',
+        ];
 
-        // Administrasi permissions
-        Permission::firstOrCreate(['name' => 'view kantor cabang']);
-        Permission::firstOrCreate(['name' => 'view program']);
-        Permission::firstOrCreate(['name' => 'view jabatan']);
-        Permission::firstOrCreate(['name' => 'view pangkat']);
-        Permission::firstOrCreate(['name' => 'view tipe absensi']);
-        Permission::firstOrCreate(['name' => 'view gaji']);
-        Permission::firstOrCreate(['name' => 'view tipe donatur']);
-        Permission::firstOrCreate(['name' => 'view form pesan']);
-        Permission::firstOrCreate(['name' => 'view kelembagaan']);
-        Permission::firstOrCreate(['name' => 'view sop']);
-        Permission::firstOrCreate(['name' => 'view aturan kepegawaian']);
+        $actions = ['view', 'create', 'update', 'show', 'delete'];
 
-        // Konten & Publikasi permissions
-        Permission::firstOrCreate(['name' => 'view program kami']);
-        Permission::firstOrCreate(['name' => 'view profile kami']);
-        Permission::firstOrCreate(['name' => 'view proposal data']);
-        Permission::firstOrCreate(['name' => 'view bulletin data']);
+        foreach ($modules as $module) {
+            foreach ($actions as $action) {
+                Permission::firstOrCreate([
+                    'name' => "{$action} {$module}",
+                    'guard_name' => 'web',
+                ]);
+            }
+        }
 
-        // User & Kepegawaian permissions
-        Permission::firstOrCreate(['name' => 'view user']);
-        Permission::firstOrCreate(['name' => 'view karyawan']);
-        Permission::firstOrCreate(['name' => 'view mitra']);
-        Permission::firstOrCreate(['name' => 'view donatur']);
+        // Clear permission cache after creating
+        app()->make(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
 
-        // Operasional permissions
-        Permission::firstOrCreate(['name' => 'view absensi']);
-        Permission::firstOrCreate(['name' => 'view remunerasi']);
+        $this->command->info('CRUD menu permissions created successfully!');
 
-        // Keuangan permissions
-        Permission::firstOrCreate(['name' => 'view finansial']);
-        Permission::firstOrCreate(['name' => 'view transaksi']);
-        Permission::firstOrCreate(['name' => 'view penyaluran']);
-        Permission::firstOrCreate(['name' => 'view pengajuan dana']);
-        Permission::firstOrCreate(['name' => 'view keuangan']);
-
-        // Laporan permissions
-        Permission::firstOrCreate(['name' => 'view laporan transaksi']);
-        Permission::firstOrCreate(['name' => 'view laporan keuangan']);
-
-        $this->command->info('Menu permissions created successfully!');
+        // Ensure admin role has all permissions
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $adminRole->syncPermissions(Permission::all());
+        $this->command->info('Admin role synced with all permissions');
     }
 }
 

@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -96,11 +97,17 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue' // Tetap impor komponen
 import { ref as vueRef } from 'vue'
 import { useToast } from 'vue-toastification' // Tambahkan impor useToast
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast() // Inisialisasi toast
-const currentPageTitle = ref(route.meta.title || 'Landing Proposal')
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create landing proposal'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update landing proposal'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete landing proposal'))
+const canView = computed(() => isAdmin() || hasPermission('view landing proposal'))
+const currentPageTitle = ref<string>(String(route.meta.title || 'Landing Proposal'))
 
 // Column definitions (Tidak ada perubahan)
 const columnDefs = [
@@ -172,30 +179,33 @@ const columnDefs = [
       const div = document.createElement('div')
       div.className = 'flex items-center gap-3'
       
-      const editBtn = document.createElement('button')
-      editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
-      editBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      `
-      editBtn.onclick = () => handleEdit(params.data.id)
-      
-      const deleteBtn = document.createElement('button')
-      deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
-      deleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        const editBtn = document.createElement('button')
+        editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
+        editBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        `
+        editBtn.onclick = () => handleEdit(params.data.id)
+        div.appendChild(editBtn)
+      }
+
+      if (canDelete.value) {
+        const deleteBtn = document.createElement('button')
+        deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
+        deleteBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        `
+        deleteBtn.onclick = () => handleDelete(params.data.id)
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -235,6 +245,7 @@ const fetchData = async () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 

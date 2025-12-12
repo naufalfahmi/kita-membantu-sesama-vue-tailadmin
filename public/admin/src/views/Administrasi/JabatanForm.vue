@@ -534,7 +534,7 @@ const saveJabatan = async () => {
     }
   } catch (error: any) {
     console.error('Error saving jabatan:', error)
-    toast.error(error.message || 'Gagal menyimpan jabatan')
+    toast.error((error as any).message || 'Gagal menyimpan jabatan')
   } finally {
     isSaving.value = false
   }
@@ -567,7 +567,7 @@ const cloneJabatan = async () => {
     }
   } catch (error: any) {
     console.error('Error cloning jabatan:', error)
-    toast.error(error.message || 'Gagal menduplikasi jabatan')
+    toast.error((error as any).message || 'Gagal menduplikasi jabatan')
   }
 }
 

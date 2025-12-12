@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -102,6 +103,7 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { useAuth } from '@/composables/useAuth'
 
 interface DonaturRow {
   id: string
@@ -117,7 +119,12 @@ interface DonaturRow {
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { fetchUser, hasPermission, isAdmin } = useAuth()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Donatur')
+const canCreate = computed(() => isAdmin() || hasPermission('create donatur'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update donatur'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete donatur'))
+const canView = computed(() => isAdmin() || hasPermission('view donatur'))
 
 // Loading & data state
 const loading = ref(false)
@@ -238,8 +245,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -292,11 +303,19 @@ const debouncedFetch = () => {
 
 // Handle add button - redirect to form page
 const handleAdd = () => {
+  if (!canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk membuat donatur')
+    return
+  }
   router.push('/user-kepegawaian/donatur/new')
 }
 
 // Handle edit - redirect to form page
 const handleEdit = (id: string) => {
+  if (!canUpdate.value) {
+    toast.error('Anda tidak memiliki izin untuk mengubah donatur')
+    return
+  }
   router.push(`/user-kepegawaian/donatur/${id}/edit`)
 }
 
@@ -353,6 +372,7 @@ const resetFilter = () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 </script>

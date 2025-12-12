@@ -29,6 +29,7 @@
             Export Excel
           </button>
           <button
+            v-if="canCreate"
             @click="handleAdd"
             class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
           >
@@ -235,6 +236,7 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/composables/useAuth'
 
 // Options for Status filter
 const statusFilterOptions = [
@@ -259,9 +261,14 @@ interface PengajuanDanaRow {
 
 const route = useRoute()
 const router = useRouter()
-const currentPageTitle = ref(route.meta.title || 'Pengajuan Dana')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Pengajuan Dana'))
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 const toast = useToast()
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create pengajuan dana'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update pengajuan dana'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete pengajuan dana'))
+const canView = computed(() => isAdmin() || hasPermission('view pengajuan dana'))
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
 
@@ -394,8 +401,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -665,16 +676,16 @@ const refreshGrid = (scrollToTop = false) => {
   dataSource.value.getRows = newDataSource.getRows
 
   nextTick(() => {
-    if (agGridRef.value && agGridRef.value.api) {
+    const gridApi = (agGridRef.value as any)?.api
+    if (gridApi) {
       try {
-        agGridRef.value.api.purgeInfiniteCache()
-        agGridRef.value.api.refreshInfiniteCache()
+        gridApi.purgeInfiniteCache()
+        gridApi.refreshInfiniteCache()
 
         if (scrollToTop) {
-          setTimeout(() => {
-            if (agGridRef.value && agGridRef.value.api) {
-              agGridRef.value.api.ensureIndexVisible(0, 'top')
-            }
+          window.setTimeout(() => {
+            const inner = (agGridRef.value as any)?.api
+            if (inner) inner.ensureIndexVisible(0, 'top')
           }, 100)
         }
       } catch (error) {
@@ -686,6 +697,7 @@ const refreshGrid = (scrollToTop = false) => {
 
 // Set datasource after component is mounted
 onMounted(() => {
+  fetchUser()
   refreshGrid()
 })
 

@@ -40,8 +40,10 @@
 <script setup lang="ts">
 import { defineProps } from 'vue'
 
+import type { Ref } from 'vue'
+
 interface BreadcrumbProps {
-  pageTitle: string
+  pageTitle: string | Ref<any>
 }
 
 defineProps<BreadcrumbProps>()

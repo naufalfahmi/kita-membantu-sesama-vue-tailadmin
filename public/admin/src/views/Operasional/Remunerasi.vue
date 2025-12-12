@@ -29,6 +29,7 @@
             Export Excel
           </button>
           <button
+            v-if="canCreate"
             @click="handleAdd"
             class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
           >
@@ -208,6 +209,7 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/composables/useAuth'
 
 // Options for Bulan filter
 const bulanFilterOptions = [
@@ -229,12 +231,16 @@ const bulanFilterSearchInput = ref('')
 
 const route = useRoute()
 const router = useRouter()
-const currentPageTitle = computed(() => (route.meta.title as string) || 'Remunerasi')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Remunerasi'))
 
 // Delete modal state
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
 const toast = useToast()
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create remunerasi'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update remunerasi'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete remunerasi'))
 
 // Flatpickr configuration for date
 const flatpickrDateConfig = {
@@ -338,8 +344,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -354,7 +364,7 @@ const defaultColDef = {
 }
 
 // row data (loaded from API)
-const rowDataArray = ref([])
+const rowDataArray = ref<any[]>([])
 const loading = ref(false)
 
 // pagination state (optional)
@@ -383,7 +393,7 @@ const loadData = async () => {
     const json = await res.json()
     const items = json.data || []
     // map to table shape (for backward compatibility)
-    rowDataArray.value = items.map((it) => ({
+    rowDataArray.value = items.map((it: any) => ({
       id: it.id,
       namaKaryawan: it.karyawan ? (it.karyawan.name || '') : '',
       bulanRemunerasi: it.bulan_remunerasi,

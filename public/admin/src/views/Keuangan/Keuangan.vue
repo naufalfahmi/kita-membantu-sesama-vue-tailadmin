@@ -22,25 +22,6 @@
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M10.8333 3.33333V9.16667H16.6667L10.8333 3.33333ZM4.16667 2.5H11.6667L17.5 8.33333V15.8333C17.5 16.2754 17.3244 16.6993 17.0118 17.0118C16.6993 17.3244 16.2754 17.5 15.8333 17.5H4.16667C3.72464 17.5 3.30072 17.3244 2.98816 17.0118C2.67559 16.6993 2.5 16.2754 2.5 15.8333V4.16667C2.5 3.72464 2.67559 3.30072 2.98816 2.98816C3.30072 2.67559 3.72464 2.5 4.16667 2.5Z"
-                fill="currentColor"
-              />
-            </svg>
-            Export Excel
-          </button>
-          <button
-            @click="handleAdd"
-            class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
-          >
-            <svg
-              class="fill-current"
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
                 fill-rule="evenodd"
                 clip-rule="evenodd"
                 d="M10 3.33333C10.4602 3.33333 10.8333 3.70643 10.8333 4.16667V9.16667H15.8333C16.2936 9.16667 16.6667 9.53976 16.6667 10C16.6667 10.4602 16.2936 10.8333 15.8333 10.8333H10.8333V15.8333C10.8333 16.2936 10.4602 16.6667 10 16.6667C9.53976 16.6667 9.16667 16.2936 9.16667 15.8333V10.8333H4.16667C3.70643 10.8333 3.33333 10.4602 3.33333 10C3.33333 9.53976 3.70643 9.16667 4.16667 9.16667H9.16667V4.16667C9.16667 3.70643 9.53976 3.33333 10 3.33333Z"
@@ -233,6 +214,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/composables/useAuth'
 
 
 interface KeuanganRow {
@@ -245,9 +227,13 @@ interface KeuanganRow {
 
 const route = useRoute()
 const router = useRouter()
-const currentPageTitle = ref(route.meta.title || 'Keuangan')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Keuangan'))
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 const toast = useToast()
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create keuangan'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update keuangan'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete keuangan'))
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
 
@@ -341,8 +327,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -611,15 +601,17 @@ const refreshGrid = (scrollToTop = false) => {
   dataSource.value.getRows = newDataSource.getRows
 
   nextTick(() => {
-    if (agGridRef.value && agGridRef.value.api) {
+    const gridApi = (agGridRef.value as any)?.api
+    if (gridApi) {
       try {
-        agGridRef.value.api.purgeInfiniteCache()
-        agGridRef.value.api.refreshInfiniteCache()
+        gridApi.purgeInfiniteCache()
+        gridApi.refreshInfiniteCache()
 
         if (scrollToTop) {
-          setTimeout(() => {
-            if (agGridRef.value && agGridRef.value.api) {
-              agGridRef.value.api.ensureIndexVisible(0, 'top')
+          window.setTimeout(() => {
+            const innerApi = (agGridRef.value as any)?.api
+            if (innerApi) {
+              innerApi.ensureIndexVisible(0, 'top')
             }
           }, 100)
         }
@@ -632,6 +624,7 @@ const refreshGrid = (scrollToTop = false) => {
 
 // Set datasource after component is mounted
 onMounted(() => {
+  fetchUser()
   refreshGrid()
 })
 

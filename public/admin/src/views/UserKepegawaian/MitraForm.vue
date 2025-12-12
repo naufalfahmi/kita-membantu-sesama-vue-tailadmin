@@ -181,7 +181,7 @@ const flatpickrConfig = {
   dateFormat: 'Y-m-d',
   altInput: true,
   altFormat: 'd F Y',
-  locale: 'id',
+  locale: 'id' as any,
   wrap: false,
   clickOpens: true,
   allowInput: false,
@@ -320,7 +320,7 @@ const handleSave = async () => {
     const json = await res.json().catch(() => ({}))
 
     if (!res.ok) {
-      const firstError = json?.errors ? Object.values(json.errors)?.[0]?.[0] : undefined
+      const firstError = json?.errors ? (Object.values(json.errors) as any[])[0]?.[0] : undefined
       const message = firstError || json.message || 'Request gagal'
       throw new Error(message)
     }

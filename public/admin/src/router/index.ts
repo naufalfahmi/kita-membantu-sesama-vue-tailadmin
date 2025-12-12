@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 
 const router = createRouter({
   history: createWebHistory('/admin/'),
@@ -22,7 +23,7 @@ const router = createRouter({
     {
       path: '/profile',
       name: 'Profile',
-      component: () => import('../views/Others/UserProfile.vue'),
+      redirect: { path: '/welcome', hash: '#profile' },
       meta: {
         title: 'Profile',
       },
@@ -174,6 +175,12 @@ const router = createRouter({
       component: () => import('../views/Company/LandingProfile.vue'),
       meta: { title: 'Landing Profile' },
     },
+      {
+        path: '/restricted',
+        name: 'Restricted',
+        component: () => import('../views/RestrictedPage.vue'),
+        meta: { title: 'Halaman Terbatas' },
+      },
     {
       path: '/company/landing-kegiatan',
       name: 'Landing Kegiatan',
@@ -480,7 +487,7 @@ const router = createRouter({
       path: '/operasional/absensi',
       name: 'Absensi',
       component: () => import('../views/Operasional/Absensi.vue'),
-      meta: { title: 'Absensi' },
+      meta: { title: 'Absensi', permission: 'view absensi' },
     },
     {
       path: '/operasional/absensi/:id',
@@ -492,19 +499,19 @@ const router = createRouter({
       path: '/operasional/remunerasi',
       name: 'Remunerasi',
       component: () => import('../views/Operasional/Remunerasi.vue'),
-      meta: { title: 'Remunerasi' },
+      meta: { title: 'Remunerasi', permission: 'view remunerasi' },
     },
     {
       path: '/operasional/remunerasi/new',
       name: 'Tambah Remunerasi',
       component: () => import('../views/Operasional/RemunerasiForm.vue'),
-      meta: { title: 'Tambah Remunerasi' },
+      meta: { title: 'Tambah Remunerasi', permission: 'create remunerasi' },
     },
     {
       path: '/operasional/remunerasi/:id/edit',
       name: 'Edit Remunerasi',
       component: () => import('../views/Operasional/RemunerasiForm.vue'),
-      meta: { title: 'Edit Remunerasi' },
+      meta: { title: 'Edit Remunerasi', permission: 'update remunerasi' },
     },
     
     // Keuangan routes
@@ -512,73 +519,73 @@ const router = createRouter({
       path: '/keuangan/transaksi',
       name: 'Transaksi',
       component: () => import('../views/Keuangan/Transaksi.vue'),
-      meta: { title: 'Transaksi' },
+      meta: { title: 'Transaksi', permission: 'view transaksi' },
     },
     {
       path: '/keuangan/transaksi/new',
       name: 'Tambah Transaksi',
       component: () => import('../views/Keuangan/TransaksiForm.vue'),
-      meta: { title: 'Tambah Transaksi' },
+      meta: { title: 'Tambah Transaksi', permission: 'create transaksi' },
     },
     {
       path: '/keuangan/transaksi/:id/edit',
       name: 'Edit Transaksi',
       component: () => import('../views/Keuangan/TransaksiForm.vue'),
-      meta: { title: 'Edit Transaksi' },
+      meta: { title: 'Edit Transaksi', permission: 'update transaksi' },
     },
     {
       path: '/keuangan/penyaluran',
       name: 'Penyaluran',
       component: () => import('../views/Keuangan/Penyaluran.vue'),
-      meta: { title: 'Penyaluran' },
+      meta: { title: 'Penyaluran', permission: 'view penyaluran' },
     },
     {
       path: '/keuangan/penyaluran/new',
       name: 'Buat Penyaluran',
       component: () => import('../views/Keuangan/PenyaluranForm.vue'),
-      meta: { title: 'Buat Penyaluran' },
+      meta: { title: 'Buat Penyaluran', permission: 'create penyaluran' },
     },
     {
       path: '/keuangan/penyaluran/:id/edit',
       name: 'Edit Penyaluran',
       component: () => import('../views/Keuangan/PenyaluranForm.vue'),
-      meta: { title: 'Edit Penyaluran' },
+      meta: { title: 'Edit Penyaluran', permission: 'update penyaluran' },
     },
     {
       path: '/keuangan/pengajuan-dana',
       name: 'Pengajuan Dana',
       component: () => import('../views/Keuangan/PengajuanDana.vue'),
-      meta: { title: 'Pengajuan Dana' },
+      meta: { title: 'Pengajuan Dana', permission: 'view pengajuan dana' },
     },
     {
       path: '/keuangan/pengajuan-dana/new',
       name: 'Tambah Pengajuan Dana',
       component: () => import('../views/Keuangan/PengajuanDanaForm.vue'),
-      meta: { title: 'Tambah Pengajuan Dana' },
+      meta: { title: 'Tambah Pengajuan Dana', permission: 'create pengajuan dana' },
     },
     {
       path: '/keuangan/pengajuan-dana/:id/edit',
       name: 'Edit Pengajuan Dana',
       component: () => import('../views/Keuangan/PengajuanDanaForm.vue'),
-      meta: { title: 'Edit Pengajuan Dana' },
+      meta: { title: 'Edit Pengajuan Dana', permission: 'update pengajuan dana' },
     },
     {
       path: '/keuangan/keuangan',
       name: 'Keuangan',
       component: () => import('../views/Keuangan/Keuangan.vue'),
-      meta: { title: 'Keuangan' },
+      meta: { title: 'Keuangan', permission: 'view keuangan' },
     },
     {
       path: '/keuangan/keuangan/new',
       name: 'Tambah Keuangan',
       component: () => import('../views/Keuangan/KeuanganForm.vue'),
-      meta: { title: 'Tambah Keuangan' },
+      meta: { title: 'Tambah Keuangan', permission: 'create keuangan' },
     },
     {
       path: '/keuangan/keuangan/:id/edit',
       name: 'Edit Keuangan',
       component: () => import('../views/Keuangan/KeuanganForm.vue'),
-      meta: { title: 'Edit Keuangan' },
+      meta: { title: 'Edit Keuangan', permission: 'update keuangan' },
     },
     
     // Laporan routes
@@ -586,19 +593,19 @@ const router = createRouter({
       path: '/laporan/laporan-transaksi',
       name: 'Laporan Transaksi',
       component: () => import('../views/Laporan/LaporanTransaksi.vue'),
-      meta: { title: 'Laporan Transaksi' },
+      meta: { title: 'Laporan Transaksi', permission: 'view laporan transaksi' },
     },
     {
       path: '/laporan/laporan-transaksi/new',
       name: 'Tambah Laporan Transaksi',
       component: () => import('../views/Laporan/LaporanTransaksiForm.vue'),
-      meta: { title: 'Tambah Laporan Transaksi' },
+      meta: { title: 'Tambah Laporan Transaksi', permission: 'create laporan transaksi' },
     },
     {
       path: '/laporan/laporan-transaksi/:id/edit',
       name: 'Edit Laporan Transaksi',
       component: () => import('../views/Laporan/LaporanTransaksiForm.vue'),
-      meta: { title: 'Edit Laporan Transaksi' },
+      meta: { title: 'Edit Laporan Transaksi', permission: 'update laporan transaksi' },
     },
     {
       path: '/laporan/laporan-keuangan',
@@ -684,7 +691,7 @@ router.beforeEach(async (to, from, next) => {
   document.title = `Kita Membantu Sesama - Admin | ${to.meta.title}`
   
   // Public routes that don't require authentication
-  const publicRoutes = ['/signin', '/signup']
+  const publicRoutes = ['/signin', '/signup', '/profile']
   const isPublicRoute = publicRoutes.includes(to.path)
   
   // Always check authentication status for non-public routes
@@ -706,6 +713,45 @@ router.beforeEach(async (to, from, next) => {
     return
   }
   
-  // Allow access
-  next()
+  // Determine required permission. If `meta.permission` is present, use it.
+  // Otherwise derive a sensible default from the route title (covers all menus).
+  let permission = to.meta?.permission as string | undefined
+  if (!permission && to.meta?.title) {
+    const rawTitle = String(to.meta.title).toLowerCase()
+    // Skip deriving for known public pages
+    const publicTitles = ['signin', 'signup', 'welcome', 'support', 'calendar', 'blank', '404', 'halaman terbatas', 'account settings', 'profile']
+    if (!publicTitles.includes(rawTitle)) {
+      // Determine action
+      const nameStr = String(to.name || '')
+      if (nameStr.startsWith('Tambah') || to.path.includes('/new')) {
+        // Strip leading action word (e.g., 'tambah') from title for resource name
+        const resource = rawTitle.replace(/^(tambah|edit|detail|lihat)\s+/, '').trim()
+        permission = `create ${resource}`
+      } else if (nameStr.startsWith('Edit') || to.path.includes('/edit')) {
+        const resource = rawTitle.replace(/^(tambah|edit|detail|lihat)\s+/, '').trim()
+        permission = `update ${resource}`
+      } else if (nameStr.startsWith('Detail') || to.path.includes('/:id')) {
+        const resource = rawTitle.replace(/^(tambah|edit|detail|lihat)\s+/, '').trim()
+        permission = `show ${resource}`
+      } else {
+        const resource = rawTitle.replace(/^(tambah|edit|detail|lihat)\s+/, '').trim()
+        permission = `view ${resource}`
+      }
+    }
+  }
+  if (!permission) {
+    return next()
+  }
+
+  try {
+    const { fetchUser, hasPermission, isAdmin, user } = useAuth()
+    await fetchUser()
+    const allowed = isAdmin() || hasPermission(permission)
+    if (allowed) return next()
+    console.warn('Router guard: access denied', { path: to.path, permission, userPermissions: (user.value as any)?.permissions })
+    return next({ name: 'Restricted' })
+  } catch (e) {
+    // On error (e.g., not authenticated) redirect to signin
+    return next({ name: 'Signin' })
+  }
 })

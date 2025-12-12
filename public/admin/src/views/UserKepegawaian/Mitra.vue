@@ -7,6 +7,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -92,6 +93,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/composables/useAuth'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -183,30 +185,33 @@ const columnDefs = [
       const container = document.createElement('div')
       container.className = 'flex items-center gap-3'
 
-      const editBtn = document.createElement('button')
-      editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
-      editBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      `
-      editBtn.addEventListener('click', () => handleEdit(params.data.id))
+      if (canUpdate.value) {
+        const editBtn = document.createElement('button')
+        editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
+        editBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        `
+        editBtn.addEventListener('click', () => handleEdit(params.data.id))
+        container.appendChild(editBtn)
+      }
 
-      const deleteBtn = document.createElement('button')
-      deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
-      deleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      `
-      deleteBtn.addEventListener('click', () => handleDelete(params.data.id))
-
-      container.appendChild(editBtn)
-      container.appendChild(deleteBtn)
+      if (canDelete.value) {
+        const deleteBtn = document.createElement('button')
+        deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
+        deleteBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        `
+        deleteBtn.addEventListener('click', () => handleDelete(params.data.id))
+        container.appendChild(deleteBtn)
+      }
 
       return container
     },
@@ -253,11 +258,25 @@ const debouncedFetch = () => {
   }, 300)
 }
 
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+
+const canCreate = computed(() => isAdmin() || hasPermission('create mitra'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update mitra'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete mitra'))
+
 const handleAdd = () => {
+  if (!canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk membuat mitra')
+    return
+  }
   router.push('/user-kepegawaian/mitra/new')
 }
 
 const handleEdit = (id: string) => {
+  if (!canUpdate.value) {
+    toast.error('Anda tidak memiliki izin untuk mengubah mitra')
+    return
+  }
   router.push(`/user-kepegawaian/mitra/${id}/edit`)
 }
 
@@ -310,6 +329,7 @@ const resetFilter = () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 </script>

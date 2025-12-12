@@ -194,7 +194,7 @@ const flatpickrConfig = {
   dateFormat: 'Y-m-d',
   altInput: true,
   altFormat: 'd F Y',
-  locale: 'id',
+  locale: 'id' as any,
   wrap: true,
   clickOpens: true,
   allowInput: false,

@@ -9,7 +9,8 @@
           {{ currentPageTitle }}
         </h3>
         <button
-          @click="handleAdd"
+            v-if="canCreate"
+            @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
           <svg
@@ -96,6 +97,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/composables/useAuth'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -127,6 +129,9 @@ interface KaryawanRow {
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create karyawan'))
 
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Karyawan')
 
@@ -340,6 +345,7 @@ const resetFilter = () => {
 
 onMounted(() => {
   fetchData()
+  fetchUser()
 })
 </script>
 

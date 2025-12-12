@@ -182,14 +182,14 @@ const loadOptions = async () => {
     const r1 = await fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' })
     if (r1.ok) {
       const j1 = await r1.json()
-      karyawanList.value = (j1.data || []).map((k) => ({ value: String(k.id), label: k.name || k.nama || '-' }))
+      karyawanList.value = (j1.data || []).map((k: any) => ({ value: String(k.id), label: k.name || k.nama || '-' }))
     }
 
     // load kantor cabang
     const r2 = await fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' })
     if (r2.ok) {
       const j2 = await r2.json()
-      kantorCabangList.value = (j2.data || []).map((c) => ({ value: String(c.id), label: c.nama || c.name || '-' }))
+      kantorCabangList.value = (j2.data || []).map((c: any) => ({ value: String(c.id), label: c.nama || c.name || '-' }))
     }
   } catch (e) {
     console.error('Error loading options:', e)
@@ -202,6 +202,7 @@ const formData = reactive({
   bulan: null as number | null,
   tahun: null as number | null,
   kantorCabang: '',
+  namaKaryawan: '',
 })
 
 // Gaji data (will be loaded from API based on selected karyawan)
@@ -303,7 +304,7 @@ const handleSave = async () => {
     const t = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
     const tk = await t.json()
 
-    const payload = {
+    const payload: any = {
       karyawan_id: formData.karyawan_id ? Number(formData.karyawan_id) : null,
       bulan_remunerasi: formData.bulan,
       tahun_remunerasi: formData.tahun,

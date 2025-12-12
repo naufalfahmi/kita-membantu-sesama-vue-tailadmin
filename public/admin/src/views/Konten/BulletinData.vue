@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -83,10 +84,17 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import { useAuth } from '@/composables/useAuth'
 
 
 const route = useRoute()
-const currentPageTitle = ref(route.meta.title || 'Bulletin Data')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Bulletin Data'))
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create landing bulletin'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update landing bulletin'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete landing bulletin'))
+const canView = computed(() => isAdmin() || hasPermission('view landing bulletin'))
+fetchUser()
 
 // Column definitions
 const columnDefs = [
@@ -160,8 +168,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },

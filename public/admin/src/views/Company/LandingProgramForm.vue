@@ -638,7 +638,7 @@ const handleSave = async () => {
 
     // Save to API
     try {
-      const headers = {}
+      const headers: any = {}
       if (csrfToken) headers['X-CSRF-TOKEN'] = csrfToken
 
       if (isEditMode.value) {
@@ -674,7 +674,7 @@ const handleSave = async () => {
       }
     } catch (e) {
       console.error('Save error:', e)
-      toast.error('Terjadi kesalahan saat menyimpan data: ' + (e.message || ''))
+      toast.error('Terjadi kesalahan saat menyimpan data: ' + ((e as any).message || ''))
       return
     }
     

@@ -29,6 +29,7 @@
             Export Excel
           </button>
           <button
+            v-if="canCreate"
             @click="handleAdd"
             class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
           >
@@ -158,6 +159,7 @@
 
       <div v-else class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
         <ag-grid-vue
+          ref="agGridRef"
           class="ag-theme-alpine"
           style="width: 100%;"
           :columnDefs="columnDefs"
@@ -199,6 +201,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import { useAuth } from '@/composables/useAuth'
 
 interface TransaksiRow {
   id: string
@@ -217,7 +220,16 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
-const currentPageTitle = computed(() => (route.meta.title as string) || 'Transaksi')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Transaksi'))
+
+// Permissions
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create transaksi'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update transaksi'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete transaksi'))
+const canView = computed(() => isAdmin() || hasPermission('view transaksi'))
+
+const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 
 const loading = ref(false)
 const rowData = ref<TransaksiRow[]>([])
@@ -370,8 +382,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
 
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
 
       return div
     },
@@ -580,9 +596,21 @@ const handleExportExcel = () => {
   XLSX.writeFile(workbook, filename)
 }
 
-onMounted(() => {
-  fetchFilterOptions()
-  fetchData()
+onMounted(async () => {
+  // Ensure user permissions are loaded before fetching data so cellRenderers can rely on them
+  await fetchUser()
+  await fetchFilterOptions()
+  await fetchData()
+
+  // Refresh AG Grid to re-run cell renderers with correct permission flags
+  try {
+    const gridApi = (agGridRef.value as any)?.api
+    if (gridApi && typeof gridApi.refreshCells === 'function') {
+      gridApi.refreshCells({ force: true })
+    }
+  } catch (e) {
+    // Ignore
+  }
 })
 </script>
 

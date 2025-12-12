@@ -136,7 +136,7 @@ const toast = useToast();
 const route = useRoute();
 const router = useRouter();
 
-const currentPageTitle = computed(() => (route.meta.title as string) || (isEdit.value ? 'Edit Gaji' : 'Tambah Gaji'));
+const currentPageTitle = ref<string>(String(route.meta.title || 'Gaji'))
 
 const isEdit = ref(false);
 const isLoading = ref(false);
@@ -152,6 +152,14 @@ const form = ref({
 
 const jabatanOptions = ref<any[]>([]);
 const pangkatOptions = ref<any[]>([]);
+
+// Tipe options
+const tipeOptions = ref<{ value: string; label: string }[]>([
+  { value: 'bulanan', label: 'Bulanan' },
+  { value: 'harian', label: 'Harian' },
+])
+
+const tipeSearchInput = ref('')
 
 // Search inputs for searchable selects
 const jabatanSearchInput = ref('');

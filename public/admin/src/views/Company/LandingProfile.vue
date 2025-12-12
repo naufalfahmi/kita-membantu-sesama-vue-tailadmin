@@ -315,7 +315,7 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 
 const route = useRoute()
 const router = useRouter()
-const currentPageTitle = computed(() => (route.meta.title as string) || 'Landing Profile')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Landing Profile'))
 
 // Form data
 const formData = reactive({
@@ -512,7 +512,7 @@ const handleSave = async () => {
     }
     } catch (error) {
     console.error('Error saving:', error)
-    toast.error(error.message || 'Terjadi kesalahan saat menyimpan data')
+    toast.error((error as any).message || 'Terjadi kesalahan saat menyimpan data')
   }
 }
 

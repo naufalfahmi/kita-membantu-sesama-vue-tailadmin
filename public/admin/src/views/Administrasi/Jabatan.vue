@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -58,6 +59,7 @@
 
       <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; min-height: 400px;">
         <ag-grid-vue
+          ref="agGridRef"
           class="ag-theme-alpine"
           style="width: 100%;"
           :columnDefs="columnDefs"
@@ -96,10 +98,18 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
-const currentPageTitle = ref(route.meta.title || 'Jabatan')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Jabatan'))
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create jabatan'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update jabatan'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete jabatan'))
+const canView = computed(() => isAdmin() || hasPermission('view jabatan'))
+
+const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 
 // Delete modal state
 const showDeleteModal = ref(false)
@@ -139,31 +149,47 @@ const columnDefs = [
     cellRenderer: (params: any) => {
       const div = document.createElement('div')
       div.className = 'flex items-center gap-3'
-      
-      const editBtn = document.createElement('button')
-      editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
-      editBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      `
-      editBtn.onclick = () => handleEdit(params.data.id)
-      
-      const deleteBtn = document.createElement('button')
-      deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
-      deleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      // Conditionally render action buttons based on permissions
+      if (canView.value) {
+        const viewBtn = document.createElement('button')
+        viewBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors'
+        viewBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        `
+        viewBtn.onclick = () => router.push(`/administrasi/jabatan/${params.data.id}`)
+        div.appendChild(viewBtn)
+      }
+
+      if (canUpdate.value) {
+        const editBtn = document.createElement('button')
+        editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
+        editBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        `
+        editBtn.onclick = () => handleEdit(params.data.id)
+        div.appendChild(editBtn)
+      }
+
+      if (canDelete.value) {
+        const deleteBtn = document.createElement('button')
+        deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
+        deleteBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        `
+        deleteBtn.onclick = () => handleDelete(params.data.id)
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -250,7 +276,7 @@ const confirmDelete = async () => {
     }
   } catch (error: any) {
     console.error('Error deleting jabatan:', error)
-    toast.error(error.message || 'Gagal menghapus jabatan')
+    toast.error((error as any).message || 'Gagal menghapus jabatan')
   } finally {
     showDeleteModal.value = false
     deleteId.value = null
@@ -281,8 +307,20 @@ const resetFilter = () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  // Load user then data so permissions can be applied to rendered cells
+  await fetchUser()
   fetchJabatan()
+
+  // Refresh AG Grid cells so cellRenderers re-run with current permissions
+  try {
+    const gridApi = (agGridRef.value as any)?.api
+    if (gridApi && typeof gridApi.refreshCells === 'function') {
+      gridApi.refreshCells({ force: true })
+    }
+  } catch (e) {
+    // ignore grid refresh errors
+  }
 })
 </script>
 

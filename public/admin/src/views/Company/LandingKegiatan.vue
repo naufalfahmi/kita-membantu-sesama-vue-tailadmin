@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -108,6 +109,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { useAuth } from '@/composables/useAuth'
 
 // Options for Status filter
 const statusFilterOptions = [
@@ -120,6 +122,11 @@ const statusFilterSearchInput = ref('')
 const route = useRoute()
 const router = useRouter()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Landing Kegiatan')
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create landing kegiatan'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update landing kegiatan'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete landing kegiatan'))
+const canView = computed(() => isAdmin() || hasPermission('view landing kegiatan'))
 
 // Data
 const rowData = ref<any[]>([])
@@ -229,8 +236,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -376,6 +387,7 @@ const resetFilter = () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 </script>

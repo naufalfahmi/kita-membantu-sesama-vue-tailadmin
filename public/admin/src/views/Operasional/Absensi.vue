@@ -51,7 +51,7 @@
               <FlatPickr
                 v-model="filterTanggal"
                 :config="flatpickrDateConfigRange"
-                @on-change="() => { if (filterTimeout) clearTimeout(filterTimeout); filterTimeout = setTimeout(() => { if (gridApi.value) gridApi.value.purgeInfiniteCache(); else fetchData() }, 400) }"
+                @on-change="handleFilterTanggalChange"
                 class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 placeholder="Pilih rentang tanggal"
               />
@@ -70,7 +70,7 @@
               v-model="filterStatus"
               :options="statusOptions"
               placeholder="Semua Status"
-              @update:model-value="() => { if (gridApi.value) gridApi.value.purgeInfiniteCache(); else fetchData() }"
+              @update:model-value="handleFilterChange"
             />
           </div>
           <div class="flex-1">
@@ -81,7 +81,7 @@
               v-model="filterKantorCabang"
               :options="kantorCabangList"
               placeholder="Semua Kantor Cabang"
-              @update:model-value="() => { if (gridApi.value) gridApi.value.purgeInfiniteCache(); else fetchData() }"
+              @update:model-value="handleFilterChange"
             />
           </div>
           <div class="flex-1">
@@ -92,7 +92,7 @@
               v-model="filterTipeAbsensi"
               :options="tipeAbsensiList"
               placeholder="Semua Tipe Absensi"
-              @update:model-value="() => { if (gridApi.value) gridApi.value.purgeInfiniteCache(); else fetchData() }"
+              @update:model-value="handleFilterChange"
             />
           </div>
           <div class="flex items-end">
@@ -159,13 +159,25 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 
 const route = useRoute()
 const router = useRouter()
-const currentPageTitle = ref(route.meta.title || 'Absensi')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Absensi'))
 
 // State
 const loading = ref(false)
 const rowData = ref<any[]>([])
 const gridApi = ref<any | null>(null)
 const errorMessage = ref('')
+const handleFilterChange = () => {
+  if (gridApi.value) gridApi.value.purgeInfiniteCache()
+  else fetchData()
+}
+
+const handleFilterTanggalChange = () => {
+  if (filterTimeout) clearTimeout(filterTimeout)
+  filterTimeout = window.setTimeout(() => {
+    if (gridApi.value) gridApi.value.purgeInfiniteCache()
+    else fetchData()
+  }, 400)
+}
 // debug panel removed
 
 // Build query params for infinite datasource
@@ -294,7 +306,7 @@ const createDataSource = () => {
         }
       } catch (error) {
         console.error('Infinite getRows error:', error)
-        errorMessage.value = error?.message || String(error)
+        errorMessage.value = (error as any)?.message || String(error)
         params.failCallback()
       }
     },
@@ -328,7 +340,7 @@ const kantorCabangList = ref<any[]>([{ value: '', label: 'Semua Kantor Cabang' }
 const tipeAbsensiList = ref<any[]>([{ value: '', label: 'Semua Tipe Absensi' }])
 
 const flatpickrDateConfig = { dateFormat: 'Y-m-d', allowInput: true }
-const flatpickrDateConfigRange = { mode: 'range', dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', wrap: false }
+const flatpickrDateConfigRange = ({ mode: 'range', dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', wrap: false } as any)
 
 const loadOptions = async () => {
   try {

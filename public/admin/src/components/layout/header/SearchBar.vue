@@ -352,7 +352,7 @@ const closeDropdown = () => {
 const handleKeyboardShortcut = (e: KeyboardEvent) => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
     e.preventDefault()
-    loadSearchHistory() // Load history when using shortcut
+    loadHistory() // Load history when using shortcut
     searchInput.value?.focus()
     showDropdown.value = true
   }

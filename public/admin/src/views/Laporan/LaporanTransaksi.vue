@@ -29,6 +29,7 @@
             Export Excel
           </button>
           <button
+            v-if="canCreate"
             @click="handleAdd"
             class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
           >
@@ -272,6 +273,7 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import { useAuth } from '@/composables/useAuth'
 
 // Options for Status filter
 const statusFilterOptions = [
@@ -285,8 +287,13 @@ const statusFilterSearchInput = ref('')
 
 const route = useRoute()
 const router = useRouter()
-const currentPageTitle = ref(route.meta.title || 'Laporan Transaksi')
+const currentPageTitle = ref<string>(String(route.meta.title || 'Laporan Transaksi'))
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+const canCreate = computed(() => isAdmin() || hasPermission('create laporan transaksi'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update laporan transaksi'))
+const canDelete = computed(() => isAdmin() || hasPermission('delete laporan transaksi'))
+const canView = computed(() => isAdmin() || hasPermission('view laporan transaksi'))
 
 // Flatpickr configuration for date
 const flatpickrDateConfig = {
@@ -410,8 +417,12 @@ const columnDefs = [
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
       
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canUpdate.value) {
+        div.appendChild(editBtn)
+      }
+      if (canDelete.value) {
+        div.appendChild(deleteBtn)
+      }
       
       return div
     },
@@ -698,6 +709,7 @@ const dataSource = ref<IDatasource>(createDataSource())
 onMounted(() => {
   console.log('Component mounted, datasource:', dataSource.value)
   console.log('Total data:', rowDataArray.length)
+  fetchUser()
 })
 
 // Clear debounce timer on component unmount
@@ -709,14 +721,15 @@ onUnmounted(() => {
 
 // Handle sort changes
 const onSortChanged = () => {
-  if (agGridRef.value && agGridRef.value.api) {
+  const gridApiOnSort = (agGridRef.value as any)?.api
+  if (gridApiOnSort) {
     // Update datasource to include new sort
     const newDataSource = createDataSource()
     dataSource.value.getRows = newDataSource.getRows
     
     // Refresh cache immediately - animation will be handled by AG Grid
     try {
-      agGridRef.value.api.refreshInfiniteCache()
+      gridApiOnSort.refreshInfiniteCache()
     } catch (error) {
       console.error('Error refreshing cache on sort:', error)
     }
@@ -741,16 +754,18 @@ watch([filterTanggalReport, filterStatus, filterTanggal, filterPersetujuan, filt
     
     // Refresh grid smoothly without multiple setTimeout
     nextTick(() => {
-      if (agGridRef.value && agGridRef.value.api) {
+      const gridApi = (agGridRef.value as any)?.api
+      if (gridApi) {
         try {
           // Purge cache and refresh in one smooth operation
-          agGridRef.value.api.purgeInfiniteCache()
-          agGridRef.value.api.refreshInfiniteCache()
-          
+          gridApi.purgeInfiniteCache()
+          gridApi.refreshInfiniteCache()
+
           // Scroll to top after a brief delay
-          setTimeout(() => {
-            if (agGridRef.value && agGridRef.value.api) {
-              agGridRef.value.api.ensureIndexVisible(0, 'top')
+          window.setTimeout(() => {
+            const gridApiInner = (agGridRef.value as any)?.api
+            if (gridApiInner) {
+              gridApiInner.ensureIndexVisible(0, 'top')
             }
           }, 100)
         } catch (error) {

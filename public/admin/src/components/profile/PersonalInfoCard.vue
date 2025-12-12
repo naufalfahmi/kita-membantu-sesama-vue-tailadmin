@@ -60,6 +60,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 
 const userData = ref<any>({})
 
@@ -73,16 +74,13 @@ const formatDate = (dateString: string) => {
   })
 }
 
+const { fetchUser, user: authUser } = useAuth()
+
 const loadUserData = async () => {
   try {
-    const response = await fetch('/admin/api/user', {
-      credentials: 'same-origin'
-    })
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success && data.user) {
-        userData.value = data.user
-      }
+    await fetchUser()
+    if (authUser.value) {
+      userData.value = authUser.value
     }
   } catch (error) {
     console.error('Error loading user data:', error)

@@ -157,6 +157,7 @@
 
 <script setup lang="ts">
 import { reactive, computed, ref, onMounted } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import flatPickr from 'vue-flatpickr-component'
@@ -218,20 +219,7 @@ const formData = reactive({
   notes: '',
 })
 
-// Fetch current user data
-const fetchCurrentUser = async () => {
-  try {
-    const res = await fetch('/admin/api/user', { credentials: 'same-origin' })
-    if (res.ok) {
-      const json = await res.json()
-      if (json.success && json.user) {
-        currentUser.value = json.user
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching current user:', error)
-  }
-}
+const { fetchUser, hasPermission, user: authUser } = useAuth()
 
 // Fetch dropdown options from APIs
 const fetchOptions = async () => {
@@ -406,7 +394,20 @@ const handleSave = async () => {
 }
 
 onMounted(async () => {
-  await fetchCurrentUser()
+  await fetchUser()
+  // Use the composable's cached user to set local currentUser
+  currentUser.value = authUser.value
+  // Authorization checks: redirect if unauthorized to access this form
+  if (!isEditMode.value && !hasPermission('create transaksi')) {
+    toast.error('Anda tidak memiliki hak untuk membuat transaksi')
+    router.push('/keuangan/transaksi')
+    return
+  }
+  if (isEditMode.value && !hasPermission('update transaksi')) {
+    toast.error('Anda tidak memiliki hak untuk mengubah transaksi')
+    router.push('/keuangan/transaksi')
+    return
+  }
   await fetchOptions()
   await loadData()
 

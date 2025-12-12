@@ -4,7 +4,7 @@
     <div class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12">
       <div class="mb-6 flex items-center justify-between">
         <h3 class="font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">{{ currentPageTitle }}</h3>
-        <router-link class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600" :to="{ name: 'Tambah Gaji' }">Tambah Gaji</router-link>
+        <router-link v-if="canCreate" class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600" :to="{ name: 'Tambah Gaji' }">Tambah Gaji</router-link>
       </div>
 
       <!-- Filter Section -->
@@ -64,6 +64,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useAuth } from '@/composables/useAuth'
+import { useAuth } from '@/composables/useAuth'
 import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import ConfirmModal from '@/components/common/ConfirmModal.vue';
@@ -78,6 +80,12 @@ const router = useRouter();
 const toast = useToast();
 
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Gaji');
+const { fetchUser, hasPermission } = useAuth()
+const canCreate = computed(() => hasPermission('create gaji'))
+const canUpdate = computed(() => hasPermission('update gaji'))
+const canDelete = computed(() => hasPermission('delete gaji'))
+const { fetchUser, hasPermission } = useAuth()
+const canCreate = computed(() => hasPermission('create gaji'))
 
 const columnDefs = [
   { headerName: 'Jabatan', valueGetter: (params: any) => params.data?.jabatan?.name || '-', sortable: true, filter: true, flex: 1 },
@@ -138,10 +146,7 @@ function actionCellRenderer(params: any) {
       <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
     </svg>
   `;
-  editBtn.addEventListener('click', () => {
-    router.push(`/administrasi/gaji/${id}/edit`);
-  });
-  container.appendChild(editBtn);
+  if (canUpdate.value) { editBtn.addEventListener('click', () => { router.push(`/administrasi/gaji/${id}/edit`) }); container.appendChild(editBtn) }
 
   const delBtn = document.createElement('button');
   delBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors';
@@ -154,11 +159,7 @@ function actionCellRenderer(params: any) {
       <line x1="14" y1="11" x2="14" y2="17"></line>
     </svg>
   `;
-  delBtn.addEventListener('click', () => {
-    deleteId.value = id;
-    showDeleteModal.value = true;
-  });
-  container.appendChild(delBtn);
+  if (canDelete.value) { delBtn.addEventListener('click', () => { deleteId.value = id; showDeleteModal.value = true }); container.appendChild(delBtn) }
 
   return container;
 }
@@ -224,6 +225,7 @@ function handleAdd() {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData();
 });
 </script>

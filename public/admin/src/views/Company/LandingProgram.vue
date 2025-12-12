@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -86,6 +87,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
@@ -96,6 +98,10 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 const route = useRoute()
 const router = useRouter()
 const currentPageTitle = ref(route.meta.title || 'Landing Program')
+const { fetchUser, hasPermission } = useAuth()
+const canCreate = computed(() => hasPermission('create landing program'))
+const canUpdate = computed(() => hasPermission('update landing program'))
+const canDelete = computed(() => hasPermission('delete landing program'))
 
 // Column definitions
 const columnDefs = [
@@ -176,7 +182,7 @@ const columnDefs = [
           <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
         </svg>
       `
-      editBtn.onclick = () => handleEdit(params.data.id)
+      if (canUpdate.value) editBtn.addEventListener('click', () => handleEdit(params.data.id))
       
       const deleteBtn = document.createElement('button')
       deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
@@ -189,10 +195,10 @@ const columnDefs = [
           <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
       `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canDelete.value) deleteBtn.addEventListener('click', () => handleDelete(params.data.id))
+
+      if (canUpdate.value) div.appendChild(editBtn)
+      if (canDelete.value) div.appendChild(deleteBtn)
       
       return div
     },
@@ -229,6 +235,7 @@ const fetchData = async () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 

@@ -196,6 +196,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import SearchableMultiSelect from '@/components/forms/SearchableMultiSelect.vue'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
@@ -280,14 +281,13 @@ const formData = reactive({
   status: 'aktif',
 })
 
+const { fetchUser, user: authUser } = useAuth()
+
 const fetchCurrentUser = async () => {
   try {
-    const res = await fetch('/admin/api/user', { credentials: 'same-origin' })
-    if (res.ok) {
-      const json = await res.json()
-      if (json.success && json.user) {
-        currentUser.value = json.user
-      }
+    await fetchUser()
+    if (authUser.value) {
+      currentUser.value = authUser.value
     }
   } catch (error) {
     console.error('Error fetching current user:', error)

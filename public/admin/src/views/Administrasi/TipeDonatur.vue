@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -89,6 +90,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -100,7 +102,11 @@ import { useToast } from 'vue-toastification'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { fetchUser, hasPermission } = useAuth()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Tipe Donatur')
+const canCreate = computed(() => hasPermission('create tipe donatur'))
+const canUpdate = computed(() => hasPermission('update tipe donatur'))
+const canDelete = computed(() => hasPermission('delete tipe donatur'))
 
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
@@ -147,7 +153,7 @@ const columnDefs = [
           <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
         </svg>
       `
-      editBtn.onclick = () => handleEdit(params.data.id)
+      if (canUpdate.value) editBtn.addEventListener('click', () => handleEdit(params.data.id))
       
       const deleteBtn = document.createElement('button')
       deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
@@ -160,10 +166,10 @@ const columnDefs = [
           <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
       `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canDelete.value) deleteBtn.addEventListener('click', () => handleDelete(params.data.id))
+
+      if (canUpdate.value) div.appendChild(editBtn)
+      if (canDelete.value) div.appendChild(deleteBtn)
       
       return div
     },
@@ -282,6 +288,7 @@ const resetFilter = () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 </script>

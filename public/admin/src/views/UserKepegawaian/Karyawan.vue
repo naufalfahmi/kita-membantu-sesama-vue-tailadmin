@@ -9,6 +9,7 @@
           {{ currentPageTitle }}
         </h3>
         <button
+          v-if="canCreate"
           @click="handleAdd"
           class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
         >
@@ -42,8 +43,10 @@
               type="text"
               v-model="filterNama"
               placeholder="Cari nama karyawan..."
-              @input="debouncedFetch"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+        const { fetchUser, hasPermission } = useAuth()
+        const canCreate = computed(() => hasPermission('create karyawan'))
+        const canUpdate = computed(() => hasPermission('update karyawan'))
+        const canDelete = computed(() => hasPermission('delete karyawan'))
             />
           </div>
           <div class="flex items-end">
@@ -94,6 +97,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { AgGridVue } from 'ag-grid-vue3'
@@ -127,13 +131,15 @@ interface KaryawanRow {
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { fetchUser, hasPermission } = useAuth()
+const canCreate = computed(() => hasPermission('create karyawan'))
 
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Karyawan')
 
 const loading = ref(false)
 const rowData = ref<KaryawanRow[]>([])
 const filterNama = ref('')
-const showDeleteModal = ref(false)
+              if (canUpdate.value) editBtn.addEventListener('click', () => handleEdit(params.data.id))
 const deleteId = ref<number | null>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -146,7 +152,9 @@ const columnDefs = [
   },
   {
     headerName: 'No Induk',
-    field: 'no_induk',
+              if (canDelete.value) deleteBtn.addEventListener('click', () => handleDelete(params.data.id))
+              if (canUpdate.value) container.appendChild(editBtn)
+              if (canDelete.value) container.appendChild(deleteBtn)
     sortable: true,
     width: 140,
     valueFormatter: (params: any) => params.value || '-',
@@ -339,6 +347,7 @@ const resetFilter = () => {
 }
 
 onMounted(() => {
+  fetchUser()
   fetchData()
 })
 </script>

@@ -4,6 +4,10 @@
     <div
       class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
     >
+      <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Data ini ditampilkan dari <strong>Company &rarr; Landing Profile</strong> — tampilan read-only pada Konten & Publikasi.
+        Untuk mengubah, gunakan menu <strong>Company &rarr; Landing Profile</strong>.
+      </div>
       <form @submit.prevent="handleSave" class="flex flex-col">
         <!-- Section Title -->
         <div class="mb-8">
@@ -17,6 +21,7 @@
             v-model="formData.sectionTitle"
             placeholder="Masukkan section title"
             class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            :disabled="isReadOnly"
           />
         </div>
 
@@ -54,6 +59,7 @@
                   v-model="formData.email.label"
                   placeholder="Email :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 />
               </div>
               
@@ -66,6 +72,7 @@
                   placeholder="Email kami untuk pertanyaan umum, termasuk peluang pemasaran dan kemitraan."
                   rows="3"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 ></textarea>
               </div>
               
@@ -78,6 +85,7 @@
                   v-model="formData.email.value"
                   placeholder="kitamembantusesama@gmail.com"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 />
               </div>
             </div>
@@ -116,6 +124,7 @@
                   v-model="formData.phone.label"
                   placeholder="No. Telp :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 />
               </div>
               
@@ -128,6 +137,7 @@
                   placeholder="Hubungi kami untuk berbicara dengan anggota tim kami. Kami selalu senang membantu."
                   rows="3"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 ></textarea>
               </div>
               
@@ -140,6 +150,7 @@
                   v-model="formData.phone.value"
                   placeholder="62895621093500"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 />
               </div>
             </div>
@@ -190,6 +201,7 @@
                     type="button"
                     @click="addRekening"
                     class="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                    v-if="!isReadOnly"
                   >
                     + Tambah Rekening
                   </button>
@@ -207,12 +219,14 @@
                         v-model="rekening.bank"
                         placeholder="Nama Bank (contoh: Bank BSI)"
                         class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      :disabled="isReadOnly"
                       />
                       <input
                         type="text"
                         v-model="rekening.number"
                         placeholder="Nomor Rekening"
                         class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      :disabled="isReadOnly"
                       />
                     </div>
                     <button
@@ -275,6 +289,7 @@
                   v-model="formData.kantorDepok.label"
                   placeholder="Kantor Cabang Depok :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 />
               </div>
               
@@ -287,6 +302,7 @@
                   placeholder="Jl Sawangan Elok Raya Blok C-1 No.7 Duren Seribu, Kec. Bojongsari, Kota Depok, Jawa Barat 16518"
                   rows="4"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 ></textarea>
               </div>
             </div>
@@ -325,6 +341,7 @@
                   v-model="formData.kantorBogor.label"
                   placeholder="Kantor Cabang Bogor :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 />
               </div>
               
@@ -337,27 +354,39 @@
                   placeholder="Jl. Anggrek III No. 27 Kp. Sukamulya Ciomas Bogor Jawa Barat 16610"
                   rows="4"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                :disabled="isReadOnly"
                 ></textarea>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Action Buttons -->
+        <!-- Action Buttons (read-only view: show Refresh) -->
         <div class="mt-8 flex items-center justify-end gap-3">
-          <button
-            type="button"
-            @click="handleCancel"
-            class="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
-          >
-            Batal
-          </button>
-          <button
-            type="submit"
-            class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
-          >
-            Simpan
-          </button>
+          <template v-if="isReadOnly">
+            <button
+              type="button"
+              @click="fetchProfile"
+              class="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Refresh
+            </button>
+          </template>
+          <template v-else>
+            <button
+              type="button"
+              @click="handleCancel"
+              class="flex w-full justify-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] sm:w-auto"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
+            >
+              Simpan
+            </button>
+          </template>
         </div>
       </form>
     </div>
@@ -375,7 +404,7 @@ const router = useRouter()
 
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Profile Kami')
 
-// Form data structure
+// Form data structure (read-only view populated from landing profile API)
 const formData = reactive({
   sectionTitle: 'Profile Kami',
   email: {
@@ -396,6 +425,7 @@ const formData = reactive({
       { bank: 'Bank BRI', number: '761701012584531' },
     ],
   },
+  addresses: [] as Array<{ id: number; name: string; address: string; is_primary?: boolean }>,
   kantorDepok: {
     label: 'Kantor Cabang Depok :',
     address: 'Jl Sawangan Elok Raya Blok C-1 No.7 Duren Seribu, Kec. Bojongsari, Kota Depok, Jawa Barat 16518',
@@ -406,6 +436,40 @@ const formData = reactive({
   },
 })
 
+const isReadOnly = ref(true)
+
+const fetchProfile = async () => {
+  try {
+    const res = await fetch('/admin/api/landing-profile', { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const json = await res.json()
+    if (json.success && json.data) {
+      const p = json.data
+      formData.sectionTitle = p.title || formData.sectionTitle
+      formData.email.value = p.email || formData.email.value
+      formData.email.description = p.description || formData.email.description
+      formData.phone.value = p.phone_number || formData.phone.value
+      // Map bank accounts
+      if (p.bank_account_1 && Array.isArray(p.bank_account_1)) {
+        formData.rekening.accounts = p.bank_account_1.map((b: any) => ({ bank: b.bank || b.bank_name || '', number: b.number || b.account_number || '' }))
+      }
+      if (p.address && Array.isArray(p.address)) {
+        // Map primary address as kantorDepok/Bogor if present, otherwise fill addresses array
+        formData.addresses = p.address.map((a: any, idx: number) => ({ id: idx + 1, name: a.name || `Address ${idx + 1}`, address: a.address || a.street || '', is_primary: !!a.is_primary }))
+        // Fill kantorDepok/KantorBogor from addresses if names match
+        const depok = formData.addresses.find(a => /depok/i.test(a.name))
+        if (depok) { formData.kantorDepok.address = depok.address }
+        const bogor = formData.addresses.find(a => /bogor/i.test(a.name))
+        if (bogor) { formData.kantorBogor.address = bogor.address }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch landing profile:', e)
+  }
+}
+
+onMounted(fetchProfile)
+
 // Add rekening account
 const addRekening = () => {
   formData.rekening.accounts.push({ bank: '', number: '' })
@@ -415,21 +479,6 @@ const addRekening = () => {
 const removeRekening = (index: number) => {
   if (formData.rekening.accounts.length > 1) {
     formData.rekening.accounts.splice(index, 1)
-  }
-}
-
-// Load data from API
-const loadData = async () => {
-  try {
-    // TODO: Load data from API
-    // const response = await fetch('/admin/api/konten/profile-kami')
-    // const data = await response.json()
-    // if (data.success) {
-    //   Object.assign(formData, data.data)
-    // }
-    console.log('Loading profile kami data...')
-  } catch (error) {
-    console.error('Error loading data:', error)
   }
 }
 
@@ -462,9 +511,7 @@ const handleSave = async () => {
   }
 }
 
-onMounted(() => {
-  loadData()
-})
+// (data is loaded via fetchProfile on mount)
 </script>
 
 <style scoped>

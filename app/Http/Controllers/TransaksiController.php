@@ -14,11 +14,21 @@ class TransaksiController extends Controller
      */
     protected array $allowedStatuses = ['pending', 'verified', 'cancelled'];
 
+    // Removed middleware() in constructor because this app's Controller doesn't register middleware aliases by default
+    // We'll perform permission checks inline in controller methods to avoid kernel alias dependencies.
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !$user->can('view transaksi')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden',
+            ], 403);
+        }
         $query = Transaksi::with([
             'kantorCabang:id,nama',
             'donatur:id,nama',
@@ -27,7 +37,6 @@ class TransaksiController extends Controller
         ]);
 
         // Filter berdasarkan user yang login (kecuali admin/superadmin)
-        $user = auth()->user();
         if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
             $query->where('created_by', $user->id);
         }
@@ -108,6 +117,13 @@ class TransaksiController extends Controller
      */
     public function store(Request $request)
     {
+        $user = auth()->user();
+        if (!$user || !$user->can('create transaksi')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden',
+            ], 403);
+        }
         $validator = Validator::make($request->all(), [
             'kantor_cabang_id' => 'required|uuid|exists:kantor_cabang,id',
             'donatur_id' => 'required|uuid|exists:donaturs,id',
@@ -164,6 +180,13 @@ class TransaksiController extends Controller
      */
     public function show(string $id)
     {
+        $user = auth()->user();
+        if (!$user || !$user->can('view transaksi')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden',
+            ], 403);
+        }
         $query = Transaksi::with([
             'kantorCabang:id,nama',
             'donatur:id,nama',
@@ -172,7 +195,7 @@ class TransaksiController extends Controller
         ]);
 
         // Filter berdasarkan user yang login (kecuali admin/superadmin)
-        $user = auth()->user();
+        // $user is already set above in permission check
         if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
             $query->where('created_by', $user->id);
         }
@@ -197,10 +220,14 @@ class TransaksiController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $query = Transaksi::query();
-
-        // Filter berdasarkan user yang login (kecuali admin/superadmin)
         $user = auth()->user();
+        if (!$user || !$user->can('update transaksi')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden',
+            ], 403);
+        }
+        $query = Transaksi::query();
         if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
             $query->where('created_by', $user->id);
         }
@@ -268,10 +295,14 @@ class TransaksiController extends Controller
      */
     public function destroy(string $id)
     {
-        $query = Transaksi::query();
-
-        // Filter berdasarkan user yang login (kecuali admin/superadmin)
         $user = auth()->user();
+        if (!$user || !$user->can('delete transaksi')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Forbidden',
+            ], 403);
+        }
+        $query = Transaksi::query();
         if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
             $query->where('created_by', $user->id);
         }

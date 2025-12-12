@@ -139,8 +139,8 @@ class LoginController extends Controller
             ], 401);
         }
 
-        // Load relationships
-        $user->load(['pangkat', 'tipeAbsensi', 'kantorCabang', 'roles']);
+        // Load relationships and permissions
+        $user->load(['pangkat', 'tipeAbsensi', 'kantorCabang', 'roles', 'permissions']);
 
         return response()->json([
             'success' => true,
@@ -157,6 +157,7 @@ class LoginController extends Controller
                 'tanggal_lahir' => $user->tanggal_lahir,
                 'tanggal_masuk' => $user->tanggal_masuk,
                 'role' => $user->roles->first(),
+                'permissions' => $user->getAllPermissions()->pluck('name'),
                 'kantor_cabang' => $user->kantorCabang,
                 'jabatan' => $user->posisi,
                 'pangkat' => $user->pangkat,

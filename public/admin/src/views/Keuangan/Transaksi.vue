@@ -29,6 +29,7 @@
             Export Excel
           </button>
           <button
+            v-if="canCreate"
             @click="handleAdd"
             class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
           >
@@ -187,6 +188,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { AgGridVue } from 'ag-grid-vue3'
@@ -215,6 +217,9 @@ interface TransaksiRow {
 
 const route = useRoute()
 const router = useRouter()
+const { hasPermission, fetchUser } = useAuth()
+
+const canCreate = computed(() => hasPermission('create transaksi'))
 const toast = useToast()
 
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Transaksi')
@@ -278,6 +283,13 @@ const flatpickrDateConfig = {
   altInput: true,
   altFormat: 'd/m/Y',
   wrap: false,
+}
+
+// permissions flags used in cell renderer (filled in onMounted)
+const canPerms = {
+  create: false,
+  update: false,
+  delete: false,
 }
 
 const columnDefs = [
@@ -348,30 +360,33 @@ const columnDefs = [
       const div = document.createElement('div')
       div.className = 'flex items-center gap-3'
 
-      const editBtn = document.createElement('button')
-      editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
-      editBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      `
-      editBtn.onclick = () => handleEdit(params.data.id)
+      if (canPerms.update) {
+        const editBtn = document.createElement('button')
+        editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
+        editBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        `
+        editBtn.onclick = () => handleEdit(params.data.id)
+        div.appendChild(editBtn)
+      }
 
-      const deleteBtn = document.createElement('button')
-      deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
-      deleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-
-      div.appendChild(editBtn)
-      div.appendChild(deleteBtn)
+      if (canPerms.delete) {
+        const deleteBtn = document.createElement('button')
+        deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
+        deleteBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        `
+        deleteBtn.onclick = () => handleDelete(params.data.id)
+        div.appendChild(deleteBtn)
+      }
 
       return div
     },
@@ -580,7 +595,12 @@ const handleExportExcel = () => {
   XLSX.writeFile(workbook, filename)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchUser()
+  // Setup permission flags for grid row actions
+  canPerms.create = hasPermission('create transaksi')
+  canPerms.update = hasPermission('update transaksi')
+  canPerms.delete = hasPermission('delete transaksi')
   fetchFilterOptions()
   fetchData()
 })

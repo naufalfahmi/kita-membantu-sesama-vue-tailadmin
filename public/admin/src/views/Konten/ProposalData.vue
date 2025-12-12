@@ -30,6 +30,10 @@
           Tambah Proposal
         </button>
       </div>
+      <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+        Data ditampilkan dari <strong>Company &rarr; Landing Proposal</strong> (read-only).
+        Untuk menambah/mengubah, gunakan menu <strong>Company &rarr; Landing Proposal</strong>.
+      </div>
 
       <!-- Filter Section -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
@@ -76,8 +80,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
@@ -86,6 +90,7 @@ import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 
 
 const route = useRoute()
+const router = useRouter()
 const currentPageTitle = ref(route.meta.title || 'Proposal Data')
 
 // Column definitions
@@ -175,92 +180,61 @@ const defaultColDef = {
   filter: true,
 }
 
-// Sample data
-const rowDataArray = [
-  {
-    id: '1',
-    namaProposal: 'Proposal Program Pendidikan',
-    tanggalProposal: '2024-01-15',
-    tanggal: '2024-01-10',
-  },
-  {
-    id: '2',
-    namaProposal: 'Proposal Bantuan Kesehatan',
-    tanggalProposal: '2024-02-20',
-    tanggal: '2024-02-15',
-  },
-  {
-    id: '3',
-    namaProposal: 'Proposal Pemberdayaan Ekonomi',
-    tanggalProposal: '2024-03-10',
-    tanggal: '2024-03-05',
-  },
-  {
-    id: '4',
-    namaProposal: 'Proposal Infrastruktur Desa',
-    tanggalProposal: '2024-04-05',
-    tanggal: '2024-04-01',
-  },
-  {
-    id: '5',
-    namaProposal: 'Proposal Pelatihan SDM',
-    tanggalProposal: '2024-05-12',
-    tanggal: '2024-05-08',
-  },
-  {
-    id: '6',
-    namaProposal: 'Proposal Konservasi Lingkungan',
-    tanggalProposal: '2024-06-18',
-    tanggal: '2024-06-14',
-  },
-  {
-    id: '7',
-    namaProposal: 'Proposal Festival Budaya',
-    tanggalProposal: '2024-07-25',
-    tanggal: '2024-07-20',
-  },
-  {
-    id: '8',
-    namaProposal: 'Proposal Bantuan Bencana',
-    tanggalProposal: '2024-08-30',
-    tanggal: '2024-08-25',
-  },
-]
+// Data from API
+const rowData = ref<any[]>([])
 
-// Create ref for rowData
-const rowData = ref(rowDataArray)
+const fetchData = async () => {
+  try {
+    const url = `/admin/api/landing-proposal${filterNamaProposal.value ? '?search=' + encodeURIComponent(filterNamaProposal.value) : ''}`
+    const res = await fetch(url, { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to fetch')
+    const json = await res.json()
+    if (json.success) {
+      rowData.value = (json.data || []).map((item: any) => ({
+        id: item.id,
+        namaProposal: item.name,
+        tanggalProposal: item.date,
+        tanggal: item.created_at,
+      }))
+    }
+  } catch (err) {
+    console.error('Error fetching landing proposals:', err)
+    rowData.value = []
+  }
+}
 
 // Handle add button
 const handleAdd = () => {
-  console.log('Add new proposal')
-  alert('Fungsi tambah proposal akan diimplementasikan')
+  router.push('/company/landing-proposal/new')
 }
 
 // Handle edit
 const handleEdit = (id: string) => {
-  console.log('Edit proposal:', id)
-  alert(`Edit proposal dengan ID: ${id}`)
+  router.push(`/company/landing-proposal/${id}/edit`)
 }
 
 // Handle delete
 const handleDelete = (id: string) => {
-  console.log('Delete proposal:', id)
-  if (confirm('Apakah Anda yakin ingin menghapus proposal ini?')) {
-    alert(`Proposal dengan ID: ${id} akan dihapus`)
-  }
+  router.push(`/company/landing-proposal/${id}/edit`)
 }
 
 // Filter state
 const filterNamaProposal = ref('')
+let filterTimeout: any = null
+
+watch(filterNamaProposal, () => {
+  clearTimeout(filterTimeout)
+  filterTimeout = setTimeout(fetchData, 400)
+})
 
 // Filtered data for AG Grid
 const gridRowData = computed(() => {
-  let filtered = [...rowDataArray]
+  let filtered = [...rowData.value]
   
   // Filter by nama proposal
   if (filterNamaProposal.value) {
     filtered = filtered.filter((item) =>
-      item.namaProposal.toLowerCase().includes(filterNamaProposal.value.toLowerCase())
+      (item.namaProposal || '').toLowerCase().includes(filterNamaProposal.value.toLowerCase())
     )
   }
   
@@ -271,6 +245,8 @@ const gridRowData = computed(() => {
 const resetFilter = () => {
   filterNamaProposal.value = ''
 }
+
+onMounted(fetchData)
 </script>
 
 <style>

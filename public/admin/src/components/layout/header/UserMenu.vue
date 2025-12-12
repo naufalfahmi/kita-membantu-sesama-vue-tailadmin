@@ -64,13 +64,14 @@
 <script setup lang="ts">
 import { ChevronDownIcon, InfoCircleIcon, LogoutIcon, SettingsIcon, UserCircleIcon } from '@/icons'
 import { onMounted, onUnmounted, ref, computed } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import { useRouter } from 'vue-router'
 import { resetAuthState } from '@/router'
 
 const router = useRouter()
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
-const user = ref<{ id: number; name: string; email: string; avatar?: string } | null>(null)
+const { user, fetchUser } = useAuth()
 const imageError = ref(false)
 
 const menuItems = [
@@ -89,28 +90,7 @@ const userAvatar = computed(() => {
   return user.value.avatar
 })
 
-const fetchUser = async () => {
-  try {
-    const response = await fetch('/admin/api/user', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-      },
-      credentials: 'same-origin',
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success && data.user) {
-        user.value = data.user
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching user:', error)
-  }
-}
+// Use the composable's fetchUser to obtain user data (cached)
 
 const toggleDropdown = () => {
   dropdownOpen.value = !dropdownOpen.value
@@ -180,7 +160,7 @@ const handleClickOutside = (event: Event) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-  fetchUser()
+  void fetchUser()
 })
 
 onUnmounted(() => {

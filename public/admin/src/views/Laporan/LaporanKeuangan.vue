@@ -326,7 +326,7 @@
               class="group cursor-pointer rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-brand-300 hover:shadow-lg dark:border-gray-700 dark:bg-white/[0.03] dark:hover:border-brand-500"
             >
               <div class="mb-4 flex items-center justify-between">
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-100 text-brand-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-brand-500 group-hover:text-white dark:bg-brand-500/10 dark:text-brand-400">
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-500 text-white transition-all duration-300 group-hover:scale-110 group-hover:bg-brand-500 group-hover:text-white dark:bg-brand-500/10 dark:text-white/90">
                   <svg
                     class="h-6 w-6"
                     fill="none"

@@ -60,7 +60,7 @@
           >
             <div class="mb-4 flex items-center justify-center">
               <div
-                class="flex h-16 w-16 items-center justify-center rounded-lg bg-brand-100 text-brand-600 transition-all duration-300 group-hover:scale-110 group-hover:bg-brand-500 group-hover:text-white dark:bg-brand-500/10 dark:text-brand-400"
+                class="flex h-16 w-16 items-center justify-center rounded-lg bg-brand-500 text-white transition-all duration-300 group-hover:scale-110 group-hover:bg-brand-500 group-hover:text-white dark:bg-brand-500/10 dark:text-white/90"
               >
                 <component
                   :is="item.icon"

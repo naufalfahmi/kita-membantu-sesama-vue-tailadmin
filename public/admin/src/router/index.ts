@@ -298,6 +298,12 @@ const router = createRouter({
       meta: { title: 'Jabatan' },
     },
     {
+      path: '/administrasi/jabatan/:id',
+      name: 'Detail Jabatan',
+      component: () => import('../views/Administrasi/JabatanDetail.vue'),
+      meta: { title: 'Detail Jabatan' },
+    },
+    {
       path: '/administrasi/jabatan/new',
       name: 'Tambah Jabatan',
       component: () => import('../views/Administrasi/JabatanForm.vue'),

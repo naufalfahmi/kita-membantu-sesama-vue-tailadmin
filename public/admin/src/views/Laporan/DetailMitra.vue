@@ -50,7 +50,7 @@
         <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
           <div class="mb-6 flex items-center justify-between">
             <div class="flex items-center gap-4">
-              <div class="flex h-16 w-16 items-center justify-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+              <div class="flex h-16 w-16 items-center justify-center rounded-lg bg-brand-500 text-white dark:bg-brand-500/10 dark:text-white/90">
                 <svg
                   class="h-8 w-8"
                   fill="none"

@@ -207,15 +207,31 @@
 
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Kantor Cabang
+              Leader
             </label>
             <SearchableSelect
-              v-model="formData.kantor_cabang_id"
-              :options="kantorCabangSelectOptions"
-              placeholder="Pilih Kantor Cabang"
-              :search-input="kantorCabangSearchInput"
-              @update:search-input="kantorCabangSearchInput = $event"
+              v-model="formData.leader_id"
+              :options="leaderSelectOptions"
+              placeholder="Pilih Leader"
             />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Kantor Cabang
+            </label>
+            <div v-if="kantorCabangSelectOptions.length">
+              <SearchableMultiSelect
+                v-model="formData.kantor_cabang_ids"
+                :options="kantorCabangSelectOptions"
+                placeholder="Pilih Kantor Cabang"
+                :search-input="kantorCabangSearchInput"
+                @update:search-input="kantorCabangSearchInput = $event"
+              />
+            </div>
+            <div v-else class="mt-2 text-sm text-gray-500">
+              Belum ada kantor cabang. <router-link to="/kantor-cabang/new" class="text-brand-500">Tambah</router-link>
+            </div>
           </div>
 
           <div class="flex items-center gap-3">
@@ -257,6 +273,7 @@ import { useToast } from 'vue-toastification'
 import FlatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import SearchableMultiSelect from '@/components/forms/SearchableMultiSelect.vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 
@@ -325,6 +342,9 @@ const kantorCabangSelectOptions = computed(() =>
   }))
 )
 
+const leaderOptions = ref<any[]>([])
+const leaderSelectOptions = computed(() => leaderOptions.value.map((item: any) => ({ value: String(item.id), label: item.name || item.nama || '-' })))
+
 const formData = reactive({
   name: '',
   no_induk: '',
@@ -340,6 +360,8 @@ const formData = reactive({
   pendidikan: '',
   tanggal_masuk: '',
   kantor_cabang_id: '',
+  kantor_cabang_ids: [] as string[],
+  leader_id: '',
   is_active: true,
 })
 
@@ -368,6 +390,14 @@ const fetchReferenceData = async () => {
     if (pangJson.success) pangkatOptions.value = pangJson.data || []
     if (tipeJson.success) tipeAbsensiOptions.value = tipeJson.data || []
     if (cabJson.success) kantorCabangOptions.value = cabJson.data || []
+    // Fetch karyawan list for leader choices
+    try {
+      const k = await fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' })
+      const kj = await k.json()
+      if (kj.success) leaderOptions.value = kj.data || []
+    } catch (e) {
+      // ignore
+    }
   } catch (error) {
     toast.error('Gagal memuat data referensi')
   }
@@ -409,6 +439,8 @@ const loadData = async (id: string) => {
       formData.pendidikan = data.pendidikan || ''
       formData.tanggal_masuk = data.tanggal_masuk || ''
       formData.kantor_cabang_id = data.kantor_cabang_id ? String(data.kantor_cabang_id) : ''
+      formData.kantor_cabang_ids = (data.kantor_cabang_ids || []).map((id: string) => String(id))
+      formData.leader_id = data.leader ? String(data.leader.id) : ''
       formData.is_active = Boolean(data.is_active)
       formData.password = ''
     } else {
@@ -471,6 +503,8 @@ const handleSave = async () => {
       pendidikan: toNullable(formData.pendidikan),
       tanggal_masuk: formData.tanggal_masuk || null,
       kantor_cabang_id: toNullable(formData.kantor_cabang_id),
+      kantor_cabang_ids: formData.kantor_cabang_ids,
+      leader_id: toNullable(formData.leader_id),
       is_active: formData.is_active,
     }
 

@@ -18,8 +18,15 @@ class MitraController extends Controller
 
         // Filter berdasarkan user yang login (kecuali admin/superadmin)
         $user = auth()->user();
-        if ($user && ! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
-            $query->where('created_by', $user->id);
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
+        }
+
+        $isAdmin = $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
+        if (! $isAdmin) {
+            $subIds = $user->subordinates()->pluck('id')->toArray();
+            $allowed = array_merge([$user->id], $subIds);
+            $query->whereIn('created_by', $allowed);
         }
 
         if ($request->filled('search')) {
@@ -113,7 +120,20 @@ class MitraController extends Controller
      */
     public function show(string $id)
     {
-        $mitra = Mitra::with(['kantorCabang:id,nama'])->find($id);
+        // Restrict show by created_by for non-admins (allow leaders to view subordinates' created items)
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
+        }
+
+        $query = Mitra::with(['kantorCabang:id,nama']);
+        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $subIds = $user->subordinates()->pluck('id')->toArray();
+            $allowed = array_merge([$user->id], $subIds);
+            $query->whereIn('created_by', $allowed);
+        }
+
+        $mitra = $query->find($id);
 
         if (! $mitra) {
             return response()->json([
@@ -133,7 +153,19 @@ class MitraController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $mitra = Mitra::find($id);
+        $query = Mitra::query();
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
+        }
+
+        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+            $subIds = $user->subordinates()->pluck('id')->toArray();
+            $allowed = array_merge([$user->id], $subIds);
+            $query->whereIn('created_by', $allowed);
+        }
+
+        $mitra = $query->find($id);
 
         if (! $mitra) {
             return response()->json([

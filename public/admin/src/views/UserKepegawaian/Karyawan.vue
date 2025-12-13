@@ -34,26 +34,40 @@
 
       <!-- Filter Section -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="flex gap-4">
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Nama
-            </label>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Nama / No Induk</label>
             <input
               type="text"
               v-model="filterNama"
-              placeholder="Cari nama karyawan..."
+              placeholder="Cari nama atau no. induk..."
               @input="debouncedFetch"
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
-          <div class="flex items-end">
-            <button
-              @click="resetFilter"
-              class="h-11 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
-            >
-              Reset Filter
-            </button>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Pangkat</label>
+            <SearchableSelect v-model="filterPangkat" :options="pangkatSelectOptions" placeholder="Pilih Pangkat" />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Jabatan</label>
+            <SearchableSelect v-model="filterJabatan" :options="jabatanSelectOptions" placeholder="Pilih Jabatan" />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
+            <SearchableSelect v-model="filterKantor" :options="kantorSelectOptions" placeholder="Pilih Kantor Cabang" />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Leader</label>
+            <SearchableSelect v-model="filterLeader" :options="leaderSelectOptions" placeholder="Pilih Leader" />
+          </div>
+
+          <div class="md:col-span-3 lg:col-span-1 flex items-end">
+            <button @click="resetFilter" class="h-11 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]">Reset Filter</button>
           </div>
         </div>
       </div>
@@ -94,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/composables/useAuth'
@@ -104,6 +118,7 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 interface RelOption {
   id: string | number
@@ -138,6 +153,20 @@ const currentPageTitle = computed(() => (route.meta.title as string) || 'Karyawa
 const loading = ref(false)
 const rowData = ref<KaryawanRow[]>([])
 const filterNama = ref('')
+const filterPangkat = ref('')
+const filterJabatan = ref('')
+const filterKantor = ref('')
+const filterLeader = ref('')
+const pangkats = ref([] as Array<any>)
+const jabatanOptions = ref([] as Array<any>)
+const kantorOptions = ref([] as Array<any>)
+const leaderOptions = ref([] as Array<any>)
+
+
+const pangkatSelectOptions = computed(() => pangkats.value.map((p: any) => ({ value: p.id, label: p.nama })))
+const jabatanSelectOptions = computed(() => jabatanOptions.value.map((r: any) => ({ value: r.id, label: r.name })))
+const kantorSelectOptions = computed(() => kantorOptions.value.map((c: any) => ({ value: c.id, label: c.nama })))
+const leaderSelectOptions = computed(() => leaderOptions.value.map((l: any) => ({ value: l.id, label: l.name })))
 const showDeleteModal = ref(false)
 const deleteId = ref<number | null>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
@@ -170,7 +199,18 @@ const columnDefs = [
   },
   {
     headerName: 'Kantor Cabang',
-    valueGetter: (params: any) => params.data?.kantor_cabang?.nama || '-',
+    valueGetter: (params: any) => {
+      if (params.data?.kantor_cabangs && params.data.kantor_cabangs.length) {
+        return params.data.kantor_cabangs.map((c: any) => c.nama).join(', ')
+      }
+      return params.data?.kantor_cabang?.nama || '-'
+    },
+    flex: 1,
+    sortable: true,
+  },
+  {
+    headerName: 'Leader',
+    valueGetter: (params: any) => params.data?.leader?.name || '-',
     flex: 1,
     sortable: true,
   },
@@ -260,6 +300,18 @@ const fetchData = async () => {
     if (filterNama.value.trim()) {
       params.set('search', filterNama.value.trim())
     }
+    if (filterPangkat.value) {
+      params.set('pangkat_id', filterPangkat.value)
+    }
+    if (filterJabatan.value) {
+      params.set('role_id', filterJabatan.value)
+    }
+    if (filterKantor.value) {
+      params.set('kantor_cabang_id', filterKantor.value)
+    }
+    if (filterLeader.value) {
+      params.set('leader_id', filterLeader.value)
+    }
 
     const response = await fetch(`/admin/api/karyawan?${params.toString()}`, {
       credentials: 'same-origin',
@@ -340,12 +392,68 @@ const cancelDelete = () => {
 
 const resetFilter = () => {
   filterNama.value = ''
+  filterPangkat.value = ''
+  filterJabatan.value = ''
+  filterKantor.value = ''
+  filterLeader.value = ''
   fetchData()
+}
+
+const fetchPangkats = async () => {
+  try {
+    const res = await fetch('/admin/api/pangkat?per_page=1000', { credentials: 'same-origin' })
+    const json = await res.json()
+    if (json.success) pangkats.value = json.data || []
+  } catch (e) {
+    // ignore
+  }
+}
+
+const fetchJabatan = async () => {
+  try {
+    const res = await fetch('/admin/api/jabatan?per_page=1000', { credentials: 'same-origin' })
+    const json = await res.json()
+    if (json.success) jabatanOptions.value = json.data || []
+  } catch (e) {
+    // ignore
+  }
+}
+
+const fetchKantorOptions = async () => {
+  try {
+    const res = await fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' })
+    const json = await res.json()
+    if (json.success) kantorOptions.value = json.data || []
+  } catch (e) {
+    // ignore
+  }
+}
+
+const fetchLeaders = async () => {
+  try {
+    // fetch all karyawan and treat them as potential leaders
+    const res = await fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' })
+    const json = await res.json()
+    if (json.success) {
+      leaderOptions.value = (json.data || []).map((u: any) => ({ id: u.id, name: u.name }))
+    }
+  } catch (e) {
+    // ignore
+  }
 }
 
 onMounted(() => {
   fetchData()
   fetchUser()
+  fetchPangkats()
+  fetchJabatan()
+  fetchKantorOptions()
+  fetchLeaders()
+})
+
+// Re-fetch when filters change
+watch([filterPangkat, filterJabatan, filterKantor, filterLeader], () => {
+  fetchData()
 })
 </script>
 

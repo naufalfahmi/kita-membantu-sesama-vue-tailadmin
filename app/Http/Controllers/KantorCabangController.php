@@ -110,6 +110,7 @@ class KantorCabangController extends Controller
             'alamat' => 'nullable|string',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'radius' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -131,6 +132,7 @@ class KantorCabangController extends Controller
                 'alamat',
                 'latitude',
                 'longitude',
+                'radius',
             ]);
 
             $data['kode'] = $kode;
@@ -197,6 +199,7 @@ class KantorCabangController extends Controller
             'alamat' => 'nullable|string',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'radius' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -219,6 +222,7 @@ class KantorCabangController extends Controller
                 'alamat',
                 'latitude',
                 'longitude',
+                'radius',
             ]);
 
             $data['updated_by'] = auth()->id();

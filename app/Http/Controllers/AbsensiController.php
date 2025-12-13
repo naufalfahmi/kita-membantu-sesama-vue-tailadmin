@@ -18,6 +18,19 @@ class AbsensiController extends Controller
     {
         $query = Absensi::with(['user', 'tipeAbsensi', 'kantorCabang', 'creator', 'updater']);
 
+        $authUser = auth()->user();
+        if (!$authUser) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
+        }
+
+        $isAdmin = $authUser->hasRole('admin');
+        // Build allowed user ids for non-admin: self + subordinates
+        $allowedUserIds = null;
+        if (!$isAdmin) {
+            $subordinateIds = $authUser->subordinates()->pluck('id')->toArray();
+            $allowedUserIds = array_merge([$authUser->id], $subordinateIds);
+        }
+
         // Search filter by user name or no induk
         if ($request->filled('search')) {
             $search = $request->search;
@@ -27,9 +40,24 @@ class AbsensiController extends Controller
             });
         }
 
-        // Filter by user_id
+        // Filter by user_id / visibility
         if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+            $requestedUserId = $request->user_id;
+            if ($isAdmin) {
+                $query->where('user_id', $requestedUserId);
+            } else {
+                if (in_array($requestedUserId, $allowedUserIds)) {
+                    $query->where('user_id', $requestedUserId);
+                } else {
+                    // Unauthorized to view other users; restrict to allowed set
+                    $query->whereIn('user_id', $allowedUserIds);
+                }
+            }
+        } else {
+            if (!$isAdmin) {
+                // By default non-admins see only themselves and their subordinates
+                $query->whereIn('user_id', $allowedUserIds);
+            }
         }
 
         // Filter by single date or range (jam_masuk)
@@ -109,6 +137,18 @@ class AbsensiController extends Controller
             }
             
             $userId = $request->filled('user_id') ? $request->user_id : $user->id;
+
+            // If requesting another user's today status, ensure the requester is admin or leader of that user
+            if ($request->filled('user_id') && $request->user_id != $user->id) {
+                $isAdmin = $user->hasRole('admin');
+                $isLeaderOf = $user->subordinates()->where('id', $request->user_id)->exists();
+                if (! $isAdmin && ! $isLeaderOf) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized to view other user attendance',
+                    ], 403);
+                }
+            }
 
             $todayAttendance = Absensi::getTodayAttendance($userId);
 

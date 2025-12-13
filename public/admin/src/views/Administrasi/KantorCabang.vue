@@ -141,6 +141,13 @@ const columnDefs = [
     flex: 1,
   },
   {
+    headerName: 'Radius (m)',
+    field: 'radius',
+    sortable: true,
+    width: 140,
+    valueFormatter: (params: any) => (params.value !== null && params.value !== undefined ? `${params.value} m` : '-'),
+  },
+  {
     headerName: 'Tanggal Dibuat',
     field: 'created_at',
     sortable: true,

@@ -130,6 +130,18 @@
             />
           </div>
 
+          <!-- Radius (m) placed next to Kode Pos -->
+          <div class="lg:col-span-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Radius (meter)</label>
+            <input
+              type="number"
+              v-model.number="formData.radius"
+              placeholder="Radius (m)"
+              min="0"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+            />
+          </div>
+
           <!-- Alamat -->
           <div class="lg:col-span-2">
             <label
@@ -187,6 +199,7 @@
                 />
               </div>
             </div>
+
             <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
               Klik pada peta untuk memilih lokasi atau drag marker untuk memperbarui koordinat. 
               Titik di peta akan otomatis diperbarui saat Anda mengisi Kelurahan, Kecamatan, Kota, atau Provinsi.
@@ -253,6 +266,7 @@ const formData = reactive({
   alamat: '',
   latitude: '',
   longitude: '',
+  radius: null,
 })
 
 // Initialize MapTiler map
@@ -322,6 +336,8 @@ const setupMap = () => {
       const lngLat = marker.getLngLat()
       formData.longitude = lngLat.lng.toFixed(6)
       formData.latitude = lngLat.lat.toFixed(6)
+        // update radius circle on map
+        drawRadiusCircle()
     })
 
     // Update coordinates when map is clicked
@@ -330,9 +346,107 @@ const setupMap = () => {
       marker.setLngLat([lng, lat])
       formData.longitude = lng.toFixed(6)
       formData.latitude = lat.toFixed(6)
+      // update radius circle on map
+      drawRadiusCircle()
     })
   })
 }
+
+// Utility: compute destination point given lat/lon, distance (m), bearing (deg)
+const destinationPoint = (lat: number, lon: number, distance: number, bearing: number) => {
+  const R = 6378137 // Earth radius in meters
+  const δ = distance / R
+  const θ = (bearing * Math.PI) / 180
+  const φ1 = (lat * Math.PI) / 180
+  const λ1 = (lon * Math.PI) / 180
+
+  const sinφ1 = Math.sin(φ1)
+  const cosφ1 = Math.cos(φ1)
+  const sinδ = Math.sin(δ)
+  const cosδ = Math.cos(δ)
+
+  const sinφ2 = sinφ1 * cosδ + cosφ1 * sinδ * Math.cos(θ)
+  const φ2 = Math.asin(sinφ2)
+  const y = Math.sin(θ) * sinδ * cosφ1
+  const x = cosδ - sinφ1 * sinφ2
+  const λ2 = λ1 + Math.atan2(y, x)
+
+  return { lat: (φ2 * 180) / Math.PI, lon: ((λ2 * 180) / Math.PI) }
+}
+
+// Create a GeoJSON polygon approximating a circle
+const createCircleGeoJSON = (centerLat: number, centerLon: number, radiusMeters: number, steps = 64) => {
+  const coords: Array<[number, number]> = []
+  for (let i = 0; i <= steps; i++) {
+    const bearing = (i * 360) / steps
+    const p = destinationPoint(centerLat, centerLon, radiusMeters, bearing)
+    coords.push([p.lon, p.lat])
+  }
+  return {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [coords],
+    },
+  }
+}
+
+// Draw or update radius circle on map
+const drawRadiusCircle = () => {
+  if (!mapInstance) return
+  const lat = parseFloat(formData.latitude || '0')
+  const lon = parseFloat(formData.longitude || '0')
+  const r = formData.radius
+
+  const srcId = 'kantor-radius-src'
+  const fillLayerId = 'kantor-radius-fill'
+  const outlineLayerId = 'kantor-radius-outline'
+
+  // remove existing
+  if (mapInstance.getLayer(outlineLayerId)) {
+    try { mapInstance.removeLayer(outlineLayerId) } catch (e) {}
+  }
+  if (mapInstance.getLayer(fillLayerId)) {
+    try { mapInstance.removeLayer(fillLayerId) } catch (e) {}
+  }
+  if (mapInstance.getSource(srcId)) {
+    try { mapInstance.removeSource(srcId) } catch (e) {}
+  }
+
+  if (!r || !lat || !lon) return
+
+  const feature = createCircleGeoJSON(lat, lon, Number(r), 128)
+
+  mapInstance.addSource(srcId, {
+    type: 'geojson',
+    data: feature,
+  })
+
+  mapInstance.addLayer({
+    id: fillLayerId,
+    type: 'fill',
+    source: srcId,
+    paint: {
+      'fill-color': '#3b82f6',
+      'fill-opacity': 0.12,
+    },
+  })
+
+  mapInstance.addLayer({
+    id: outlineLayerId,
+    type: 'line',
+    source: srcId,
+    paint: {
+      'line-color': '#2563eb',
+      'line-width': 2,
+    },
+  })
+}
+
+// Watch radius changes to update circle interactively
+watch(() => formData.radius, () => {
+  if (mapInstance) drawRadiusCircle()
+})
 
 // Geocoding function to get coordinates from address
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
@@ -522,6 +636,7 @@ const loadData = async () => {
         formData.kota = data.kota || ''
         formData.provinsi = data.provinsi || ''
         formData.kode_pos = data.kode_pos || ''
+        formData.radius = data.radius ?? null
         formData.alamat = data.alamat || ''
         formData.latitude = data.latitude ? String(data.latitude) : ''
         formData.longitude = data.longitude ? String(data.longitude) : ''
@@ -582,6 +697,7 @@ const handleSave = async () => {
       alamat: formData.alamat || null,
       latitude: formData.latitude ? parseFloat(formData.latitude) : null,
       longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+      radius: formData.radius !== null ? parseInt(String(formData.radius), 10) : null,
     }
 
     // Only include kode in edit mode, let backend generate in create mode

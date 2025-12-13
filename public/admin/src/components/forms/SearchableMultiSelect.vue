@@ -135,8 +135,10 @@ const searchInputRef = ref<HTMLInputElement | null>(null)
 const selectRef = ref<HTMLElement | null>(null)
 const localSearchInput = ref(props.searchInput || '')
 
+const selectedValuesSet = computed(() => new Set((props.modelValue || []).map((v) => String(v).trim())))
+
 const selectedOptions = computed(() =>
-  props.options.filter((option) => props.modelValue.includes(option.value))
+  props.options.filter((option) => selectedValuesSet.value.has(String(option.value).trim()))
 )
 
 const filteredOptions = computed(() => {
@@ -158,19 +160,20 @@ const toggleDropdown = () => {
 }
 
 const toggleOption = (value: string) => {
-  const next = props.modelValue.includes(value)
-    ? props.modelValue.filter((item) => item !== value)
-    : [...props.modelValue, value]
-
+  const v = String(value).trim()
+  const current = (props.modelValue || []).map((x) => String(x).trim())
+  const next = current.includes(v) ? current.filter((item) => item !== v) : [...current, v]
   emit('update:modelValue', next)
 }
 
 const removeOption = (value: string) => {
-  if (!props.modelValue.includes(value)) return
-  emit('update:modelValue', props.modelValue.filter((item) => item !== value))
+  const v = String(value).trim()
+  const current = (props.modelValue || []).map((x) => String(x).trim())
+  if (!current.includes(v)) return
+  emit('update:modelValue', current.filter((item) => item !== v))
 }
 
-const isSelected = (value: string) => props.modelValue.includes(value)
+const isSelected = (value: string) => selectedValuesSet.value.has(String(value).trim())
 
 const resetSearch = () => {
   localSearchInput.value = ''

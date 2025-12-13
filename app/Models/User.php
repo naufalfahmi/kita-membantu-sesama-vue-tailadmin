@@ -35,6 +35,7 @@ class User extends Authenticatable
         'pendidikan',
         'tanggal_masuk',
         'kantor_cabang_id',
+        'leader_id',
         'tipe_user',
         'is_active',
         'created_by',
@@ -95,6 +96,30 @@ class User extends Authenticatable
     public function kantorCabang()
     {
         return $this->belongsTo(KantorCabang::class, 'kantor_cabang_id');
+    }
+
+    /**
+     * Many-to-many kantor cabang assignments for a user.
+     */
+    public function kantorCabangs()
+    {
+        return $this->belongsToMany(KantorCabang::class, 'kantor_cabang_user', 'user_id', 'kantor_cabang_id');
+    }
+
+    /**
+     * Leader (another user) for this karyawan.
+     */
+    public function leader()
+    {
+        return $this->belongsTo(User::class, 'leader_id');
+    }
+
+    /**
+     * Subordinates for which this user is leader.
+     */
+    public function subordinates()
+    {
+        return $this->hasMany(User::class, 'leader_id');
     }
 
     /**

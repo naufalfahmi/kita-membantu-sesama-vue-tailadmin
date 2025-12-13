@@ -304,6 +304,10 @@ class KaryawanSeeder extends Seeder
                     $user->syncRoles($role);
                 }
             }
+            // Ensure branch pivot is synced for existing seed data
+            if (!empty($it['branch_office_id'])) {
+                $user->kantorCabangs()->sync([$it['branch_office_id']]);
+            }
         }
 
         $this->command->info('Seeded ' . count($items) . ' karyawan');

@@ -51,7 +51,7 @@
         <div class="p-2 border-b border-gray-200 dark:border-gray-700">
           <input
             type="text"
-            :value="searchInput"
+            v-model="localSearchInput"
             @input="handleSearchInput"
             placeholder="Cari..."
             class="w-full h-9 rounded-lg border border-gray-300 bg-transparent px-3 py-1.5 text-sm text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90"

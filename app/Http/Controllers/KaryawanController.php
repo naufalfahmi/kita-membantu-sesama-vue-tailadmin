@@ -19,7 +19,8 @@ class KaryawanController extends Controller
         $query = User::with([
                 'pangkat:id,nama',
                 'tipeAbsensi:id,nama',
-                'kantorCabang:id,nama',
+                'kantorCabangs:id,nama',
+                'leader:id,name',
                 'roles:id,name',
             ])
             ->karyawan();
@@ -37,8 +38,31 @@ class KaryawanController extends Controller
             $query->where('posisi', $request->posisi);
         }
 
+        // Filter by pangkat
+        if ($request->filled('pangkat_id')) {
+            $query->where('pangkat_id', $request->pangkat_id);
+        }
+
+        // Filter by jabatan (role)
+        if ($request->filled('role_id')) {
+            $roleId = $request->role_id;
+            $query->whereHas('roles', function ($q) use ($roleId) {
+                $q->where('id', $roleId);
+            });
+        }
+
+        // Filter by leader
+        if ($request->filled('leader_id')) {
+            $query->where('leader_id', $request->leader_id);
+        }
+
         if ($request->filled('kantor_cabang_id')) {
-            $query->where('kantor_cabang_id', $request->kantor_cabang_id);
+            $query->where(function ($q) use ($request) {
+                $q->where('kantor_cabang_id', $request->kantor_cabang_id)
+                  ->orWhereHas('kantorCabangs', function ($q2) use ($request) {
+                      $q2->where('kantor_cabang.id', $request->kantor_cabang_id);
+                  });
+            });
         }
 
         $karyawans = $query
@@ -105,6 +129,9 @@ class KaryawanController extends Controller
             'pendidikan' => 'nullable|string|max:100',
             'tanggal_masuk' => 'nullable|date',
             'kantor_cabang_id' => 'nullable|uuid|exists:kantor_cabang,id',
+            'leader_id' => 'nullable|string|exists:users,id',
+            'kantor_cabang_ids' => 'nullable|array',
+            'kantor_cabang_ids.*' => 'uuid|exists:kantor_cabang,id',
             'is_active' => 'boolean',
             'role_id' => 'nullable|exists:roles,id',
         ]);
@@ -132,6 +159,8 @@ class KaryawanController extends Controller
                 'pendidikan',
                 'tanggal_masuk',
                 'kantor_cabang_id',
+                'leader_id',
+                'kantor_cabang_ids',
             ]);
 
             $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
@@ -141,6 +170,24 @@ class KaryawanController extends Controller
             $data['password'] = Hash::make($request->password ?? 'password123');
 
             $karyawan = User::create($this->sanitizePayload($data));
+
+            // Sync many-to-many kantor cabang assignments if provided
+            if ($request->has('kantor_cabang_ids')) {
+                $ids = $request->input('kantor_cabang_ids', []);
+                if (!is_array($ids)) {
+                    if (is_string($ids)) {
+                        $ids = $ids === '' ? [] : array_filter(array_map('trim', explode(',', $ids)));
+                    } else {
+                        $ids = (array) $ids;
+                    }
+                }
+                $karyawan->kantorCabangs()->sync($ids);
+                // If the legacy single `kantor_cabang_id` column is not in the new set, clear it
+                if ($karyawan->kantor_cabang_id && !in_array($karyawan->kantor_cabang_id, $ids)) {
+                    $karyawan->kantor_cabang_id = null;
+                    $karyawan->save();
+                }
+            }
 
             if ($request->filled('role_id')) {
                 $role = Role::find($request->role_id);
@@ -224,6 +271,9 @@ class KaryawanController extends Controller
             'pendidikan' => 'nullable|string|max:100',
             'tanggal_masuk' => 'nullable|date',
             'kantor_cabang_id' => 'nullable|uuid|exists:kantor_cabang,id',
+            'leader_id' => 'nullable|string|exists:users,id',
+            'kantor_cabang_ids' => 'nullable|array',
+            'kantor_cabang_ids.*' => 'uuid|exists:kantor_cabang,id',
             'is_active' => 'boolean',
             'role_id' => 'nullable|exists:roles,id',
         ]);
@@ -251,6 +301,8 @@ class KaryawanController extends Controller
                 'pendidikan',
                 'tanggal_masuk',
                 'kantor_cabang_id',
+                'leader_id',
+                'kantor_cabang_ids',
             ]);
 
             $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
@@ -263,6 +315,18 @@ class KaryawanController extends Controller
 
             $karyawan->update($this->sanitizePayload($data));
 
+            // Sync kantor cabang assignments (normalize input to array)
+            if ($request->has('kantor_cabang_ids')) {
+                $ids = $request->input('kantor_cabang_ids', []);
+                if (!is_array($ids)) {
+                    if (is_string($ids)) {
+                        $ids = $ids === '' ? [] : array_filter(array_map('trim', explode(',', $ids)));
+                    } else {
+                        $ids = (array) $ids;
+                    }
+                }
+                $karyawan->kantorCabangs()->sync($ids);
+            }
             if ($request->has('role_id')) {
                 if ($request->filled('role_id')) {
                     $role = Role::find($request->role_id);
@@ -349,6 +413,13 @@ class KaryawanController extends Controller
             'pangkat_id' => $user->pangkat_id,
             'tipe_absensi_id' => $user->tipe_absensi_id,
             'kantor_cabang_id' => $user->kantor_cabang_id,
+            'kantor_cabang_ids' => (function () use ($user) {
+                $ids = $user->kantorCabangs->pluck('id')->toArray();
+                if ($user->kantor_cabang_id && !in_array($user->kantor_cabang_id, $ids)) {
+                    $ids[] = $user->kantor_cabang_id;
+                }
+                return $ids;
+            })(),
             'role_id' => $role?->id,
             'pangkat' => $user->pangkat ? [
                 'id' => $user->pangkat->id,
@@ -358,10 +429,14 @@ class KaryawanController extends Controller
                 'id' => $user->tipeAbsensi->id,
                 'nama' => $user->tipeAbsensi->nama,
             ] : null,
+            'kantor_cabangs' => $user->kantorCabangs->map(function ($c) {
+                return ['id' => $c->id, 'nama' => $c->nama];
+            })->values()->all(),
             'kantor_cabang' => $user->kantorCabang ? [
                 'id' => $user->kantorCabang->id,
                 'nama' => $user->kantorCabang->nama,
             ] : null,
+            'leader' => $user->leader ? ['id' => $user->leader->id, 'name' => $user->leader->name] : null,
             'role' => $role ? [
                 'id' => $role->id,
                 'name' => $role->name,
@@ -420,6 +495,8 @@ class KaryawanController extends Controller
             'pendidikan',
             'tanggal_masuk',
             'kantor_cabang_id',
+            'leader_id',
+            'kantor_cabang_ids',
         ];
 
         foreach ($nullableKeys as $key) {

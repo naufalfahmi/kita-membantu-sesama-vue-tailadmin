@@ -188,6 +188,24 @@ class KaryawanController extends Controller
                     $karyawan->save();
                 }
             }
+            // Also support syncing pivot when single `kantor_cabang_id` provided
+            if ($request->has('kantor_cabang_id') && !$request->has('kantor_cabang_ids')) {
+                $single = $request->input('kantor_cabang_id');
+                if ($single === null || $single === '') {
+                    $karyawan->kantorCabangs()->sync([]);
+                } else {
+                    $karyawan->kantorCabangs()->sync([$single]);
+                }
+            }
+            // If caller provided only the legacy single `kantor_cabang_id`, make sure pivot is in sync
+            if ($request->has('kantor_cabang_id') && !$request->has('kantor_cabang_ids')) {
+                $single = $request->input('kantor_cabang_id');
+                if ($single === null || $single === '') {
+                    $karyawan->kantorCabangs()->sync([]);
+                } else {
+                    $karyawan->kantorCabangs()->sync([$single]);
+                }
+            }
 
             if ($request->filled('role_id')) {
                 $role = Role::find($request->role_id);
@@ -326,6 +344,20 @@ class KaryawanController extends Controller
                     }
                 }
                 $karyawan->kantorCabangs()->sync($ids);
+                // If the legacy single `kantor_cabang_id` column is not in the new set, clear it
+                if ($karyawan->kantor_cabang_id && !in_array($karyawan->kantor_cabang_id, $ids)) {
+                    $karyawan->kantor_cabang_id = null;
+                    $karyawan->save();
+                }
+            }
+            // Also allow syncing via single `kantor_cabang_id` for backwards compatibility
+            if ($request->has('kantor_cabang_id') && !$request->has('kantor_cabang_ids')) {
+                $single = $request->input('kantor_cabang_id');
+                if ($single === null || $single === '') {
+                    $karyawan->kantorCabangs()->sync([]);
+                } else {
+                    $karyawan->kantorCabangs()->sync([$single]);
+                }
             }
             if ($request->has('role_id')) {
                 if ($request->filled('role_id')) {
@@ -418,7 +450,8 @@ class KaryawanController extends Controller
                 if ($user->kantor_cabang_id && !in_array($user->kantor_cabang_id, $ids)) {
                     $ids[] = $user->kantor_cabang_id;
                 }
-                return $ids;
+                // ensure uniqueness and reindex
+                return array_values(array_unique($ids));
             })(),
             'role_id' => $role?->id,
             'pangkat' => $user->pangkat ? [

@@ -438,8 +438,18 @@ const loadData = async (id: string) => {
       formData.tanggal_lahir = data.tanggal_lahir || ''
       formData.pendidikan = data.pendidikan || ''
       formData.tanggal_masuk = data.tanggal_masuk || ''
-      formData.kantor_cabang_id = data.kantor_cabang_id ? String(data.kantor_cabang_id) : ''
+      // Restore multiple kantor cabang values when available
       formData.kantor_cabang_ids = (data.kantor_cabang_ids || []).map((id: string) => String(id))
+      // If legacy single column exists and not included, add it
+      if (data.kantor_cabang_id) {
+        const single = String(data.kantor_cabang_id)
+        if (!formData.kantor_cabang_ids.includes(single)) {
+          formData.kantor_cabang_ids.push(single)
+        }
+        formData.kantor_cabang_id = single
+      } else {
+        formData.kantor_cabang_id = formData.kantor_cabang_ids[0] || ''
+      }
       formData.leader_id = data.leader ? String(data.leader.id) : ''
       formData.is_active = Boolean(data.is_active)
       formData.password = ''

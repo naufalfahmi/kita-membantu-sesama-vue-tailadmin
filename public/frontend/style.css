@@ -1909,6 +1909,60 @@ h1,  h2,  h3,  h4,  h5,  h6{
   display: none;
 }
 
+/* Header logo: only reduce size of header icons (keep other images unaffected) */
+header img.om,
+header img.xc,
+header .om,
+header .xc{
+  height: 45px;
+  width: auto;
+}
+
+@media (min-width: 1280px){
+  header img.om,
+  header img.xc,
+  header .om,
+  header .xc{
+    height: 45px;
+  }
+}
+
+/* Site brand text beside logo */
+.site-brand{
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.site-brand .logo{ display:block }
+.site-brand-text{
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1;
+  font-weight: 400; /* match body/nav weight */
+  font-family: inherit; /* use same font as surrounding text */
+  font-size: 13px;
+  text-transform: none;
+  color: inherit;
+}
+.site-brand-text span{ display:block }
+
+@media (min-width: 1280px){
+  .site-brand-text{ font-size: 14px }
+}
+
+/* Default logo colors when inlined */
+.site-brand .logo-primary{ fill: #4A90E2 }
+.site-brand .logo-accent-1{ fill: #00ab4f }
+.site-brand .logo-accent-2{ fill: #ff6200 }
+.site-brand .logo-accent-3{ fill: #ff6200 }
+
+/* Helper variant classes */
+.site-brand.logo--mono .logo-primary,
+.site-brand.logo--mono .logo-accent-1,
+.site-brand.logo--mono .logo-accent-2,
+.site-brand.logo--mono .logo-accent-3{ fill: #FFFFFF }
+
+
 .b .pm{
   --tw-border-opacity: 1;
   border-color: rgb(60 69 86 / var(--tw-border-opacity));

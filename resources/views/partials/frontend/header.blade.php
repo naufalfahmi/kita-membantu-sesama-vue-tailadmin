@@ -28,31 +28,12 @@
     <div class="vd wo/4 sd qo f ho oo wf yf" :class="{ 'd hh rm sr td ud qg ug jc yh': navigationOpen }">
       <nav>
         <ul class="tc _o sf yo cg ep">
-          <li><a href="{{ route('frontend.index') }}" class="xl" :class="{ 'mk': page === 'home' }">Home</a></li>
-          <li><a href="{{ route('frontend.index') }}#features" class="xl">Features</a></li>
-          <li class="c i" x-data="{ dropdown: false }">
-            <a href="#!" class="xl tc wf yf bg" @click.prevent="dropdown = !dropdown"
-              :class="{ 'mk': page === 'blog-grid' || page === 'blog-single' || page === 'signin' || page === 'signup' || page === '404' }">
-              Pages
-
-              <svg :class="{ 'wh': dropdown }" class="th mm we fd pf" xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 512 512">
-                <path
-                  d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z" />
-              </svg>
-            </a>
-
-            <!-- Dropdown Start -->
-            <ul class="a" :class="{ 'tc': dropdown }">
-              <li><a href="{{ route('frontend.blog-grid') }}" class="xl" :class="{ 'mk': page === 'blog-grid' }">Blog Grid</a></li>
-              <li><a href="{{ route('frontend.blog-single') }}" class="xl" :class="{ 'mk': page === 'blog-single' }">Blog Single</a></li>
-              <li><a href="{{ route('frontend.signin') }}" class="xl" :class="{ 'mk': page === 'signin' }">Sign In</a></li>
-              <li><a href="{{ route('frontend.signup') }}" class="xl" :class="{ 'mk': page === 'signup' }">Sign Up</a></li>
-              <li><a href="{{ route('frontend.404') }}" class="xl" :class="{ 'mk': page === '404' }">404</a></li>
-            </ul>
-            <!-- Dropdown End -->
-          </li>
-          <li><a href="{{ route('frontend.index') }}#support" class="xl">Support</a></li>
+          <li><a href="{{ route('frontend.index') }}" class="xl" :class="{ 'mk': page === 'home' }">Tentang Kami</a></li>
+          <li><a href="{{ route('frontend.index') }}#visi-misi" class="xl">Visi & Misi Kami</a></li>
+          <li><a href="{{ route('frontend.index') }}#program" class="xl">Program</a></li>
+          <li><a href="{{ route('frontend.index') }}#kegiatan" class="xl">Kegiatan</a></li>
+          <li><a href="{{ route('frontend.index') }}#support" class="xl">Kontak</a></li>
+        </ul>
         </ul>
       </nav>
 
@@ -72,10 +53,7 @@
           </label>
         </div>
 
-        <a href="{{ route('frontend.signin') }}" :class="{ 'nk yl' : page === 'home', 'ok' : page === 'home' && stickyMenu }"
-          class="ek pk xl">Sign In</a>
-        <a href="{{ route('frontend.signup') }}" :class="{ 'hh/[0.15]' : page === 'home', 'sh' : page === 'home' && stickyMenu }"
-          class="lk gh dk rg tc wf xf _l gi hi">Sign Up</a>
+        <!-- Sign In / Sign Up removed per request -->
       </div>
     </div>
   </div>

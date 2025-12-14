@@ -205,7 +205,7 @@
           </div>
           <div class="animate_right bf">
             <a href="#!" class="vc ek kk hh rg ol il cm gi hi">
-              Get Started Now
+              Lihat Program
             </a>
           </div>
         </div>

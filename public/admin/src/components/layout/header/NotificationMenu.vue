@@ -59,34 +59,26 @@
       </div>
 
       <ul class="flex flex-col h-auto overflow-y-auto custom-scrollbar">
-        <li v-for="notification in notifications" :key="notification.id" @click="handleItemClick">
+        <li v-for="notification in notifications" :key="notification.id">
           <a
             class="flex gap-3 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5"
             href="#"
+            @click.prevent="handleItemClick($event, notification)"
           >
             <span class="relative block w-full h-10 rounded-full z-1 max-w-10">
-              <img :src="notification.userImage" alt="User" class="overflow-hidden rounded-full" />
-              <span
-                :class="notification.status === 'online' ? 'bg-success-500' : 'bg-error-500'"
-                class="absolute bottom-0 right-0 z-10 h-2.5 w-full max-w-2.5 rounded-full border-[1.5px] border-white dark:border-gray-900"
-              ></span>
+              <img src="/images/user/user-01.jpg" alt="User" class="overflow-hidden rounded-full" />
             </span>
 
             <span class="block">
-              <span class="mb-1.5 block text-theme-sm text-gray-500 dark:text-gray-400">
-                <span class="font-medium text-gray-800 dark:text-white/90">
-                  {{ notification.userName }}
-                </span>
-                {{ notification.action }}
-                <span class="font-medium text-gray-800 dark:text-white/90">
-                  {{ notification.project }}
-                </span>
+              <span :class="['mb-1.5 block text-theme-sm', notification.is_read ? 'text-gray-500' : 'text-gray-800 dark:text-white/90']">
+                <span class="font-medium">{{ notification.title }}</span>
+                <span class="ml-1 text-sm text-gray-500">{{ notification.message }}</span>
               </span>
 
               <span class="flex items-center gap-2 text-gray-500 text-theme-xs dark:text-gray-400">
                 <span>{{ notification.type }}</span>
                 <span class="w-1 h-1 bg-gray-400 rounded-full"></span>
-                <span>{{ notification.time }}</span>
+                <span>{{ new Date(notification.created_at).toLocaleString() }}</span>
               </span>
             </span>
           </a>
@@ -113,93 +105,39 @@ const dropdownOpen = ref(false)
 const notifying = ref(true)
 const dropdownRef = ref(null)
 
-const notifications = ref([
-  {
-    id: 1,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-02.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 2,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-03.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'offline',
-  },
-  {
-    id: 3,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-04.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 4,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-05.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 5,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-06.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'offline',
-  },
-  {
-    id: 6,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-07.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 7,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-08.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  {
-    id: 7,
-    userName: 'Terry Franci',
-    userImage: '/images/user/user-09.jpg',
-    action: 'requests permission to change',
-    project: 'Project - Nganter App',
-    type: 'Project',
-    time: '5 min ago',
-    status: 'online',
-  },
-  // Add more notifications here...
-])
+const notifications = ref([])
+const unreadCount = ref(0)
 
-const toggleDropdown = () => {
+const fetchNotifications = async () => {
+  try {
+    const res = await fetch('/admin/api/notifications?per_page=10', { credentials: 'same-origin' })
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) {
+      notifications.value = (json.data || []).map((n) => ({
+        id: n.id,
+        title: n.title || n.type || '',
+        message: n.message || '',
+        type: n.type || '',
+        is_read: !!n.is_read,
+        created_at: n.created_at,
+      }))
+      unreadCount.value = json.unread_count || 0
+      notifying.value = unreadCount.value > 0
+    }
+  } catch (e) {
+    console.error('Error loading notifications', e)
+  }
+}
+
+const toggleDropdown = async () => {
   dropdownOpen.value = !dropdownOpen.value
-  notifying.value = false
+  if (dropdownOpen.value) {
+    await fetchNotifications()
+  }
+  if (unreadCount.value === 0) {
+    notifying.value = false
+  }
 }
 
 const closeDropdown = () => {
@@ -212,22 +150,35 @@ const handleClickOutside = (event) => {
   }
 }
 
-const handleItemClick = (event) => {
+const handleItemClick = async (event, item) => {
   event.preventDefault()
-  // Handle the item click action here
-  console.log('Notification item clicked')
+  try {
+    // mark read on backend
+    await fetch(`/admin/api/notifications/${item.id}/read`, {
+      method: 'POST',
+      credentials: 'same-origin',
+    })
+  } catch (e) {
+    console.error('Failed to mark notification read', e)
+  }
+  // update locally
+  item.is_read = true
+  // refresh list
+  await fetchNotifications()
   closeDropdown()
 }
 
 const handleViewAllClick = (event) => {
   event.preventDefault()
-  // Handle the "View All Notification" action here
+  // Navigate to notifications page (not implemented yet)
   console.log('View All Notifications clicked')
   closeDropdown()
 }
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  // initial load for unread count
+  fetchNotifications()
 })
 
 onUnmounted(() => {

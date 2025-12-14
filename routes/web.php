@@ -30,13 +30,7 @@ Route::get('/blog-single', function () {
     return view('frontend.blog-single');
 })->name('frontend.blog-single');
 
-Route::get('/signin', function () {
-    return view('frontend.signin');
-})->name('frontend.signin');
-
-Route::get('/signup', function () {
-    return view('frontend.signup');
-})->name('frontend.signup');
+// Frontend auth pages removed (Sign In / Sign Up)
 
 Route::get('/404', function () {
     return view('frontend.404');
@@ -129,6 +123,11 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Karyawan API
     Route::get('karyawan-next-no-induk', [\App\Http\Controllers\KaryawanController::class, 'getNextNoInduk'])->name('admin.api.karyawan.next-no-induk');
     Route::apiResource('karyawan', \App\Http\Controllers\KaryawanController::class);
+
+    // Notifications
+    Route::get('notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('admin.api.notifications.index');
+    Route::post('notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])->name('admin.api.notifications.read');
+    Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('admin.api.notifications.readAll');
 
     // Mitra API
     Route::apiResource('mitra', MitraController::class);

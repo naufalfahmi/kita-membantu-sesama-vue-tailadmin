@@ -6,26 +6,30 @@
         <img src="{{ asset("frontend/images/shape-01.svg") }}" alt="shape" class="xc 2xl:ud-block h t -ud-left-[10%] ua" />
         <img src="{{ asset("frontend/images/shape-02.svg") }}" alt="shape" class="xc 2xl:ud-block h u p va" />
         <img src="{{ asset("frontend/images/shape-03.svg") }}" alt="shape" class="xc 2xl:ud-block h v w va" />
-        <img src="{{ asset("frontend/images/shape-04.svg") }}" alt="shape" class="h q r" />
-        <img src="{{ asset("frontend/images/hero.png") }}" alt="Woman" class="h q r ua" />
+        {{-- shape-04.svg removed per request --}}
+        <img src="{{ asset("frontend/images/people-who-support-svgrepo-com.svg") }}" alt="People Supporting" class="h q r ua" />
       </div>
 
       <!-- Hero Content -->
       <div class="bb ze ki xn 2xl:ud-px-0">
         <div class="tc _o">
           <div class="animate_left jn/2">
-            <h1 class="fk vj zp or kk wm wb">We specialize in UI/UX, Web Development, Digital Marketing.</h1>
-            <p class="fq">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque fringilla magna mauris. Nulla fermentum
-              viverra sem eu rhoncus consequat varius nisi quis, posuere magna.
-            </p>
+            <h1 class="fk vj zp or kk wm wb">Kita Membantu Sesama</h1>
+            <p class="fq">menjadi organisasi sosial kemanusiaan internasional yang unggul dan profesional untuk kehidupan
+              kemanusiaan yang lebih baik</p>
 
             <div class="tc tf yo zf mb">
-              <a href="#!" class="ek jk lk gh gi hi rg ml il vc _d _l">Get Started Now</a>
+              <a href="#program" class="ek jk lk gh gi hi rg ml il vc _d _l vc items-center inline-flex">Lihat Program Kami</a>
 
               <span class="tc sf">
-                <a href="#!" class="inline-block ek xj kk wm"> Call us (0123) 456 – 789 </a>
-                <span class="inline-block">For any question or concern</span>
+                <a href="https://wa.me/62895621093500" aria-label="Kontak via WhatsApp +62895621093500" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 ek xj kk wm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" class="sc mr-2" aria-hidden="true">
+                    <path d="M20.52 3.48A11.89 11.89 0 0012.02.12C6.08.12 1.19 4.99 1.19 10.93c0 1.93.5 3.82 1.44 5.5L.12 23.88l7.61-2.01a11.8 11.8 0 005.29 1.21h.01c5.94 0 10.83-4.89 10.83-10.83 0-3-1.17-5.83-3.65-7.57z" fill="#25D366" />
+                    <path d="M17.2 14.54c-.3-.15-1.76-.86-2.03-.96-.27-.1-.47-.15-.67.15-.2.3-.76.96-.93 1.16-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.48-1.74-1.65-2.04-.17-.3-.02-.46.13-.61.13-.13.3-.36.45-.54.15-.18.2-.3.3-.5.1-.2 0-.37-.02-.52-.02-.15-.67-1.6-.92-2.19-.24-.57-.49-.49-.67-.5l-.57-.01c-.2 0-.52.07-.79.37-.27.3-1.03 1.01-1.03 2.46 0 1.45 1.05 2.85 1.2 3.05.15.2 2.08 3.17 5.04 4.44 2.96 1.27 2.96.85 3.49.8.53-.05 1.73-.7 1.98-1.37.25-.66.25-1.22.17-1.37-.07-.15-.27-.24-.57-.39z" fill="#FFF" />
+                  </svg>
+                  WhatsApp +62 895-6210-93500
+                </a>
+                <span class="inline-block">untuk berbicara dengan anggota tim kami</span>
               </span>
             </div>
           </div>
@@ -76,7 +80,7 @@
     <!-- ===== Small Features End ===== -->
 
     <!-- ===== About Start ===== -->
-    <section class="ji gp uq 2xl:ud-py-35 pg">
+    <section id="tentang-kami" class="ji gp uq 2xl:ud-py-35 pg">
       <div class="bb ze ki xn wq">
         <div class="tc wf gg qq">
           <!-- About Images -->
@@ -112,6 +116,27 @@
       </div>
     </section>
     <!-- ===== About End ===== -->
+
+    <!-- ===== Visi & Misi Start ===== -->
+    <section id="visi-misi" class="ji gp uq 2xl:ud-py-20 pg">
+      <div class="bb ze ki xn wq">
+        <div class="tc wf gg qq">
+          <div class="animate_top jn/2">
+            <h4 class="ek yj mk gb">Visi & Misi Kami</h4>
+            <h2 class="fk vj zp pr kk wm qb">Visi</h2>
+            <p class="uo">Menjadi organisasi yang memberikan dampak positif dan berkelanjutan untuk masyarakat.</p>
+
+            <h2 class="fk vj zp pr kk wm qb">Misi</h2>
+            <ul class="uo">
+              <li>Meningkatkan kualitas program melalui kolaborasi.</li>
+              <li>Mengoptimalkan sumber daya untuk pelayanan publik.</li>
+              <li>Membangun kemitraan yang berkelanjutan.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ===== Visi & Misi End ===== -->
 
     <!-- ===== Team Start ===== -->
     <section class="i pg ji gp uq">
@@ -350,6 +375,67 @@
       </div>
     </section>
     <!-- ===== Services End ===== -->
+
+    <!-- ===== Program Start ===== -->
+    <section id="program" class="ji gp uq 2xl:ud-py-20 pg">
+      <div class="bb ze ki xn wq">
+        <div class="tc wf gg qq">
+          <div class="animate_top jn/2">
+            <h4 class="ek yj mk gb">Program Kami</h4>
+            <h2 class="fk vj zp pr kk wm qb">Program unggulan</h2>
+            <p class="uo">Berikut beberapa program yang kami jalankan. (Konten dinamis bisa ditambahkan melalui admin)</p>
+          </div>
+
+          <div class="bb ze i va ki xn yq mb en">
+            <div class="wc qf pn xo ng">
+              <div class="animate_top sg oi pi zq ml il am cn _m">
+                <h4 class="ek zj kk wm nb _b">Program A</h4>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+              </div>
+
+              <div class="animate_top sg oi pi zq ml il am cn _m">
+                <h4 class="ek zj kk wm nb _b">Program B</h4>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+              </div>
+
+              <div class="animate_top sg oi pi zq ml il am cn _m">
+                <h4 class="ek zj kk wm nb _b">Program C</h4>
+                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ===== Program End ===== -->
+
+    <!-- ===== Kegiatan Start ===== -->
+    <section id="kegiatan" class="ji gp uq 2xl:ud-py-20 pg">
+      <div class="bb ze ki xn wq">
+        <div class="tc wf gg qq">
+          <div class="animate_top jn/2">
+            <h4 class="ek yj mk gb">Kegiatan</h4>
+            <h2 class="fk vj zp pr kk wm qb">Agenda & Kegiatan Terbaru</h2>
+            <p class="uo">Lihat kegiatan terbaru dan acara yang akan datang.</p>
+          </div>
+
+          <div class="bb ze i va ki xn yq mb en">
+            <div class="wc qf pn xo ng">
+              <div class="animate_top sg oi pi zq ml il am cn _m">
+                <h4 class="ek zj kk wm nb _b">Kegiatan 1</h4>
+                <p>Deskripsi singkat kegiatan.</p>
+              </div>
+
+              <div class="animate_top sg oi pi zq ml il am cn _m">
+                <h4 class="ek zj kk wm nb _b">Kegiatan 2</h4>
+                <p>Deskripsi singkat kegiatan.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ===== Kegiatan End ===== -->
 
     <!-- ===== Pricing Table Start ===== -->
     <section x-data="setup()" class="i pg fh rm ji gp uq">

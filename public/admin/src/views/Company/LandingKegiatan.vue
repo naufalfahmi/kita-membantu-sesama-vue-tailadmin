@@ -110,11 +110,11 @@ import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useAuth } from '@/composables/useAuth'
 
-// Options for Status filter
+// Options for Status filter (use display labels like Landing Program)
 const statusFilterOptions = [
   { value: '', label: 'Semua Status' },
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'Aktif', label: 'Aktif' },
+  { value: 'Tidak Aktif', label: 'Tidak Aktif' },
 ]
 const statusFilterSearchInput = ref('')
 
@@ -171,20 +171,18 @@ const columnDefs = [
     sortable: true,
     width: 120,
     cellRenderer: (params: any) => {
-      const status = params.value || 'inactive'
-      const isActive = status === 'active'
-      const div = document.createElement('div')
-      div.className = 'flex items-center justify-center'
-      div.innerHTML = `
-        <span class="px-2 py-1 text-xs font-medium rounded-full ${
-          isActive
-            ? 'bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400'
-            : 'bg-gray-100 text-gray-800 dark:bg-gray-500/10 dark:text-gray-400'
-        }">
-          ${isActive ? 'Active' : 'Inactive'}
-        </span>
-      `
-      return div
+      const status = params.value || 'Tidak Aktif'
+      const statusColors: Record<string, string> = {
+        'Aktif': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        'Tidak Aktif': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+        'Draft': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+      }
+      const colorClass = statusColors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+
+      const span = document.createElement('span')
+      span.className = `px-2 py-1 rounded-full text-xs font-medium ${colorClass}`
+      span.textContent = status
+      return span
     },
   },
   {
@@ -292,7 +290,15 @@ const fetchData = async () => {
     
     const result = await response.json()
     if (result.success) {
-      rowData.value = result.data || []
+      // Map backend status values to display labels (same model as Landing Program)
+      rowData.value = (result.data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        city: item.city,
+        activity_date: item.activity_date,
+        status: item.status === 'active' ? 'Aktif' : 'Tidak Aktif',
+        created_at: item.created_at,
+      }))
     } else {
       console.error('Failed to fetch data:', result.message)
       rowData.value = []

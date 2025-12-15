@@ -135,7 +135,7 @@
           :animateRows="true"
           :suppressHorizontalScroll="true"
           @grid-ready="onGridReady"
-          @sortChanged="onSortChanged"
+          @sort-changed="onSortChanged"
         />
         </div>
       </div>
@@ -246,6 +246,7 @@ const createDataSource = () => {
 
   return {
     getRows: async (params: any) => {
+        console.log('[Absensi] getRows called', { start: params.startRow, end: params.endRow, sortModel: params.sortModel })
       const start = params.startRow
       const end = params.endRow
       const limit = Math.max(1, end - start)
@@ -268,6 +269,9 @@ const createDataSource = () => {
         }
 
         const url = `/admin/api/absensi?${buildQueryParams(start, limit, params.sortModel)}`
+        
+  // include sortModel in debug log
+  console.log('[Absensi] fetching', url, { sortModel: params.sortModel })
 
         const p = (async () => {
           const res = await fetch(url, {
@@ -331,14 +335,17 @@ const onGridReady = (params: any) => {
 }
 
 const onSortChanged = () => {
-  if (gridApi.value) {
-    try {
-      gridApi.value.purgeInfiniteCache()
-    } catch (e) {
-      // fallback: recreate datasource
-      dataSourceRef.value = createDataSource()
-      if (gridApi.value) gridApi.value.setDatasource(dataSourceRef.value)
+  console.log('[Absensi] sort changed, recreating datasource and purging cache', { sortModel: gridApi.value?.getSortModel?.() })
+  // Recreate the datasource to ensure internal block cache is cleared
+  try {
+    dataSourceRef.value = createDataSource()
+    if (gridApi.value) {
+      gridApi.value.setDatasource(dataSourceRef.value)
+      // Purge AG Grid's internal cache as well
+      try { gridApi.value.purgeInfiniteCache() } catch (e) { /* ignore */ }
     }
+  } catch (e) {
+    console.error('[Absensi] error recreating datasource:', e)
   }
 }
 

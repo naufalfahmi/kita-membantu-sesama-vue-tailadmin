@@ -1,9 +1,7 @@
 <template>
   <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90" x-text="pageTitle">
-      {{ pageTitle }}
-    </h2>
-    <nav>
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-white/90">{{ pageTitle }}</h2>
+    <nav v-if="showHome">
       <ol class="flex items-center gap-1.5">
         <li>
           <router-link
@@ -29,22 +27,23 @@
             </svg>
           </router-link>
         </li>
-        <li class="text-sm text-gray-800 dark:text-white/90">
-          {{ pageTitle }}
-        </li>
+        <li class="text-sm text-gray-800 dark:text-white/90">{{ pageTitle }}</li>
       </ol>
     </nav>
   </div>
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue'
+import { defineProps, withDefaults } from 'vue'
 
 import type { Ref } from 'vue'
 
 interface BreadcrumbProps {
   pageTitle: string | Ref<any>
+  showHome?: boolean
 }
 
-defineProps<BreadcrumbProps>()
+withDefaults(defineProps<BreadcrumbProps>(), {
+  showHome: true,
+})
 </script>

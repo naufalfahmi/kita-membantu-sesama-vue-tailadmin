@@ -1,6 +1,5 @@
 <template>
   <AdminLayout>
-    <PageBreadcrumb :pageTitle="currentPageTitle" />
     <div class="space-y-5 sm:space-y-6">
       <ComponentCard title="With Light Background">
         <div class="flex flex-wrap gap-4 sm:items-center sm:justify-center">

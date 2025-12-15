@@ -1,6 +1,5 @@
 <template>
   <AdminLayout>
-    <PageBreadcrumb :pageTitle="currentPageTitle" />
     <div className="space-y-5 sm:space-y-6">
       <ComponentCard title="Responsive Image">
         <ResponsiveImage />

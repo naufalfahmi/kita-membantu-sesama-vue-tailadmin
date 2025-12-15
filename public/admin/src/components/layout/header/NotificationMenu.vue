@@ -171,7 +171,6 @@ const handleItemClick = async (event, item) => {
 const handleViewAllClick = (event) => {
   event.preventDefault()
   // Navigate to notifications page (not implemented yet)
-  console.log('View All Notifications clicked')
   closeDropdown()
 }
 

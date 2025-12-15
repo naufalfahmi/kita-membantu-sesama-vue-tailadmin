@@ -301,8 +301,6 @@ const loadData = async () => {
       formData.usedAt = sampleData.used_at
       formData.purpose = sampleData.purpose
       formData.branchId = sampleData.branch_id
-      
-      console.log('Data loaded for edit:', id, sampleData)
     } catch (error) {
       console.error('Error loading data:', error)
       alert('Gagal memuat data pengajuan dana')
@@ -356,11 +354,9 @@ const handleSave = async () => {
 
     // TODO: Save to API
     if (isEditMode.value) {
-      console.log('Updating pengajuan dana:', payload)
       // await updatePengajuanDana(route.params.id, payload)
       alert('Pengajuan dana berhasil diupdate')
     } else {
-      console.log('Creating pengajuan dana:', payload)
       // await createPengajuanDana(payload)
       alert('Pengajuan dana berhasil ditambahkan')
     }

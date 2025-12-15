@@ -706,8 +706,6 @@ const dataSource = ref<IDatasource>(createDataSource())
 
 // Set datasource after component is mounted
 onMounted(() => {
-  console.log('Component mounted, datasource:', dataSource.value)
-  console.log('Total data:', rowDataArray.length)
   fetchUser()
 })
 

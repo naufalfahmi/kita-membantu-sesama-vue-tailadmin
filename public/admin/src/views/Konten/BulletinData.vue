@@ -243,19 +243,16 @@ const rowData = ref(rowDataArray)
 
 // Handle add button
 const handleAdd = () => {
-  console.log('Add new bulletin')
   alert('Fungsi tambah bulletin akan diimplementasikan')
 }
 
 // Handle edit
 const handleEdit = (id: string) => {
-  console.log('Edit bulletin:', id)
   alert(`Edit bulletin dengan ID: ${id}`)
 }
 
 // Handle delete
 const handleDelete = (id: string) => {
-  console.log('Delete bulletin:', id)
   if (confirm('Apakah Anda yakin ingin menghapus bulletin ini?')) {
     alert(`Bulletin dengan ID: ${id} akan dihapus`)
   }

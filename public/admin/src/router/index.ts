@@ -651,12 +651,10 @@ let isAuthenticated = false
 // Check authentication status
 const checkAuth = async (force = false) => {
   if (authChecked && !force) {
-    console.log('checkAuth: using cached result', isAuthenticated)
     return isAuthenticated
   }
   
   try {
-    console.log('checkAuth: fetching /admin/api/user')
     const response = await fetch('/admin/api/user', {
       method: 'GET',
       headers: {
@@ -667,18 +665,15 @@ const checkAuth = async (force = false) => {
       credentials: 'same-origin',
     })
     
-    console.log('checkAuth: response status', response.status)
     
     // If response is redirect (302) or unauthorized (401), user is not authenticated
     if (response.status === 401 || response.status === 302 || response.redirected) {
-      console.log('checkAuth: not authenticated (status or redirect)')
       isAuthenticated = false
       authChecked = true
       return false
     }
     
     const data = await response.json()
-    console.log('checkAuth: response data', data)
     isAuthenticated = data.success && data.user
     authChecked = true
     return isAuthenticated
@@ -709,18 +704,15 @@ router.beforeEach(async (to, from, next) => {
   // Always check authentication status for non-public routes
   const authenticated = await checkAuth()
   
-  console.log('Router guard:', { to: to.path, from: from.path, authenticated, isPublicRoute })
   
   if (!authenticated && !isPublicRoute) {
     // Redirect to signin if not authenticated and trying to access protected route
-    console.log('Not authenticated, redirecting to signin')
     next('/signin')
     return
   }
   
   if (authenticated && isPublicRoute) {
     // Redirect to dashboard if already authenticated and trying to access signin/signup
-    console.log('Already authenticated, redirecting to dashboard')
     next('/')
     return
   }

@@ -19,8 +19,7 @@
 
 **Frontend build** (required after Vue changes):
 ```bash
-cd public/admin
-npm run build  # Compiles to public/build/
+npm run build
 ```
 
 **Backend setup**:

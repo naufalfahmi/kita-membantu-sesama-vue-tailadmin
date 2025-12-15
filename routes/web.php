@@ -17,6 +17,15 @@ use App\Http\Controllers\TipeDonaturController;
 use App\Http\Controllers\TransaksiController;
 use App\Services\MenuService;
 
+// Serve SVG favicon at /favicon.ico for browsers requesting that path
+Route::get('/favicon.ico', function () {
+    $path = public_path('favicon.svg');
+    if (file_exists($path)) {
+        return response(file_get_contents($path), 200)->header('Content-Type', 'image/svg+xml');
+    }
+    abort(404);
+});
+
 // Frontend Routes
 Route::get('/', function () {
     return view('frontend.index');

@@ -318,6 +318,9 @@ layer(base);
 .site-brand-text{ display: inline-flex; flex-direction: column; gap: 0; line-height: 1; font-weight: 700; font-size: 12px; color: var(--color-gray-700); }
 .site-brand-text span{ display: block; margin: 0; padding: 0; }
 
+/* Dark mode: make brand text readable (white) */
+.dark .site-brand-text { color: #ffffff; }
+
 .sidebar:hover .menu-item-text {
   display: inline;
 }

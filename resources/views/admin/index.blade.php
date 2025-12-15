@@ -6,7 +6,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <title>{{ config('app.name', 'KMS') }} - Admin Dashboard</title>
-    
+    <!-- SVG favicon -->
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
+    <link rel="alternate icon" href="{{ asset('frontend/favicon.ico') }}">
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     
@@ -45,7 +47,6 @@
     </div>
     <script>
         // Debug: log when Vue mounts
-        console.log('Page loaded, waiting for Vue to mount...');
         window.addEventListener('error', function(e) {
             console.error('JavaScript Error:', e.message, e.filename, e.lineno);
             document.getElementById('app-loading').innerHTML = 

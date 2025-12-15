@@ -396,7 +396,6 @@ const loadData = async () => {
   if (isEditMode.value && route.params.id) {
     const id = route.params.id as string
     // TODO: Load data from API
-    console.log('Loading data for ID:', id)
     
     // Sample data for edit mode
     // formData.report_date_range = ['2024-01-01', '2024-01-31']
@@ -444,11 +443,9 @@ const handleSave = async () => {
 
     // TODO: Save to API
     if (isEditMode.value) {
-      console.log('Updating laporan transaksi:', payload)
       // await updateLaporanTransaksi(route.params.id, payload)
       toast.success('Laporan transaksi berhasil diupdate')
     } else {
-      console.log('Creating laporan transaksi:', payload)
       // await createLaporanTransaksi(payload)
       toast.success('Laporan transaksi berhasil ditambahkan')
     }

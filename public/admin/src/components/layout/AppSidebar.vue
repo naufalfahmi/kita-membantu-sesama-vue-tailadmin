@@ -193,7 +193,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import {
@@ -288,6 +288,36 @@ const isSubmenuOpen = (groupIndex, itemIndex) => {
   
   return false;
 };
+
+// Keep submenu state in sync when route or menu data changes
+const ensureActiveSubmenu = () => {
+  let activeKey = null
+  for (let g = 0; g < menuGroups.value.length; g++) {
+    const group = menuGroups.value[g]
+    if (!group || !Array.isArray(group.items)) continue
+    for (let i = 0; i < group.items.length; i++) {
+      const item = group.items[i]
+      if (!item || !Array.isArray(item.subItems)) continue
+      if (item.subItems.some((s) => isActive(s.path))) {
+        activeKey = `${g}-${i}`
+        break
+      }
+    }
+    if (activeKey) break
+  }
+
+  if (activeKey) {
+    if (!closedMenus.value[activeKey]) {
+      openSubmenu.value = activeKey
+    }
+  } else {
+    // If current route is not under a submenu, collapse open submenu
+    openSubmenu.value = null
+  }
+}
+
+watch(() => route.path, ensureActiveSubmenu)
+watch(() => menuGroups.value, ensureActiveSubmenu)
 
 const startTransition = (el) => {
   el.style.height = "auto";

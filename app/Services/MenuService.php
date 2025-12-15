@@ -20,7 +20,7 @@ class MenuService
                     [
                         'icon' => 'HomeIcon',
                         'name' => 'Dashboard',
-                        'path' => '/',
+                        'path' => '/dashboard',
                         'permission' => null, // Dashboard accessible to all authenticated users
                         'pro' => false,
                     ],

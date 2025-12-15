@@ -424,7 +424,6 @@ const loadData = async () => {
       formData.financial_date = sampleData.financial_date
       formData.branch_id = sampleData.branch_id
       
-      console.log('Data loaded for edit:', id, sampleData)
     } catch (error) {
       console.error('Error loading data:', error)
       alert('Gagal memuat data keuangan')
@@ -458,11 +457,9 @@ const handleSave = async () => {
 
     // TODO: Save to API
     if (isEditMode.value) {
-      console.log('Updating keuangan:', payload)
       // await updateKeuangan(route.params.id, payload)
       alert('Data keuangan berhasil diupdate')
     } else {
-      console.log('Creating keuangan:', payload)
       // await createKeuangan(payload)
       alert('Data keuangan berhasil ditambahkan')
     }

@@ -450,7 +450,6 @@ const loadData = async () => {
   if (isEditMode.value && route.params.id) {
     const id = route.params.id as string
     // TODO: Load data from API
-    console.log('Loading data for ID:', id)
   }
 }
 
@@ -505,11 +504,9 @@ const handleSave = async () => {
 
     // TODO: Save to API
     if (isEditMode.value) {
-      console.log('Updating penyaluran:', formData)
       // await updatePenyaluran(route.params.id, formDataToSend)
       alert('Penyaluran berhasil diupdate')
     } else {
-      console.log('Creating penyaluran:', formData)
       // await createPenyaluran(formDataToSend)
       alert('Penyaluran berhasil dibuat')
     }

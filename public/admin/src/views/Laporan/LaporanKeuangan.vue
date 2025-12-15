@@ -984,12 +984,10 @@ const mitraData = ref([
 
 // Handlers
 const handleDetail = (id: string) => {
-  console.log('Detail transaksi:', id)
   alert(`Detail transaksi dengan ID: ${id}`)
 }
 
 const handleDownload = (id: string) => {
-  console.log('Download transaksi:', id)
   alert(`Download transaksi dengan ID: ${id}`)
 }
 

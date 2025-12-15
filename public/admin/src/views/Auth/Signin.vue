@@ -22,7 +22,7 @@
                 <div v-if="error" class="mb-5 p-4 text-sm text-red-600 bg-red-50 rounded-lg dark:bg-red-900/20 dark:text-red-400">
                   {{ error }}
                 </div>
-                <form @submit.prevent="() => { console.log('Form submit event!'); handleSubmit(); }" novalidate>
+                <form @submit.prevent="() => { handleSubmit(); }" novalidate>
                   <div class="space-y-5">
                     <!-- Email -->
                     <div>
@@ -144,7 +144,7 @@
                       <button
                         type="button"
                         :disabled="loading"
-                        @click="() => { console.log('Button clicked!'); handleSubmit(); }"
+                        @click="() => { handleSubmit(); }"
                         class="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <span v-if="loading">Signing in...</span>
@@ -164,7 +164,7 @@
             <common-grid-shape />
             <div class="flex flex-col items-center max-w-xs">
               <router-link to="/" class="block mb-4">
-                <img width="{231}" height="{48}" src="/images/logo/auth-logo.svg" alt="Logo" />
+                <img width="231" height="48" src="/favicon.svg" alt="Logo" />
               </router-link>
               <p class="text-center text-gray-400 dark:text-white/60">
                 Dashboard Kita Membantu Sesama
@@ -195,15 +195,11 @@ const error = ref<string | null>(null)
 // Debug: Expose handleSubmit to window for testing
 if (typeof window !== 'undefined') {
   (window as any).testHandleSubmit = () => {
-    console.log('Test handleSubmit called from window')
     handleSubmit()
   }
   
   // Also expose email and password for debugging
   (window as any).debugLogin = () => {
-    console.log('Email:', email.value)
-    console.log('Password:', password.value)
-    console.log('handleSubmit function:', typeof handleSubmit)
   }
 }
 
@@ -216,12 +212,10 @@ const getCsrfToken = async () => {
     // Try to get from meta tag first
     const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
     if (metaToken) {
-      console.log('CSRF token from meta:', metaToken.substring(0, 20) + '...')
       return metaToken
     }
     
     // If not available, fetch from API
-    console.log('Fetching CSRF token from API...')
     const response = await fetch('/admin/api/csrf-token', {
       method: 'GET',
       credentials: 'same-origin',
@@ -232,7 +226,6 @@ const getCsrfToken = async () => {
     }
     
     const data = await response.json()
-    console.log('CSRF token from API:', data.csrf_token?.substring(0, 20) + '...')
     return data.csrf_token || ''
   } catch (e) {
     console.error('Failed to get CSRF token:', e)
@@ -247,27 +240,17 @@ const handleSubmit = async (e?: Event) => {
     e.stopPropagation()
   }
   
-  console.log('=== handleSubmit CALLED ===')
-  console.log('Event:', e)
-  console.log('Email:', email.value)
-  console.log('Password:', password.value ? '***' : 'empty')
-  console.log('Password length:', password.value?.length || 0)
-  console.log('Loading:', loading.value)
   
   // Prevent double submission
   if (loading.value) {
-    console.log('Already loading, ignoring submit')
     return
   }
   
   loading.value = true
   error.value = null
   
-  console.log('Starting login process...')
 
   try {
-    console.log('Starting login process...')
-    console.log('Email:', email.value)
     
     // Get CSRF token
     const csrfToken = await getCsrfToken()
@@ -282,7 +265,6 @@ const handleSubmit = async (e?: Event) => {
       remember: keepLoggedIn.value,
     }
     
-    console.log('Sending login request...', { email: loginData.email, remember: loginData.remember })
     
     const response = await fetch('/admin/api/login', {
       method: 'POST',
@@ -296,19 +278,16 @@ const handleSubmit = async (e?: Event) => {
       body: JSON.stringify(loginData),
     })
 
-    console.log('Response status:', response.status, response.statusText)
 
     let data
     try {
       const responseText = await response.text()
-      console.log('Response text:', responseText)
       data = JSON.parse(responseText)
     } catch (e) {
       console.error('Failed to parse response:', e)
       throw new Error('Invalid response from server. Please check console for details.')
     }
 
-    console.log('Login response data:', data)
 
     if (!response.ok) {
       // Handle validation errors
@@ -320,8 +299,6 @@ const handleSubmit = async (e?: Event) => {
     }
 
     if (data.success) {
-      console.log('Login successful! Redirecting...')
-      console.log('Is first login:', data.is_first_login)
       
       // Update auth state immediately
       resetAuthState()
@@ -331,14 +308,12 @@ const handleSubmit = async (e?: Event) => {
       
       // Force check auth to update state before redirect
       const authResult = await checkAuth(true)
-      console.log('Auth check result:', authResult)
       
       // Always redirect to welcome page after successful login
       const redirectPath = '/admin/welcome'
       
       // Use window.location for reliable redirect (bypasses router guard temporarily)
       // This ensures the redirect happens even if router guard hasn't updated yet
-      console.log('Redirecting to:', redirectPath)
       window.location.href = redirectPath
     } else {
       throw new Error(data.message || 'Login failed')

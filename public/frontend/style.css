@@ -1946,6 +1946,9 @@ header .xc{
 }
 .site-brand-text span{ display:block }
 
+/* Dark mode: ensure brand stacked text is white for readability */
+.dark .site-brand-text { color: #ffffff; }
+
 @media (min-width: 1280px){
   .site-brand-text{ font-size: 14px }
 }

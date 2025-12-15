@@ -329,7 +329,6 @@ const toast = useToast()
 const handleDelete = async (id: string | number) => {
   // Debug log to confirm click handler is invoked
   // console.log is intentional for quick browser debugging; remove after verification
-  console.log('handleDelete called for id:', id)
   deleteTargetId.value = String(id)
   showDeleteModal.value = true
 }

@@ -426,7 +426,6 @@ const loadData = async () => {
     // if (data.success) {
     //   Object.assign(formData, data.data)
     // }
-    console.log('Loading profile kami data...')
   } catch (error) {
     console.error('Error loading data:', error)
   }
@@ -453,7 +452,6 @@ const handleSave = async () => {
     // if (data.success) {
     //   alert('Data berhasil disimpan')
     // }
-    console.log('Saving profile kami data:', formData)
     alert('Data berhasil disimpan')
   } catch (error) {
     console.error('Error saving:', error)

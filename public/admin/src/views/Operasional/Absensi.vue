@@ -261,9 +261,7 @@ const createDataSource = () => {
           return
         }
 
-        console.log('Absensi dataSource.getRows', { start, end, limit })
         const url = `/admin/api/absensi?${buildQueryParams(start, limit)}`
-        console.log('Absensi getRows fetching', url)
 
         const p = (async () => {
           const res = await fetch(url, {
@@ -277,10 +275,8 @@ const createDataSource = () => {
             credentials: 'same-origin',
           })
 
-          console.log('Absensi getRows response ok?', res.ok, 'status', res.status)
           if (!res.ok) throw new Error('Failed to fetch')
           const json = await res.json()
-          console.log('Absensi getRows json', json)
 
           if (json.success) {
             errorMessage.value = ''
@@ -320,7 +316,6 @@ const dataSourceRef = ref(createDataSource())
 
 const onGridReady = (params: any) => {
   gridApi.value = params.api
-  console.log('Absensi onGridReady called')
   // Bind the reactive datasource to AG Grid (use .value on the ref)
   try {
     params.api.setDatasource(dataSourceRef.value)
@@ -521,7 +516,6 @@ const getCsrfToken = (): string => {
 // Fetch data from API
 const fetchData = async () => {
   // Keep for export and fallback; infinite grid will use dataSource instead
-  console.log('fetchData: loading absensi data...')
   loading.value = true
   try {
     const params = new URLSearchParams()
@@ -690,7 +684,6 @@ watch([filterSearch, filterTanggal, filterStatus, filterKantorCabang, filterTipe
 })
 
 onMounted(() => {
-  console.log('Absensi component mounted')
   loadOptions()
   fetchData()
 })

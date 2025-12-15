@@ -243,19 +243,16 @@ const rowData = ref(rowDataArray)
 
 // Handle add button
 const handleAdd = () => {
-  console.log('Add new proposal')
   alert('Fungsi tambah proposal akan diimplementasikan')
 }
 
 // Handle edit
 const handleEdit = (id: string) => {
-  console.log('Edit proposal:', id)
   alert(`Edit proposal dengan ID: ${id}`)
 }
 
 // Handle delete
 const handleDelete = (id: string) => {
-  console.log('Delete proposal:', id)
   if (confirm('Apakah Anda yakin ingin menghapus proposal ini?')) {
     alert(`Proposal dengan ID: ${id} akan dihapus`)
   }

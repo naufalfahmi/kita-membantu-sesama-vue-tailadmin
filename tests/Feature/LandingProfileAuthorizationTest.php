@@ -14,8 +14,10 @@ class LandingProfileAuthorizationTest extends TestCase
     {
         $user = \App\Models\User::factory()->create();
 
+        // Authenticated users should be able to view the landing profile (read-only)
         $res = $this->actingAs($user)->getJson('/admin/api/company/landing-profile');
-        $res->assertStatus(403);
+        $res->assertStatus(200);
+        $res->assertJson(['success' => true]);
     }
 
     public function test_user_with_permission_can_view_and_update_landing_profile()
@@ -35,5 +37,20 @@ class LandingProfileAuthorizationTest extends TestCase
         $res2->assertStatus(200);
 
         $this->assertDatabaseHas('landing_profiles', ['title' => 'New Title From Test']);
+    }
+
+    public function test_admin_can_view_landing_profile_without_explicit_permission()
+    {
+        // create landing profile data
+        \App\Models\LandingProfile::create(['title' => 'Admin View Test']);
+
+        // create admin role and assign to user
+        $role = \Spatie\Permission\Models\Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $user = \App\Models\User::factory()->create();
+        $user->assignRole('admin');
+
+        $res = $this->actingAs($user)->getJson('/admin/api/company/landing-profile');
+        $res->assertStatus(200);
+        $res->assertJsonPath('data.title', 'Admin View Test');
     }
 }

@@ -10,9 +10,24 @@ class LandingProfileController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:view landing profile')->only('index');
-        $this->middleware('permission:create landing profile')->only('store');
-        $this->middleware('permission:update landing profile')->only('update');
+        // Any authenticated user may view the landing profile (read-only)
+        // (the route group already enforces 'auth')
+
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if ($user && ($user->hasRole('admin') || $user->can('create landing profile'))) {
+                return $next($request);
+            }
+            abort(403);
+        })->only('store');
+
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if ($user && ($user->hasRole('admin') || $user->can('update landing profile'))) {
+                return $next($request);
+            }
+            abort(403);
+        })->only('update');
     }
     /**
      * Return the first landing profile (there should be at most one)

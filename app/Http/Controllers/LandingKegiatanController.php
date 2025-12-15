@@ -10,6 +10,13 @@ use Illuminate\Support\Str;
 
 class LandingKegiatanController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view landing kegiatan')->only(['index', 'show']);
+        $this->middleware('permission:create landing kegiatan')->only('store');
+        $this->middleware('permission:update landing kegiatan')->only('update');
+        $this->middleware('permission:delete landing kegiatan')->only('destroy');
+    }
     /**
      * Display a listing of the resource.
      */

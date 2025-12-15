@@ -305,6 +305,19 @@ layer(base);
   display: none;
 }
 
+/* Logo color tokens so inline SVGs match frontend */
+.logo-primary{ fill: #4A90E2 }
+.logo-accent-1{ fill: #00ab4f }
+.logo-accent-2{ fill: #ff6200 }
+.logo-accent-3{ fill: #ff6200 }
+
+/* Site brand text next to logo (stacked, compact spacing)
+   Keep horizontal padding small so left/right space isn't too wide */
+.site-brand{ display: inline-flex; align-items: center; gap: 4px; padding-left: 2px; padding-right: 2px; }
+.site-brand .logo, .site-brand .logo-icon { margin-right: 4px; }
+.site-brand-text{ display: inline-flex; flex-direction: column; gap: 0; line-height: 1; font-weight: 700; font-size: 12px; color: var(--color-gray-700); }
+.site-brand-text span{ display: block; margin: 0; padding: 0; }
+
 .sidebar:hover .menu-item-text {
   display: inline;
 }

@@ -8,6 +8,13 @@ use Illuminate\Support\Facades\Validator;
 
 class LandingProgramController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view landing program')->only(['index', 'show']);
+        $this->middleware('permission:create landing program')->only('store');
+        $this->middleware('permission:update landing program')->only('update');
+        $this->middleware('permission:delete landing program')->only('destroy');
+    }
     public function index(Request $request)
     {
         $query = LandingProgram::query();

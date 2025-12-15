@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
@@ -39,38 +40,40 @@ class DashboardController extends Controller
                         'landingBulletin' => DB::table('landing_bulletins')->count(),
                     ],
                     'administrasi' => [
-                        'kantorCabang' => DB::table('kantor_cabangs')->count(),
-                        'program' => DB::table('programs')->count(),
-                        'jabatan' => DB::table('roles')->count(),
-                        'pangkat' => DB::table('pangkats')->count(),
-                        'gaji' => DB::table('gajis')->count(),
-                        'sop' => DB::table('sops')->count(),
+                        'kantorCabang' => $this->safeCount('kantor_cabang'),
+                        'program' => $this->safeCount('program'),
+                        'jabatan' => $this->safeCount('roles'),
+                        'pangkat' => $this->safeCount('pangkats'),
+                        'gaji' => $this->safeCount('gajis'),
+                        'sop' => $this->safeCount('sops'),
                     ],
                     'konten' => [
-                        'programKami' => DB::table('program_kamis')->count(),
-                        'profileKami' => DB::table('profile_kamis')->count(),
-                        'proposalData' => DB::table('proposal_data')->count(),
-                        'bulletinData' => DB::table('bulletin_data')->count(),
+                        'programKami' => $this->safeCount('program_kamis'),
+                        'profileKami' => $this->safeCount('profile_kamis'),
+                        'proposalData' => $this->safeCount('proposal_data'),
+                        'bulletinData' => $this->safeCount('bulletin_data'),
                     ],
                     'userKepegawaian' => [
-                        'karyawan' => DB::table('karyawans')->count(),
-                        'mitra' => DB::table('mitras')->count(),
-                        'donatur' => DB::table('donaturs')->count(),
+                        'karyawan' => $this->safeCount('karyawans'),
+                        'mitra' => $this->safeCount('mitras'),
+                        'donatur' => $this->safeCount('donaturs'),
                     ],
                     'operasional' => [
                         'absensi' => DB::table('absensis')->count(),
                         'remunerasi' => DB::table('remunerasis')->count(),
                     ],
                     'keuangan' => [
-                        'transaksi' => DB::table('transaksis')->count(),
-                        'penyaluran' => DB::table('penyalurans')->count(),
-                        'pengajuanDana' => DB::table('pengajuan_danas')->count(),
-                        'total' => DB::table('keuangans')->sum('jumlah') ?? 0,
+                        'transaksi' => $this->safeCount('transaksis'),
+                        'penyaluran' => $this->safeCount('penyalurans'),
+                        'pengajuanDana' => $this->safeCount('pengajuan_danas'),
+                        'total' => $this->safeSum('keuangans', 'jumlah'),
                     ],
                     'laporan' => [
-                        'laporanTransaksi' => DB::table('laporan_transaksis')->count(),
-                        'laporanKeuangan' => DB::table('laporan_keuangans')->count(),
+                        'laporanTransaksi' => $this->safeCount('laporan_transaksis'),
+                        'laporanKeuangan' => $this->safeCount('laporan_keuangans'),
                     ],
+                    // Transactions breakdown for admin dashboard
+                    'transactions' => $this->getTransactionStats($request),
                 ],
             ]);
         } else {
@@ -80,14 +83,107 @@ class DashboardController extends Controller
                 'data' => [
                     'role' => 'user',
                     'userKepegawaian' => [
-                        'karyawan' => DB::table('karyawans')->where('user_id', $user->id)->count(),
+                        'karyawan' => Schema::hasTable('karyawans') ? DB::table('karyawans')->where('user_id', $user->id)->count() : 0,
                     ],
                     'operasional' => [
-                        'absensi' => DB::table('absensis')->where('user_id', $user->id)->count(),
-                        'remunerasi' => DB::table('remunerasis')->where('user_id', $user->id)->count(),
+                        'absensi' => Schema::hasTable('absensis') ? DB::table('absensis')->where('user_id', $user->id)->count() : 0,
+                        'remunerasi' => Schema::hasTable('remunerasis') ? DB::table('remunerasis')->where('user_id', $user->id)->count() : 0,
                     ],
                 ],
             ]);
+        }
+    }
+
+    /**
+     * Build transaction statistics grouped by jabatan and time series
+     */
+    protected function getTransactionStats(Request $request)
+    {
+        $days = $request->integer('days', 30);
+        $to = now()->endOfDay();
+        $from = now()->subDays(max(1, $days - 1))->startOfDay();
+
+        // By jabatan (role)
+        $byJabatan = DB::table('transaksis')
+            ->select('roles.name as jabatan', DB::raw('COUNT(*) as count'), DB::raw('COALESCE(SUM(nominal),0) as total'))
+            ->leftJoin('users', 'transaksis.fundraiser_id', '=', 'users.id')
+            ->leftJoin('model_has_roles', function ($join) {
+                $join->on('model_has_roles.model_id', '=', 'users.id')
+                    ->where('model_has_roles.model_type', '=', 'App\\Models\\User');
+            })
+            ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->whereBetween('tanggal_transaksi', [$from->toDateString(), $to->toDateString()])
+            ->groupBy('roles.name')
+            ->get();
+
+        // Time series (daily totals)
+        $rawSeries = DB::table('transaksis')
+            ->select(DB::raw('DATE(tanggal_transaksi) as date'), DB::raw('COALESCE(SUM(nominal),0) as total'))
+            ->whereBetween('tanggal_transaksi', [$from->toDateString(), $to->toDateString()])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // Build full date range series to ensure zero values are present
+        $period = [];
+        for ($d = $from->copy(); $d->lte($to); $d->addDay()) {
+            $key = $d->toDateString();
+            $period[] = [
+                'date' => $key,
+                'total' => isset($rawSeries[$key]) ? (float) $rawSeries[$key]->total : 0.0,
+            ];
+        }
+
+        // Normalize byJabatan to include label when null
+        $byJabatan = $byJabatan->map(function ($row) {
+            return [
+                'jabatan' => $row->jabatan ?? 'Tanpa Jabatan',
+                'count' => (int) $row->count,
+                'total' => (float) $row->total,
+            ];
+        })->values();
+
+        return [
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+            'by_jabatan' => $byJabatan,
+            'timeseries' => $period,
+        ];
+    }
+
+    /**
+     * Safe count helper which returns 0 when table does not exist or on error
+     */
+    protected function safeCount(string $table): int
+    {
+        try {
+            if (!Schema::hasTable($table)) {
+                return 0;
+            }
+
+            return (int) DB::table($table)->count();
+        } catch (\Throwable $e) {
+            // Log silently and return zero to avoid breaking dashboard
+            report($e);
+            return 0;
+        }
+    }
+
+    /**
+     * Safe sum helper which returns 0 when table does not exist or on error
+     */
+    protected function safeSum(string $table, string $column)
+    {
+        try {
+            if (!Schema::hasTable($table)) {
+                return 0;
+            }
+
+            return DB::table($table)->sum($column) ?? 0;
+        } catch (\Throwable $e) {
+            report($e);
+            return 0;
         }
     }
 }

@@ -9,6 +9,13 @@ use Illuminate\Support\Facades\Validator;
 
 class LandingBulletinController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view landing bulletin')->only(['index', 'show']);
+        $this->middleware('permission:create landing bulletin')->only('store');
+        $this->middleware('permission:update landing bulletin')->only('update');
+        $this->middleware('permission:delete landing bulletin')->only('destroy');
+    }
     public function index(Request $request)
     {
         $query = LandingBulletin::query();

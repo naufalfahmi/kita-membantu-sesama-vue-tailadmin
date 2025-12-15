@@ -9,6 +9,13 @@ use Illuminate\Support\Facades\Validator;
 
 class LandingProposalController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view landing proposal')->only(['index', 'show']);
+        $this->middleware('permission:create landing proposal')->only('store');
+        $this->middleware('permission:update landing proposal')->only('update');
+        $this->middleware('permission:delete landing proposal')->only('destroy');
+    }
     public function index(Request $request)
     {
         $query = LandingProposal::query();

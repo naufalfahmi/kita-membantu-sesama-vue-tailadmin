@@ -8,6 +8,12 @@ use Illuminate\Support\Facades\Validator;
 
 class LandingProfileController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('permission:view landing profile')->only('index');
+        $this->middleware('permission:create landing profile')->only('store');
+        $this->middleware('permission:update landing profile')->only('update');
+    }
     /**
      * Return the first landing profile (there should be at most one)
      */

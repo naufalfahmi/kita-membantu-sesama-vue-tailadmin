@@ -63,6 +63,7 @@
               List Bank
             </h4>
             <button
+              v-if="existingProfile ? canUpdate : canCreate"
               type="button"
               @click="addBank"
               class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
@@ -100,6 +101,7 @@
                 Bank #{{ index + 1 }}
               </span>
               <button
+                v-if="existingProfile ? canUpdate : canCreate"
                 type="button"
                 @click="removeBank(index)"
                 class="flex items-center gap-1 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"
@@ -172,6 +174,7 @@
               List Alamat
             </h4>
             <button
+              v-if="existingProfile ? canUpdate : canCreate"
               type="button"
               @click="addAddress"
               class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
@@ -220,6 +223,7 @@
                 </label>
               </div>
               <button
+                v-if="existingProfile ? canUpdate : canCreate"
                 type="button"
                 @click="removeAddress(index)"
                 class="flex items-center gap-1 rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:bg-gray-800 dark:text-red-400 dark:hover:bg-red-900/20"
@@ -295,6 +299,7 @@
             Batal
           </button>
           <button
+            v-if="existingProfile ? canUpdate : canCreate"
             type="submit"
             class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
           >
@@ -312,6 +317,7 @@ import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
@@ -329,12 +335,23 @@ const formData = reactive({
 const errors = ref<Record<string, string>>({})
 const toast = useToast()
 
+// Auth / permissions
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+fetchUser()
+
+const canCreate = computed(() => isAdmin() || hasPermission('create landing profile'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update landing profile'))
+
 // Counter for unique IDs
 let bankIdCounter = 0
 let addressIdCounter = 0
 
 // Add new bank
 const addBank = () => {
+  if (existingProfile.value ? !canUpdate.value : !canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk menambah data')
+    return
+  }
   formData.banks.push({
     id: ++bankIdCounter,
     bank_name: '',
@@ -344,6 +361,10 @@ const addBank = () => {
 
 // Remove bank
 const removeBank = (index: number) => {
+  if (existingProfile.value ? !canUpdate.value : !canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk menghapus data')
+    return
+  }
   formData.banks.splice(index, 1)
   // Clear related errors
   delete errors.value[`banks.${index}.bank_name`]
@@ -352,6 +373,10 @@ const removeBank = (index: number) => {
 
 // Add new address
 const addAddress = () => {
+  if (existingProfile.value ? !canUpdate.value : !canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk menambah data')
+    return
+  }
   formData.addresses.push({
     id: ++addressIdCounter,
     name: '',
@@ -362,6 +387,10 @@ const addAddress = () => {
 
 // Remove address
 const removeAddress = (index: number) => {
+  if (existingProfile.value ? !canUpdate.value : !canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk menghapus data')
+    return
+  }
   formData.addresses.splice(index, 1)
   // Clear related errors
   delete errors.value[`addresses.${index}.name`]
@@ -458,6 +487,11 @@ const handleCancel = () => {
 
 // Handle save
 const handleSave = async () => {
+  if (existingProfile.value ? !canUpdate.value : !canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk menyimpan data')
+    return
+  }
+
   if (!validateForm()) {
     return
   }

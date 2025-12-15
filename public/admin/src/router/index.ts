@@ -10,7 +10,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'Home',
-      redirect: '/welcome',
+      redirect: '/dashboard',
     },
     {
       path: '/calendar',
@@ -165,6 +165,12 @@ const router = createRouter({
       meta: {
         title: 'Welcome',
       },
+    },
+    {
+      path: '/dashboard',
+      name: 'Dashboard',
+      component: () => import('../views/Dashboard.vue'),
+      meta: { title: 'Dashboard' },
     },
     
     // Dynamic routes for all menu items - using BlankPage as default

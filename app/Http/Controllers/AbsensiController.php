@@ -86,6 +86,44 @@ class AbsensiController extends Controller
         if ($request->filled('tipe_absensi_id')) {
             $query->where('tipe_absensi_id', $request->tipe_absensi_id);
         }
+        // Sorting support: allow `sort_by` and `sort_direction` (asc|desc).
+        // Supports related fields like `user.name`, `kantor_cabang.nama`, `tipe_absensi.nama`.
+        $appliedSort = false;
+        if ($request->filled('sort_by')) {
+            $sortBy = $request->input('sort_by');
+            $direction = strtolower($request->input('sort_direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+            if (str_contains($sortBy, '.')) {
+                [$relation, $col] = explode('.', $sortBy, 2);
+                switch ($relation) {
+                    case 'user':
+                        $query->leftJoin('users as u', 'absensis.user_id', '=', 'u.id')
+                              ->orderBy("u.{$col}", $direction)
+                              ->select('absensis.*');
+                        $appliedSort = true;
+                        break;
+                    case 'kantor_cabang':
+                        $query->leftJoin('kantor_cabang as k', 'absensis.kantor_cabang_id', '=', 'k.id')
+                              ->orderBy("k.{$col}", $direction)
+                              ->select('absensis.*');
+                        $appliedSort = true;
+                        break;
+                    case 'tipe_absensi':
+                        $query->leftJoin('tipe_absensis as t', 'absensis.tipe_absensi_id', '=', 't.id')
+                              ->orderBy("t.{$col}", $direction)
+                              ->select('absensis.*');
+                        $appliedSort = true;
+                        break;
+                    default:
+                        // fallback to order by column on absensis
+                        $query->orderBy($sortBy, $direction);
+                        $appliedSort = true;
+                }
+            } else {
+                $query->orderBy($sortBy, $direction);
+                $appliedSort = true;
+            }
+        }
 
         // Support both classic pagination and infinite scroll (start/limit)
         if ($request->filled('start') && $request->filled('limit')) {
@@ -94,8 +132,11 @@ class AbsensiController extends Controller
 
             $total = $query->count();
 
-            $items = $query->orderBy('jam_masuk', 'desc')
-                           ->skip($start)
+            if (! $appliedSort) {
+                $query->orderBy('jam_masuk', 'desc');
+            }
+
+            $items = $query->skip($start)
                            ->take($limit)
                            ->get();
 
@@ -106,8 +147,11 @@ class AbsensiController extends Controller
             ]);
         }
 
-        $absensi = $query->orderBy('jam_masuk', 'desc')
-                 ->paginate($request->get('per_page', 10));
+        if (! isset($appliedSort) || ! $appliedSort) {
+            $query->orderBy('jam_masuk', 'desc');
+        }
+
+        $absensi = $query->paginate($request->get('per_page', 10));
 
         return response()->json([
             'success' => true,

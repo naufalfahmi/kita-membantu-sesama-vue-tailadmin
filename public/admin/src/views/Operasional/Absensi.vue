@@ -135,6 +135,7 @@
           :animateRows="true"
           :suppressHorizontalScroll="true"
           @grid-ready="onGridReady"
+          @sortChanged="onSortChanged"
         />
         </div>
       </div>
@@ -181,7 +182,7 @@ const handleFilterTanggalChange = () => {
 // debug panel removed
 
 // Build query params for infinite datasource
-const buildQueryParams = (start: number, limit: number) => {
+const buildQueryParams = (start: number, limit: number, sortModel?: any) => {
   const params = new URLSearchParams()
   params.append('start', String(start))
   params.append('limit', String(limit))
@@ -213,6 +214,11 @@ const buildQueryParams = (start: number, limit: number) => {
 
   if (filterStatus.value) params.append('status', filterStatus.value)
   params.append('per_page', '10')
+  if (sortModel && Array.isArray(sortModel) && sortModel.length > 0) {
+    const s = sortModel[0]
+    if (s.colId) params.append('sort_by', s.colId)
+    if (s.sort) params.append('sort_direction', s.sort)
+  }
   return params.toString()
 }
 
@@ -261,7 +267,7 @@ const createDataSource = () => {
           return
         }
 
-        const url = `/admin/api/absensi?${buildQueryParams(start, limit)}`
+        const url = `/admin/api/absensi?${buildQueryParams(start, limit, params.sortModel)}`
 
         const p = (async () => {
           const res = await fetch(url, {
@@ -321,6 +327,18 @@ const onGridReady = (params: any) => {
     params.api.setDatasource(dataSourceRef.value)
   } catch (e) {
     console.error('Error setting datasource on grid ready:', e)
+  }
+}
+
+const onSortChanged = () => {
+  if (gridApi.value) {
+    try {
+      gridApi.value.purgeInfiniteCache()
+    } catch (e) {
+      // fallback: recreate datasource
+      dataSourceRef.value = createDataSource()
+      if (gridApi.value) gridApi.value.setDatasource(dataSourceRef.value)
+    }
   }
 }
 

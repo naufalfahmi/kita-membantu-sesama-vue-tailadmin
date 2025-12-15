@@ -579,31 +579,78 @@ const cancelDelete = () => {
   deleteId.value = null
 }
 
-const handleExportExcel = () => {
-  const dataToExport = rowData.value.map((item) => ({
-    'Kode': item.kode || '-',
-    'Donatur': item.donatur || '-',
-    'Kantor Cabang': item.kantor_cabang || '-',
-    'Fundraiser': item.fundraiser || '-',
-    'Program': item.program || '-',
-    'Nominal': item.nominal_formatted,
-    'Tanggal': item.tanggal_transaksi
-      ? new Date(item.tanggal_transaksi).toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-      : '-',
-  }))
+const handleExportExcel = async () => {
+  try {
+    // Build same params as fetchData but request many items
+    const params = new URLSearchParams()
+    params.append('per_page', '1000')
 
-  const worksheet = XLSX.utils.json_to_sheet(dataToExport)
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Transaksi')
+    if (filterSearch.value) params.append('search', filterSearch.value)
 
-  const now = new Date()
-  const filename = `Transaksi_${now.toISOString().split('T')[0]}.xlsx`
+    if (Array.isArray(filterTanggal.value) && filterTanggal.value.length === 2) {
+      const [from, to] = filterTanggal.value
+      const toISO = (d: any) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d))
+      params.append('tanggal_from', toISO(from))
+      params.append('tanggal_to', toISO(to))
+    } else if (filterTanggal.value) {
+      params.append('tanggal', String(filterTanggal.value))
+    }
 
-  XLSX.writeFile(workbook, filename)
+    if (filterDonatur.value) params.append('donatur_id', filterDonatur.value)
+    if (filterProgram.value) params.append('program_id', filterProgram.value)
+    if (filterKantorCabang.value) params.append('kantor_cabang_id', filterKantorCabang.value)
+    if (filterFundraiser.value) params.append('fundraiser_id', filterFundraiser.value)
+
+    const res = await fetch(`/admin/api/transaksi?${params.toString()}`, {
+      credentials: 'same-origin',
+    })
+
+    if (!res.ok) throw new Error('Failed to fetch transaksi for export')
+
+    const json = await res.json()
+    if (!json.success) throw new Error(json.message || 'Failed to fetch transaksi for export')
+
+    const data = (json.data || []).map((item: any) => ({
+      'Kode': item.kode || '-',
+      'Donatur': item.donatur?.nama || '-',
+      'Kantor Cabang': item.kantor_cabang?.nama || '-',
+      'Fundraiser': item.fundraiser?.name || '-',
+      'Program': item.program?.nama_program || '-',
+      'Nominal': item.nominal_formatted,
+      'Tanggal': item.tanggal_transaksi
+        ? new Date(item.tanggal_transaksi).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+        : '-',
+      'Keterangan': item.keterangan || '-',
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(data)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Transaksi')
+
+    // Build filename including date range if present
+    let rangePart = ''
+    if (Array.isArray(filterTanggal.value) && filterTanggal.value.length === 2) {
+      const [from, to] = filterTanggal.value
+      const fmt = (d: any) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d))
+      rangePart = `_${fmt(from)}_to_${fmt(to)}`
+    } else if (filterTanggal.value) {
+      const d = filterTanggal.value instanceof Date ? filterTanggal.value.toISOString().slice(0,10) : String(filterTanggal.value)
+      rangePart = `_${d}`
+    }
+
+    const now = new Date()
+    const filename = `Transaksi${rangePart}_${now.toISOString().split('T')[0]}.xlsx`
+
+    XLSX.writeFile(workbook, filename)
+    toast.success('Export Excel berhasil')
+  } catch (err) {
+    console.error(err)
+    toast.error('Gagal mengekspor data')
+  }
 }
 
 onMounted(async () => {

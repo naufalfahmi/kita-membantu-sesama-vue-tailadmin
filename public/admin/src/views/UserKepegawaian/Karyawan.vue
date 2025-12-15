@@ -162,10 +162,25 @@ const kantorOptions = ref([] as Array<any>)
 const leaderOptions = ref([] as Array<any>)
 
 
-const pangkatSelectOptions = computed(() => pangkats.value.map((p: any) => ({ value: p.id, label: p.nama })))
-const jabatanSelectOptions = computed(() => jabatanOptions.value.map((r: any) => ({ value: r.id, label: r.name })))
-const kantorSelectOptions = computed(() => kantorOptions.value.map((c: any) => ({ value: c.id, label: c.nama })))
-const leaderSelectOptions = computed(() => leaderOptions.value.map((l: any) => ({ value: l.id, label: l.name })))
+const pangkatSelectOptions = computed(() => {
+  const opts = pangkats.value.map((p: any) => ({ value: String(p.id), label: p.nama || '-' }))
+  return [{ value: '', label: 'Semua Pangkat' }, ...opts]
+})
+
+const jabatanSelectOptions = computed(() => {
+  const opts = jabatanOptions.value.map((r: any) => ({ value: String(r.id), label: r.name || '-' }))
+  return [{ value: '', label: 'Semua Jabatan' }, ...opts]
+})
+
+const kantorSelectOptions = computed(() => {
+  const opts = kantorOptions.value.map((c: any) => ({ value: String(c.id), label: c.nama || '-' }))
+  return [{ value: '', label: 'Semua Kantor Cabang' }, ...opts]
+})
+
+const leaderSelectOptions = computed(() => {
+  const opts = leaderOptions.value.map((l: any) => ({ value: String(l.id), label: l.name || '-' }))
+  return [{ value: '', label: 'Semua Leader' }, ...opts]
+})
 const showDeleteModal = ref(false)
 const deleteId = ref<number | null>(null)
 let debounceTimer: ReturnType<typeof setTimeout> | undefined

@@ -75,13 +75,29 @@ class TransaksiController extends Controller
         }
 
         // Support both single-date filter (`tanggal=YYYY-MM-DD`) and
-        // a date range via `tanggal_from` and `tanggal_to`.
+        // a date range via `tanggal_from`/`tanggal_to` or a range passed
+        // in the `tanggal` parameter like `YYYY-MM-DD to YYYY-MM-DD`.
         if ($request->filled('tanggal_from') && $request->filled('tanggal_to')) {
             $from = $request->input('tanggal_from');
             $to = $request->input('tanggal_to');
             $query->whereBetween('tanggal_transaksi', [$from, $to]);
         } elseif ($request->filled('tanggal')) {
-            $query->whereDate('tanggal_transaksi', $request->tanggal);
+            $tanggal = trim((string) $request->input('tanggal'));
+
+            // Accept common range separators: " to " or " - "
+            $parts = preg_split('/\s+(?:to|-)\s+/i', $tanggal);
+            if (is_array($parts) && count($parts) === 2) {
+                [$from, $to] = array_map('trim', $parts);
+                // Basic YYYY-MM-DD validation
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+                    $query->whereBetween('tanggal_transaksi', [$from, $to]);
+                } else {
+                    // fallback to equality if parsing fails
+                    $query->whereDate('tanggal_transaksi', $tanggal);
+                }
+            } else {
+                $query->whereDate('tanggal_transaksi', $tanggal);
+            }
         }
 
         if ($request->filled('status')) {

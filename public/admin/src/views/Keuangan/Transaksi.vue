@@ -297,6 +297,19 @@ const flatpickrDateConfig = ({
   wrap: false,
 } as any)
 
+// Format date to local YYYY-MM-DD (avoid timezone shifts from toISOString)
+const formatYMDLocal = (d: any) => {
+  if (!d) return ''
+  if (typeof d === 'string') return d
+  if (d instanceof Date && !isNaN(d.getTime())) {
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+  return String(d)
+}
+
 const columnDefs = [
   {
     headerName: 'Kode',
@@ -457,13 +470,24 @@ const fetchData = async () => {
       params.append('search', filterSearch.value)
     }
 
+    const formatYMDLocal = (d: any) => {
+      if (!d) return ''
+      if (typeof d === 'string') return d
+      if (d instanceof Date && !isNaN(d.getTime())) {
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+        return `${yyyy}-${mm}-${dd}`
+      }
+      return String(d)
+    }
+
     if (Array.isArray(filterTanggal.value) && filterTanggal.value.length === 2) {
       const [from, to] = filterTanggal.value
-      const toISO = (d: any) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d))
-      params.append('tanggal_from', toISO(from))
-      params.append('tanggal_to', toISO(to))
+      params.append('tanggal_from', formatYMDLocal(from))
+      params.append('tanggal_to', formatYMDLocal(to))
     } else if (filterTanggal.value) {
-      params.append('tanggal', String(filterTanggal.value))
+      params.append('tanggal', formatYMDLocal(filterTanggal.value))
     }
 
     if (filterDonatur.value) {
@@ -589,11 +613,10 @@ const handleExportExcel = async () => {
 
     if (Array.isArray(filterTanggal.value) && filterTanggal.value.length === 2) {
       const [from, to] = filterTanggal.value
-      const toISO = (d: any) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d))
-      params.append('tanggal_from', toISO(from))
-      params.append('tanggal_to', toISO(to))
+      params.append('tanggal_from', formatYMDLocal(from))
+      params.append('tanggal_to', formatYMDLocal(to))
     } else if (filterTanggal.value) {
-      params.append('tanggal', String(filterTanggal.value))
+      params.append('tanggal', formatYMDLocal(filterTanggal.value))
     }
 
     if (filterDonatur.value) params.append('donatur_id', filterDonatur.value)
@@ -635,10 +658,9 @@ const handleExportExcel = async () => {
     let rangePart = ''
     if (Array.isArray(filterTanggal.value) && filterTanggal.value.length === 2) {
       const [from, to] = filterTanggal.value
-      const fmt = (d: any) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d))
-      rangePart = `_${fmt(from)}_to_${fmt(to)}`
+      rangePart = `_${formatYMDLocal(from)}_to_${formatYMDLocal(to)}`
     } else if (filterTanggal.value) {
-      const d = filterTanggal.value instanceof Date ? filterTanggal.value.toISOString().slice(0,10) : String(filterTanggal.value)
+      const d = formatYMDLocal(filterTanggal.value)
       rangePart = `_${d}`
     }
 

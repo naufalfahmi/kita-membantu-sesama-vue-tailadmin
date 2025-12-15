@@ -19,7 +19,7 @@
 
 **Frontend build** (required after Vue changes):
 ```bash
-npm run build
+cd /Users/roy/var/www/html/kms && npm run build
 ```
 
 **Backend setup**:

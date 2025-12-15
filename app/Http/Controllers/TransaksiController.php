@@ -74,7 +74,13 @@ class TransaksiController extends Controller
             $query->where('program_id', $request->program_id);
         }
 
-        if ($request->filled('tanggal')) {
+        // Support both single-date filter (`tanggal=YYYY-MM-DD`) and
+        // a date range via `tanggal_from` and `tanggal_to`.
+        if ($request->filled('tanggal_from') && $request->filled('tanggal_to')) {
+            $from = $request->input('tanggal_from');
+            $to = $request->input('tanggal_to');
+            $query->whereBetween('tanggal_transaksi', [$from, $to]);
+        } elseif ($request->filled('tanggal')) {
             $query->whereDate('tanggal_transaksi', $request->tanggal);
         }
 

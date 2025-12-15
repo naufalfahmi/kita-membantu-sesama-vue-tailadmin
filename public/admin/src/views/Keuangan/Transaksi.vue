@@ -69,7 +69,7 @@
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Tanggal
+              Rentang Tanggal
             </label>
             <div class="relative">
               <FlatPickr
@@ -77,7 +77,7 @@
                 :config="flatpickrDateConfig"
                 @on-change="debouncedFetch"
                 class="h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                placeholder="Pilih tanggal"
+                placeholder="Pilih rentang tanggal"
               />
               <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none">
                 <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -233,7 +233,7 @@ const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 const loading = ref(false)
 const rowData = ref<TransaksiRow[]>([])
 const filterSearch = ref('')
-const filterTanggal = ref('')
+const filterTanggal = ref<any>([])
 const filterDonatur = ref('')
 const filterProgram = ref('')
 const filterFundraiser = ref('')
@@ -255,41 +255,47 @@ const fundraiserSearchInput = ref('')
 const kantorCabangSearchInput = ref('')
 
 // Computed options for SearchableSelect
-const donaturOptions = computed(() =>
-  donaturList.value.map((item) => ({
+const donaturOptions = computed(() => [
+  { value: '', label: 'Semua Donatur' },
+  ...donaturList.value.map((item) => ({
     value: item.id,
     label: item.nama || '-',
-  }))
-)
+  })),
+])
 
-const programOptions = computed(() =>
-  programList.value.map((item) => ({
+const programOptions = computed(() => [
+  { value: '', label: 'Semua Program' },
+  ...programList.value.map((item) => ({
     value: item.id,
     label: item.nama_program || '-',
-  }))
-)
+  })),
+])
 
-const fundraiserOptions = computed(() =>
-  fundraiserList.value.map((item) => ({
+const fundraiserOptions = computed(() => [
+  { value: '', label: 'Semua Fundraiser' },
+  ...fundraiserList.value.map((item) => ({
     value: String(item.id),
     label: item.name || '-',
-  }))
-)
+  })),
+])
 
-const kantorCabangOptions = computed(() =>
-  kantorCabangList.value.map((item) => ({
+const kantorCabangOptions = computed(() => [
+  { value: '', label: 'Semua Kantor Cabang' },
+  ...kantorCabangList.value.map((item) => ({
     value: item.id,
     label: item.nama || '-',
-  }))
-)
+  })),
+])
 
 
-const flatpickrDateConfig = {
+
+const flatpickrDateConfig = ({
+  mode: 'range',
   dateFormat: 'Y-m-d',
   altInput: true,
   altFormat: 'd/m/Y',
   wrap: false,
-}
+} as any)
 
 const columnDefs = [
   {
@@ -451,8 +457,13 @@ const fetchData = async () => {
       params.append('search', filterSearch.value)
     }
 
-    if (filterTanggal.value) {
-      params.append('tanggal', filterTanggal.value)
+    if (Array.isArray(filterTanggal.value) && filterTanggal.value.length === 2) {
+      const [from, to] = filterTanggal.value
+      const toISO = (d: any) => (d instanceof Date ? d.toISOString().slice(0, 10) : String(d))
+      params.append('tanggal_from', toISO(from))
+      params.append('tanggal_to', toISO(to))
+    } else if (filterTanggal.value) {
+      params.append('tanggal', String(filterTanggal.value))
     }
 
     if (filterDonatur.value) {
@@ -509,7 +520,7 @@ const debouncedFetch = () => {
 
 const resetFilter = () => {
   filterSearch.value = ''
-  filterTanggal.value = ''
+  filterTanggal.value = []
   filterDonatur.value = ''
   filterProgram.value = ''
   filterKantorCabang.value = ''

@@ -118,7 +118,6 @@ const localSearchInput = ref(props.searchInput || '')
 
 // Get selected label
 const selectedLabel = computed(() => {
-  if (!props.modelValue) return ''
   const selected = props.options.find((opt) => opt.value === props.modelValue)
   return selected ? selected.label : ''
 })

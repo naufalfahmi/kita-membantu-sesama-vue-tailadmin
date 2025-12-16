@@ -33,8 +33,8 @@
 
       <!-- Filter Section -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="flex gap-4">
-          <div class="flex-1">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div class="md:col-span-2 xl:col-span-2">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Cari
             </label>
@@ -47,22 +47,27 @@
             />
           </div>
 
-          <div class="w-64">
+          <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
             <SearchableSelect v-model="filterPic" :options="picSelectOptions" placeholder="Semua PIC" />
           </div>
 
-          <div class="w-64">
+          <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Jenis Donatur</label>
-            <SearchableMultiSelect v-model="filterJenis" :options="jenisOptions" placeholder="Semua Tipe" />
+            <SearchableMultiSelect
+              v-model="filterJenis"
+              :options="jenisSelectOptions"
+              placeholder="Semua Tipe"
+              @update:modelValue="handleJenisFilterChange"
+            />
           </div>
 
-          <div class="w-64">
+          <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
             <SearchableSelect v-model="filterKantorCabang" :options="kantorCabangSelectOptions" placeholder="Semua Kantor" />
           </div>
 
-          <div class="flex items-end">
+          <div class="flex items-end md:col-span-2 xl:col-span-1">
             <button
               @click="resetFilter"
               class="h-11 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
@@ -109,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { AgGridVue } from 'ag-grid-vue3'
@@ -157,22 +162,31 @@ const filterJenis = ref<string[]>([])
 const filterKantorCabang = ref('')
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
-const jenisOptions = [
+const ALL_JENIS_OPTION = '__ALL_JENIS__'
+
+const baseJenisOptions = [
   { value: 'komunitas', label: 'Komunitas' },
   { value: 'kotak_infaq', label: 'Kotak Infaq' },
   { value: 'retail', label: 'Retail' },
 ]
 
+const jenisSelectOptions = computed(() => [
+  { value: ALL_JENIS_OPTION, label: 'Semua Jenis Donatur' },
+  ...baseJenisOptions,
+])
+
 const kantorCabangOptions = ref<any[]>([])
 const karyawanOptions = ref<any[]>([])
 
-const picSelectOptions = computed(() =>
-  karyawanOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' }))
-)
+const picSelectOptions = computed(() => [
+  { value: '', label: 'Semua PIC' },
+  ...karyawanOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
+])
 
-const kantorCabangSelectOptions = computed(() =>
-  kantorCabangOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' }))
-)
+const kantorCabangSelectOptions = computed(() => [
+  { value: '', label: 'Semua Kantor Cabang' },
+  ...kantorCabangOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
+])
 
 // Column definitions
 const columnDefs = [
@@ -420,6 +434,19 @@ const resetFilter = () => {
   filterKantorCabang.value = ''
   fetchData()
 }
+
+const handleJenisFilterChange = (values: string[]) => {
+  if (values.includes(ALL_JENIS_OPTION)) {
+    filterJenis.value = []
+    return
+  }
+  filterJenis.value = values
+}
+
+// Trigger fetch automatically whenever non-text filters change
+watch([filterPic, filterJenis, filterKantorCabang], () => {
+  fetchData()
+}, { deep: true })
 
 const fetchReferenceData = async () => {
   try {

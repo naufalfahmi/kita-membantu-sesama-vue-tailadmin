@@ -140,7 +140,12 @@
         </div>
       </div>
 
-      <!-- Empty state is handled by AG Grid overlay for infinite row model -->
+      <!-- Friendly placeholder when backend reports zero rows -->
+      <div v-if="!loading && totalAbsensi === 0" class="py-10">
+        <div class="flex flex-col items-center justify-center gap-3">
+          
+        </div>
+      </div>
     </div>
   </AdminLayout>
 </template>
@@ -167,7 +172,11 @@ const loading = ref(false)
 const rowData = ref<any[]>([])
 const gridApi = ref<any | null>(null)
 const errorMessage = ref('')
+// total count from API (null means unknown yet)
+const totalAbsensi = ref<number | null>(null)
 const handleFilterChange = () => {
+  // reset total when filters change
+  totalAbsensi.value = null
   if (gridApi.value) gridApi.value.purgeInfiniteCache()
   else fetchData()
 }
@@ -291,15 +300,24 @@ const createDataSource = () => {
           if (json.success) {
             errorMessage.value = ''
             lastTotal = typeof json.total === 'number' ? json.total : (json.data ? json.data.length : null)
+            // reflect total to reactive outside var so template can show placeholder
+            totalAbsensi.value = lastTotal ?? null
             const data = json.data || []
             // cache by start index
             blockCache.set(blockKey, data)
             params.successCallback(data, lastTotal ?? null)
-            if (!data || data.length === 0) {
-              errorMessage.value = 'Tidak ada data pada rentang/ filter ini.'
+
+            // show friendly message if backend reports zero total
+            if ((lastTotal === 0) || (!data || data.length === 0)) {
+              errorMessage.value = ''
+              // Show AG Grid 'no rows' overlay if api is available
+              try { gridApi.value?.showNoRowsOverlay?.() } catch (e) { /* ignore */ }
+            } else {
+              try { gridApi.value?.hideOverlay?.() } catch (e) { /* ignore */ }
             }
           } else {
             errorMessage.value = json.message || 'Gagal memuat data absensi'
+            totalAbsensi.value = 0
             params.successCallback([], 0)
           }
         })()

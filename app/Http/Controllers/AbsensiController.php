@@ -23,7 +23,7 @@ class AbsensiController extends Controller
             return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-        $isAdmin = $authUser->hasRole('admin');
+        $isAdmin = $authUser->hasAnyRole(['admin', 'superadmin', 'super-admin']);
         // Build allowed user ids for non-admin: self + subordinates
         $allowedUserIds = null;
         if (!$isAdmin) {
@@ -41,7 +41,7 @@ class AbsensiController extends Controller
         }
 
         // Filter by user_id / visibility
-        if ($request->filled('user_id')) {
+            if ($request->filled('user_id')) {
             $requestedUserId = $request->user_id;
             if ($isAdmin) {
                 $query->where('user_id', $requestedUserId);
@@ -184,7 +184,7 @@ class AbsensiController extends Controller
 
             // If requesting another user's today status, ensure the requester is admin or leader of that user
             if ($request->filled('user_id') && $request->user_id != $user->id) {
-                $isAdmin = $user->hasRole('admin');
+                $isAdmin = $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
                 $isLeaderOf = $user->subordinates()->where('id', $request->user_id)->exists();
                 if (! $isAdmin && ! $isLeaderOf) {
                     return response()->json([

@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use App\Models\Transaksi;
 use App\Models\Donatur;
 use App\Models\Program;
@@ -58,15 +59,118 @@ class TransaksiSeeder extends Seeder
 
                     // create minimal related records if missing so foreign keys won't fail
                     if (!empty($item['donor_id'])) {
+                        $donorJenis = null;
+                        if (!empty($item['donor']['jenis_donatur'])) {
+                            $donorJenis = $item['donor']['jenis_donatur'];
+                        } elseif (!empty($item['donor']['jenis'])) {
+                            $donorJenis = $item['donor']['jenis'];
+                        } elseif (!empty($item['donor']['type'])) {
+                            $donorJenis = $item['donor']['type'];
+                        }
+
+                        // Normalize to array
+                        // If donor provides a tipe_donatur id, prefer that (lookup name from table)
+                        $donorJenisArr = null;
+                        $tipeId = $item['donor']['tipe_donatur_id'] ?? $item['donor']['tipe_donatur']['id'] ?? $item['donor']['type_id'] ?? $item['donor']['donor_type_id'] ?? $item['donor']['donor_type']['id'] ?? $item['donor_type_id'] ?? $item['donor_type']['id'] ?? null;
+                        if ($tipeId) {
+                            $tipeNama = DB::table('tipe_donatur')->where('id', $tipeId)->value('nama');
+                            if ($tipeNama) {
+                                // normalize to lowercase underscore format, e.g. "Kotak infaq" => "kotak_infaq"
+                                $donorJenisArr = [Str::slug($tipeNama, '_')];
+                            }
+                        }
+
+                        // If donor provides donor_type as object or string, use its name if available
+                        if (empty($donorJenisArr) && !empty($item['donor']['donor_type'])) {
+                            $dt = $item['donor']['donor_type'];
+                            if (is_array($dt)) {
+                                $dtName = $dt['nama'] ?? $dt['name'] ?? ($dt['nama'] ?? null);
+                                if (!empty($dtName)) {
+                                    $donorJenisArr = [$dtName];
+                                }
+                            } elseif (is_string($dt)) {
+                                $donorJenisArr = [$dt];
+                            }
+                        }
+
+                        if (is_null($donorJenisArr)) {
+                            if (empty($donorJenis)) {
+                                $donorJenisArr = ['perorangan'];
+                            } elseif (is_array($donorJenis)) {
+                                $donorJenisArr = $donorJenis;
+                            } else {
+                                $donorJenisArr = [$donorJenis];
+                            }
+                        }
+
+                        // map pic to internal user id if donor contains pic_id or pic_uuid
+                        $picUserId = null;
+                        $picUuid = $item['donor']['pic_id'] ?? $item['donor']['pic_uuid'] ?? $item['donor']['pic'] ?? null;
+                        if ($picUuid) {
+                            $picUserId = DB::table('users')->where('uuid', $picUuid)->value('id');
+
+                            // if user with that UUID doesn't exist, create/update placeholder karyawan user
+                            if (!$picUserId) {
+                                $next = DB::table('users')->where('name', 'like', 'Karyawan Untitled%')->count() + 1;
+                                $name = 'Karyawan Untitled ' . $next;
+                                $email = substr($picUuid, 0, 8) . '@example.com';
+                                $noInduk = $item['donor']['donor_index_number'] ?? null;
+
+                                // if a user with this email already exists, reuse and ensure uuid/password are set
+                                $existing = DB::table('users')->where('email', $email)->first();
+                                if ($existing) {
+                                    $picUserId = $existing->id;
+                                    $updateData = ['uuid' => $picUuid, 'updated_at' => now(), 'password' => Hash::make('password123')];
+                                    if ($noInduk) $updateData['no_induk'] = $noInduk;
+                                    if ($item['donor']['branch_office_id'] ?? $item['branch_office_id'] ?? null) $updateData['kantor_cabang_id'] = $item['donor']['branch_office_id'] ?? $item['branch_office_id'] ?? null;
+                                    DB::table('users')->where('id', $picUserId)->update($updateData);
+                                } else {
+                                    $picUserId = DB::table('users')->insertGetId([
+                                        'name' => $name,
+                                        'email' => $email,
+                                        'password' => Hash::make('password123'),
+                                        'no_induk' => $noInduk,
+                                        'posisi' => 'karyawan',
+                                        'tipe_user' => 'karyawan',
+                                        'is_active' => 1,
+                                        'uuid' => $picUuid,
+                                        'kantor_cabang_id' => $item['donor']['branch_office_id'] ?? $item['branch_office_id'] ?? null,
+                                        'created_at' => now(),
+                                        'updated_at' => now(),
+                                    ]);
+                                }
+                            }
+                        }
+
+                        // normalize donor status
+                        $statusRaw = strtolower($item['donor']['status'] ?? '');
+                        if ($statusRaw === 'active') {
+                            $status = 'aktif';
+                        } elseif ($statusRaw === 'inactive' || $statusRaw === 'tidak active' || $statusRaw === 'not active') {
+                            $status = 'tidak_aktif';
+                        } elseif ($statusRaw === 'pending') {
+                            $status = 'pending';
+                        } else {
+                            $status = 'aktif';
+                        }
+
+                        $tanggalLahir = isset($item['donor']['date_of_birth']) && $item['donor']['date_of_birth'] ? Carbon::parse($item['donor']['date_of_birth'])->toDateString() : null;
+
                         DB::table('donaturs')->updateOrInsert(
                             ['id' => $item['donor_id']],
                             [
                                 'kode' => 'DNT-' . Str::upper(substr($item['donor_id'], 0, 8)),
                                 'nama' => $item['donor']['nama'] ?? $item['donor']['name'] ?? 'Imported Donatur ' . substr($item['donor_id'], 0, 8),
-                                'jenis_donatur' => json_encode(['perorangan']),
-                                'status' => 'aktif',
-                                'created_at' => $toDatetime($item['created_at'] ?? null),
-                                'updated_at' => $toDatetime($item['updated_at'] ?? null),
+                                'jenis_donatur' => json_encode($donorJenisArr),
+                                'alamat' => $item['donor']['address'] ?? null,
+                                'no_handphone' => $item['donor']['phone_number'] ?? null,
+                                'email' => $item['donor']['email'] ?? null,
+                                'tanggal_lahir' => $tanggalLahir,
+                                'status' => $status,
+                                'pic' => $picUserId ? (int) $picUserId : null,
+                                'kantor_cabang_id' => $item['donor']['branch_office_id'] ?? $item['branch_office_id'] ?? null,
+                                'created_at' => $toDatetime($item['donor']['created_at'] ?? $item['created_at'] ?? null),
+                                'updated_at' => $toDatetime($item['donor']['updated_at'] ?? $item['updated_at'] ?? null),
                             ]
                         );
                     }

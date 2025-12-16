@@ -142,6 +142,7 @@
                     class="h-full w-full object-cover"
                   />
                   <button
+                    v-if="canUpdate"
                     type="button"
                     @click="removeExistingImage(index)"
                     class="absolute right-2 top-2 rounded-lg bg-red-500 p-1.5 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
@@ -174,6 +175,7 @@
                     class="h-full w-full object-cover"
                   />
                   <button
+                    v-if="canUpdate"
                     type="button"
                     @click="removeFile(index)"
                     class="absolute right-2 top-2 rounded-lg bg-red-500 p-1.5 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
@@ -233,6 +235,7 @@
             Batal
           </button>
           <button
+            v-if="isEditMode ? canUpdate : canCreate"
             type="submit"
             class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
           >
@@ -251,6 +254,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import { useToast } from 'vue-toastification'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
@@ -260,6 +264,12 @@ const currentPageTitle = computed(() => {
   return isEditMode.value ? 'Edit Landing Program' : 'Tambah Landing Program'
 })
 const toast = useToast()
+
+// Auth / permissions
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+fetchUser()
+const canCreate = computed(() => isAdmin() || hasPermission('create landing program'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update landing program'))
 
 // Options for select fields
 const statusOptions = [
@@ -585,6 +595,12 @@ const handleCancel = () => {
 // Handle save
 const handleSave = async () => {
   if (!validateForm()) {
+    return
+  }
+
+  // Permission guard: prevent saving if user lacks create/update permissions
+  if (isEditMode.value ? !canUpdate.value : !canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk melakukan tindakan ini')
     return
   }
 

@@ -107,6 +107,7 @@
               <div>
                 <input
                   ref="fileInputRef"
+                  :disabled="isViewMode"
                   type="file"
                   accept=".pdf,.doc,.docx"
                   @change="handleFileSelect"
@@ -149,6 +150,7 @@
                         Lihat
                       </a>
                       <button
+                        v-if="canUpdate && !isViewMode"
                         type="button"
                         @click="removeExistingFile"
                         class="flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
@@ -192,6 +194,7 @@
                       </p>
                     </div>
                     <button
+                      v-if="canUpdate && !isViewMode"
                       type="button"
                       @click="removeFile"
                       class="flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
@@ -231,6 +234,7 @@
             Batal
           </button>
           <button
+            v-if="(isEditMode ? canUpdate : canCreate) && !isViewMode"
             type="submit"
             :disabled="loading"
             class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
@@ -252,6 +256,7 @@ import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import { useAuth } from '@/composables/useAuth'
 
 // Options for Status Publish dropdown
 const publishStatusOptions = [
@@ -264,6 +269,9 @@ const route = useRoute()
 const router = useRouter()
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
+// view-only mode when accessed via ?view=1
+const isViewMode = computed(() => String(route.query.view || '') === '1')
+
 const isEditMode = computed(() => route.params.id !== undefined && route.params.id !== 'new')
 const currentPageTitle = computed(() => {
   return isEditMode.value ? 'Edit Landing Bulletin' : 'Tambah Landing Bulletin'
@@ -271,6 +279,12 @@ const currentPageTitle = computed(() => {
 
 const loading = ref(false)
 const toast = useToast()
+
+// Auth / permissions
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+fetchUser()
+const canCreate = computed(() => isAdmin() || hasPermission('create landing bulletin'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update landing bulletin'))
 
 // Date picker config
 const datePickerConfig = {
@@ -534,6 +548,12 @@ const handleCancel = () => {
 // Handle save
 const handleSave = async () => {
   if (!validateForm()) {
+    return
+  }
+
+  // Permission guard
+  if (isEditMode.value ? !canUpdate.value : !canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk melakukan tindakan ini')
     return
   }
 

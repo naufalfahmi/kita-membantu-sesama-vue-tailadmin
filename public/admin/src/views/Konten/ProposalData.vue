@@ -7,28 +7,8 @@
         <h3 class="font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">
           {{ currentPageTitle }}
         </h3>
-        <button
-          v-if="canCreate"
-          @click="handleAdd"
-          class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
-        >
-          <svg
-            class="fill-current"
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M10 3.33333C10.4602 3.33333 10.8333 3.70643 10.8333 4.16667V9.16667H15.8333C16.2936 9.16667 16.6667 9.53976 16.6667 10C16.6667 10.4602 16.2936 10.8333 15.8333 10.8333H10.8333V15.8333C10.8333 16.2936 10.4602 16.6667 10 16.6667C9.53976 16.6667 9.16667 16.2936 9.16667 15.8333V10.8333H4.16667C3.70643 10.8333 3.33333 10.4602 3.33333 10C3.33333 9.53976 3.70643 9.16667 4.16667 9.16667H9.16667V4.16667C9.16667 3.70643 9.53976 3.33333 10 3.33333Z"
-              fill="currentColor"
-            />
-          </svg>
-          Tambah Proposal
-        </button>
+        <!-- Add button disabled for view-only listing per request -->
+        <!-- intentionally hidden: v-if="false" -->
       </div>
 
       <!-- Filter Section -->
@@ -144,36 +124,18 @@ const columnDefs = [
     cellRenderer: (params: any) => {
       const div = document.createElement('div')
       div.className = 'flex items-center gap-3'
-      
-      const editBtn = document.createElement('button')
-      editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
-      editBtn.innerHTML = `
+
+      const detailsBtn = document.createElement('button')
+      detailsBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
+      detailsBtn.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          <path d="M12 20h9"></path>
+          <path d="M12 4h9M12 12h9"></path>
         </svg>
       `
-      editBtn.onclick = () => handleEdit(params.data.id)
-      
-      const deleteBtn = document.createElement('button')
-      deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
-      deleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      if (canUpdate.value) {
-        div.appendChild(editBtn)
-      }
-      if (canDelete.value) {
-        div.appendChild(deleteBtn)
-      }
-      
+      detailsBtn.onclick = () => handleDetails(params.data.id)
+
+      div.appendChild(detailsBtn)
       return div
     },
   },
@@ -243,19 +205,24 @@ const rowData = ref(rowDataArray)
 
 // Handle add button
 const handleAdd = () => {
-  alert('Fungsi tambah proposal akan diimplementasikan')
+  // Add disabled - listing is view-only per request
+  // placeholder in case needed later
 }
 
 // Handle edit
 const handleEdit = (id: string) => {
-  alert(`Edit proposal dengan ID: ${id}`)
+  // Edit disabled for view-only listing
 }
 
 // Handle delete
 const handleDelete = (id: string) => {
-  if (confirm('Apakah Anda yakin ingin menghapus proposal ini?')) {
-    alert(`Proposal dengan ID: ${id} akan dihapus`)
-  }
+  // Delete disabled for view-only listing
+}
+
+// Handle details - open read-only view
+const handleDetails = (id: string) => {
+  // Navigate to form in view mode (query param view=1)
+  window.location.href = `/company/landing-proposal/${id}/edit?view=1`
 }
 
 // Filter state

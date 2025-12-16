@@ -261,7 +261,7 @@ const kantorCabangSelectOptions = computed(() =>
 
 const picOptions = computed(() =>
   karyawanOptions.value.map((item) => ({
-    value: item.nama || item.name || '',
+    value: String(item.id),
     label: item.nama || item.name || '-',
   }))
 )
@@ -346,7 +346,8 @@ const loadData = async (id: string) => {
       formData.kode = data.kode || ''
       formData.nama = data.nama || ''
       formData.jenis_donatur = Array.isArray(data.jenis_donatur) ? data.jenis_donatur : []
-      formData.pic = data.pic || ''
+      // PIC returned as pic (id) and pic_user (object) — prefer id from pic_user
+      formData.pic = data.pic_user?.id ? String(data.pic_user.id) : (data.pic || '')
       formData.alamat = data.alamat || ''
       formData.no_handphone = data.no_handphone || ''
       formData.email = data.email || ''
@@ -459,8 +460,8 @@ onMounted(async () => {
   // For Fundrising role, auto-set PIC and Kantor Cabang from current user
   if (isFundrising.value && !isEditMode.value) {
     // Set PIC to current user's name
-    if (currentUser.value?.name) {
-      formData.pic = currentUser.value.name
+    if (currentUser.value?.id) {
+      formData.pic = String(currentUser.value.id)
     }
     // Set Kantor Cabang to current user's kantor_cabang
     if (currentUser.value?.kantor_cabang?.id) {

@@ -76,4 +76,12 @@ class Donatur extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
+    /**
+     * Get the PIC user (reference to users table).
+     */
+    public function picUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'pic');
+    }
 }

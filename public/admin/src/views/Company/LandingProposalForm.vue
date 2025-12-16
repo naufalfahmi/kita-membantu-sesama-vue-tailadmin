@@ -27,6 +27,7 @@
             <input
               type="text"
               v-model="formData.name"
+              :disabled="isViewMode"
               placeholder="Masukkan nama proposal"
               maxlength="100"
               required
@@ -67,6 +68,7 @@
                 <input
                   ref="fileInputRef"
                   type="file"
+                  :disabled="isViewMode"
                   accept=".pdf,.doc,.docx"
                   @change="handleFileSelect"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:focus:border-brand-800"
@@ -93,28 +95,28 @@
                       {{ existingFile.size ? formatFileSize(existingFile.size) : '' }}
                     </p>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <a
-                      v-if="existingFile.url"
-                      :href="existingFile.url"
-                      target="_blank"
-                      class="flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
-                    >
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      Lihat
-                    </a>
-                    <button
-                      type="button"
-                      @click="removeExistingFile"
-                      class="flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"></path>
-                      </svg>
-                    </button>
+                    <div class="flex items-center gap-2" v-if="canUpdate && !isViewMode">
+                      <a
+                        v-if="existingFile.url"
+                        :href="existingFile.url"
+                        target="_blank"
+                        class="flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-600"
+                      >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        Lihat
+                      </a>
+                      <button
+                        type="button"
+                        @click="removeExistingFile"
+                        class="flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                      </button>
                   </div>
                 </div>
 
@@ -134,6 +136,7 @@
                     </p>
                   </div>
                   <button
+                    v-if="canUpdate"
                     type="button"
                     @click="removeFile"
                     class="flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
@@ -158,6 +161,7 @@
             Batal
           </button>
           <button
+            v-if="(isEditMode ? canUpdate : canCreate) && !isViewMode"
             type="submit"
             :disabled="loading"
             class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed sm:w-auto"
@@ -178,10 +182,14 @@ import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import { useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
 const router = useRouter()
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+// view-only mode when accessed via ?view=1
+const isViewMode = computed(() => String(route.query.view || '') === '1')
 
 const isEditMode = computed(() => route.params.id !== undefined && route.params.id !== 'new')
 const currentPageTitle = computed(() => {
@@ -190,6 +198,12 @@ const currentPageTitle = computed(() => {
 
 const loading = ref(false)
 const toast = useToast()
+
+// Auth / permissions
+const { fetchUser, hasPermission, isAdmin } = useAuth()
+fetchUser()
+const canCreate = computed(() => isAdmin() || hasPermission('create landing proposal'))
+const canUpdate = computed(() => isAdmin() || hasPermission('update landing proposal'))
 
 // Date picker config
 const datePickerConfig = {
@@ -376,6 +390,18 @@ const handleCancel = () => {
 // Handle save
 const handleSave = async () => {
   if (!validateForm()) {
+    return
+  }
+
+  // Prevent saving in view-only mode
+  if (isViewMode.value) {
+    toast.error('Hanya tampilan. Tidak dapat menyimpan.')
+    return
+  }
+
+  // Permission guard
+  if (isEditMode.value ? !canUpdate.value : !canCreate.value) {
+    toast.error('Anda tidak memiliki izin untuk melakukan tindakan ini')
     return
   }
 

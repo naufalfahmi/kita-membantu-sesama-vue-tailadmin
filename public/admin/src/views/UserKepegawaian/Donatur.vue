@@ -46,6 +46,22 @@
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
+
+          <div class="w-64">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
+            <SearchableSelect v-model="filterPic" :options="picSelectOptions" placeholder="Semua PIC" />
+          </div>
+
+          <div class="w-64">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Jenis Donatur</label>
+            <SearchableMultiSelect v-model="filterJenis" :options="jenisOptions" placeholder="Semua Tipe" />
+          </div>
+
+          <div class="w-64">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
+            <SearchableSelect v-model="filterKantorCabang" :options="kantorCabangSelectOptions" placeholder="Semua Kantor" />
+          </div>
+
           <div class="flex items-end">
             <button
               @click="resetFilter"
@@ -102,6 +118,8 @@ import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import SearchableMultiSelect from '@/components/forms/SearchableMultiSelect.vue'
 import { useAuth } from '@/composables/useAuth'
 
 interface DonaturRow {
@@ -110,6 +128,7 @@ interface DonaturRow {
   nama: string
   jenis_donatur: string[]
   pic: string | null
+  pic_user?: { id: string; nama?: string }
   status: string
   tanggal_dibuat: string | null
   kantor_cabang: { id: string; nama: string } | null
@@ -133,7 +152,27 @@ const deleteId = ref<string | null>(null)
 
 // Filter state
 const filterNama = ref('')
+const filterPic = ref('')
+const filterJenis = ref<string[]>([])
+const filterKantorCabang = ref('')
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
+
+const jenisOptions = [
+  { value: 'komunitas', label: 'Komunitas' },
+  { value: 'kotak_infaq', label: 'Kotak Infaq' },
+  { value: 'retail', label: 'Retail' },
+]
+
+const kantorCabangOptions = ref<any[]>([])
+const karyawanOptions = ref<any[]>([])
+
+const picSelectOptions = computed(() =>
+  karyawanOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' }))
+)
+
+const kantorCabangSelectOptions = computed(() =>
+  kantorCabangOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' }))
+)
 
 // Column definitions
 const columnDefs = [
@@ -155,7 +194,7 @@ const columnDefs = [
     field: 'pic',
     sortable: true,
     flex: 1,
-    valueFormatter: (params: any) => params.value || '-',
+    valueFormatter: (params: any) => params.data?.pic_user?.nama || params.value || '-',
   },
   {
     headerName: 'Jenis Donatur',
@@ -273,6 +312,15 @@ const fetchData = async () => {
     if (filterNama.value) {
       params.append('search', filterNama.value)
     }
+    if (filterPic.value) {
+      params.append('pic', filterPic.value)
+    }
+    if (filterJenis.value && filterJenis.value.length) {
+      params.append('jenis_donatur', filterJenis.value.join(','))
+    }
+    if (filterKantorCabang.value) {
+      params.append('kantor_cabang_id', filterKantorCabang.value)
+    }
 
     const res = await fetch(`/admin/api/donatur?${params.toString()}`, {
       credentials: 'same-origin',
@@ -367,11 +415,42 @@ const cancelDelete = () => {
 // Reset filter
 const resetFilter = () => {
   filterNama.value = ''
+  filterPic.value = ''
+  filterJenis.value = []
+  filterKantorCabang.value = ''
   fetchData()
+}
+
+const fetchReferenceData = async () => {
+  try {
+    const [kantorRes, karyawanRes] = await Promise.all([
+      fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' }),
+      fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
+    ])
+
+    if (kantorRes.ok) {
+      const json = await kantorRes.json()
+      if (json.success) {
+        const payload = Array.isArray(json.data) ? json.data : json.data?.data
+        kantorCabangOptions.value = Array.isArray(payload) ? payload : []
+      }
+    }
+
+    if (karyawanRes.ok) {
+      const json = await karyawanRes.json()
+      if (json.success) {
+        const payload = Array.isArray(json.data) ? json.data : json.data?.data
+        karyawanOptions.value = Array.isArray(payload) ? payload : []
+      }
+    }
+  } catch (error) {
+    // ignore
+  }
 }
 
 onMounted(() => {
   fetchUser()
+  fetchReferenceData()
   fetchData()
 })
 </script>

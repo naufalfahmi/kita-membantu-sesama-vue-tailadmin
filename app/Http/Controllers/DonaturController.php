@@ -61,7 +61,7 @@ class DonaturController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Donatur::with(['kantorCabang:id,nama']);
+        $query = Donatur::with(['kantorCabang:id,nama', 'picUser:id,name']);
 
         // Filter berdasarkan user yang login (kecuali admin/superadmin)
         $user = auth()->user();
@@ -76,6 +76,7 @@ class DonaturController extends Controller
             $query->whereIn('created_by', $allowed);
         }
 
+        // General search (nama, email, kode, no_handphone)
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->where(function ($q) use ($search) {
@@ -84,6 +85,12 @@ class DonaturController extends Controller
                     ->orWhere('kode', 'like', "%{$search}%")
                     ->orWhere('no_handphone', 'like', "%{$search}%");
             });
+        }
+
+        // Explicit nama filter (for dedicated Nama filter field)
+        if ($request->filled('nama')) {
+            $nama = trim((string) $request->input('nama'));
+            $query->where('nama', 'like', "%{$nama}%");
         }
 
         if ($request->filled('status')) {
@@ -95,6 +102,13 @@ class DonaturController extends Controller
 
         if ($request->filled('kantor_cabang_id')) {
             $query->where('kantor_cabang_id', $request->input('kantor_cabang_id'));
+        }
+
+        // Filter by PIC (expects user id)
+        if ($request->filled('pic')) {
+            $pic = $request->input('pic');
+            // If a uuid-like value provided, match directly to pic column
+            $query->where('pic', $pic);
         }
 
         if ($request->filled('jenis_donatur')) {
@@ -137,7 +151,7 @@ class DonaturController extends Controller
             'nama' => 'required|string|max:255',
             'jenis_donatur' => 'required|array|min:1',
             'jenis_donatur.*' => ['string', Rule::in($this->allowedDonorTypes)],
-            'pic' => 'nullable|string|max:255',
+            'pic' => 'nullable|uuid|exists:users,id',
             'alamat' => 'nullable|string|max:1000',
             'no_handphone' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:255|unique:donaturs,email',
@@ -170,7 +184,7 @@ class DonaturController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Donatur berhasil ditambahkan',
-                'data' => $this->transformDonatur($donatur->fresh(['kantorCabang:id,nama'])),
+                'data' => $this->transformDonatur($donatur->fresh(['kantorCabang:id,nama','picUser:id,name'])),
             ], 201);
         } catch (\Throwable $th) {
             return response()->json([
@@ -186,7 +200,7 @@ class DonaturController extends Controller
      */
     public function show(string $id)
     {
-        $query = Donatur::with(['kantorCabang:id,nama']);
+        $query = Donatur::with(['kantorCabang:id,nama', 'picUser:id,name']);
 
         // Restrict show by created_by for non-admins (allow leaders to view subordinates' created items)
         $user = auth()->user();
@@ -248,7 +262,7 @@ class DonaturController extends Controller
             'nama' => 'required|string|max:255',
             'jenis_donatur' => 'required|array|min:1',
             'jenis_donatur.*' => ['string', Rule::in($this->allowedDonorTypes)],
-            'pic' => 'nullable|string|max:255',
+            'pic' => 'nullable|uuid|exists:users,id',
             'alamat' => 'nullable|string|max:1000',
             'no_handphone' => 'nullable|string|max:30',
             'email' => ['nullable', 'email', 'max:255', Rule::unique('donaturs', 'email')->ignore($id)],
@@ -274,7 +288,7 @@ class DonaturController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Donatur berhasil diperbarui',
-                'data' => $this->transformDonatur($donatur->fresh(['kantorCabang:id,nama'])),
+                'data' => $this->transformDonatur($donatur->fresh(['kantorCabang:id,nama','picUser:id,name'])),
             ]);
         } catch (\Throwable $th) {
             return response()->json([
@@ -342,6 +356,10 @@ class DonaturController extends Controller
             'nama' => $donatur->nama,
             'jenis_donatur' => array_values($donatur->jenis_donatur ?? []),
             'pic' => $donatur->pic,
+            'pic_user' => $donatur->picUser ? [
+                'id' => $donatur->picUser->id,
+                'nama' => $donatur->picUser->name,
+            ] : null,
             'alamat' => $donatur->alamat,
             'no_handphone' => $donatur->no_handphone,
             'email' => $donatur->email,

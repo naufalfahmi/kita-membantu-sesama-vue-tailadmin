@@ -14,6 +14,7 @@
           <input
             type="text"
             v-model="formData.sectionTitle"
+            :disabled="true"
             placeholder="Masukkan section title"
             class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
           />
@@ -51,6 +52,7 @@
                 <input
                   type="text"
                   v-model="formData.email.label"
+                  :disabled="true"
                   placeholder="Email :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
@@ -62,6 +64,7 @@
                 </label>
                 <textarea
                   v-model="formData.email.description"
+                  :disabled="true"
                   placeholder="Email kami untuk pertanyaan umum, termasuk peluang pemasaran dan kemitraan."
                   rows="3"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
@@ -75,6 +78,7 @@
                 <input
                   type="email"
                   v-model="formData.email.value"
+                  :disabled="true"
                   placeholder="kitamembantusesama@gmail.com"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
@@ -113,6 +117,7 @@
                 <input
                   type="text"
                   v-model="formData.phone.label"
+                  :disabled="true"
                   placeholder="No. Telp :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
@@ -124,6 +129,7 @@
                 </label>
                 <textarea
                   v-model="formData.phone.description"
+                  :disabled="true"
                   placeholder="Hubungi kami untuk berbicara dengan anggota tim kami. Kami selalu senang membantu."
                   rows="3"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
@@ -137,6 +143,7 @@
                 <input
                   type="text"
                   v-model="formData.phone.value"
+                  :disabled="true"
                   placeholder="62895621093500"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
@@ -175,24 +182,18 @@
                 <input
                   type="text"
                   v-model="formData.rekening.label"
+                  :disabled="true"
                   placeholder="Rekening Donasi :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
               </div>
               
               <div>
-                <div class="mb-2 flex items-center justify-between">
+                <div class="mb-2">
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">
                     Daftar Rekening
                   </label>
-                  <button
-                    type="button"
-                    @click="addRekening"
-                    class="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
-                  >
-                    + Tambah Rekening
-                  </button>
-                </div>
+                </div> 
                 
                 <div class="space-y-3">
                   <div
@@ -204,37 +205,19 @@
                       <input
                         type="text"
                         v-model="rekening.bank"
+                        :disabled="true"
                         placeholder="Nama Bank (contoh: Bank BSI)"
                         class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                       />
                       <input
                         type="text"
                         v-model="rekening.number"
+                        :disabled="true"
                         placeholder="Nomor Rekening"
                         class="dark:bg-dark-900 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                       />
                     </div>
-                    <button
-                      type="button"
-                      @click="removeRekening(index)"
-                      class="mt-1 text-red-500 hover:text-red-600"
-                      v-if="formData.rekening.accounts.length > 1"
-                    >
-                      <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M5 5L15 15M15 5L5 15"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                        />
-                      </svg>
-                    </button>
+
                   </div>
                 </div>
               </div>
@@ -272,6 +255,7 @@
                 <input
                   type="text"
                   v-model="formData.kantorDepok.label"
+                  :disabled="true"
                   placeholder="Kantor Cabang Depok :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
@@ -283,6 +267,7 @@
                 </label>
                 <textarea
                   v-model="formData.kantorDepok.address"
+                  :disabled="true"
                   placeholder="Jl Sawangan Elok Raya Blok C-1 No.7 Duren Seribu, Kec. Bojongsari, Kota Depok, Jawa Barat 16518"
                   rows="4"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
@@ -322,6 +307,7 @@
                 <input
                   type="text"
                   v-model="formData.kantorBogor.label"
+                  :disabled="true"
                   placeholder="Kantor Cabang Bogor :"
                   class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
                 />
@@ -333,6 +319,7 @@
                 </label>
                 <textarea
                   v-model="formData.kantorBogor.address"
+                  :disabled="true"
                   placeholder="Jl. Anggrek III No. 27 Kp. Sukamulya Ciomas Bogor Jawa Barat 16610"
                   rows="4"
                   class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
@@ -351,12 +338,7 @@
           >
             Batal
           </button>
-          <button
-            type="submit"
-            class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
-          >
-            Simpan
-          </button>
+
         </div>
       </form>
     </div>

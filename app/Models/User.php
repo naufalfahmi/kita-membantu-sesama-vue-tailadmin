@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -20,6 +21,8 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'id',
+        'uuid',
         'name',
         'email',
         'password',
@@ -72,6 +75,20 @@ class User extends Authenticatable
             'tanggal_masuk' => 'date',
             'is_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Boot model events to ensure uuid is set on create.
+     */
+    protected static function booted()
+    {
+        parent::booted();
+
+        static::creating(function ($model) {
+            if (empty($model->uuid)) {
+                $model->uuid = (string) Str::uuid();
+            }
+        });
     }
 
     /**

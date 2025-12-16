@@ -16,6 +16,7 @@ class KaryawanSeeder extends Seeder
     {
         $items = [
             [
+                'id' => 'ea37aa66-ba3a-48f0-aebd-867eb94035fc',
                 'name' => 'Abdul Hamid',
                 'email' => 'abdulhamidsumarjo@gmail.com',
                 'account_index_number' => '01-2025731-kms002-41',
@@ -31,6 +32,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => '6627d353-87f0-46f1-9e9b-424b05306f6c',
                 'name' => 'Divia Zahra Choirunnisa',
                 'email' => 'diviazahra63@gmail.com',
                 'account_index_number' => '01-202562-kms003-40',
@@ -46,6 +48,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => '61e401a5-40fd-463d-b981-d3ce57adcdea',
                 'name' => 'Jivanti Zuleika khoirunnisa',
                 'email' => 'zuleikajivanti@gmail.com',
                 'account_index_number' => '01-202562-kms002-38',
@@ -61,6 +64,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => '22702d34-7ef7-4e1b-b7d7-c387817f8abe',
                 'name' => 'Fadli Darmadi',
                 'email' => 'abu.hafizha@gmail.com',
                 'account_index_number' => '01-2025114-kms003-32',
@@ -76,6 +80,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => 'c74be476-bee2-4592-a0aa-4a7941ea5aaa',
                 'name' => 'Putrie Intan',
                 'email' => 'putrie.intannurh@gmail.com',
                 'account_index_number' => '01-2024823-kms003-27',
@@ -91,6 +96,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '0e44a46d-7e39-486e-864f-5d8c38532ef7',
             ],
             [
+                'id' => '16a118ac-f276-4e0b-a19f-8f0d94d2a21a',
                 'name' => 'Haryadi kurniawan',
                 'email' => 'kurniawanyadi74@gmail.com',
                 'account_index_number' => '01-2024813-kms002-26',
@@ -106,6 +112,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => '99708226-8a05-4894-8140-927379cd3b97',
                 'name' => 'Aldi Lustandial',
                 'email' => 'bisnisaldi2@gmail.com',
                 'account_index_number' => '01-2024610-kms003-25',
@@ -121,6 +128,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => 'c20053ce-7ddf-469f-8c31-dd8970bf4ab6',
                 'name' => 'Ahmad Firdaus',
                 'email' => 'ahmadfirdausfirdaus56@gmail.com',
                 'account_index_number' => '01-202419-kms003-21',
@@ -136,6 +144,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => 'a030b21d-3b33-4036-9f3d-cd78cd3037e2',
                 'name' => 'Safina Hana Azizah',
                 'email' => 'finahana190@gmail.com',
                 'account_index_number' => '01-2023720-kms002-18',
@@ -151,6 +160,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '0e44a46d-7e39-486e-864f-5d8c38532ef7',
             ],
             [
+                'id' => '0b2893fc-36fa-4199-a803-5ca1c0650b84',
                 'name' => 'ARYA BRAMANTYO',
                 'email' => 'aryabramantyo8781@gmail.com',
                 'account_index_number' => '01-202365-kms002-16',
@@ -166,6 +176,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => 'f30eb0fd-45d7-41fb-9ee0-dc88d68c4b7e',
                 'name' => 'Isnah dayu wati',
                 'email' => 'isnahbramantyo@gmail.com',
                 'account_index_number' => '01-2023523-kms002-14',
@@ -181,6 +192,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => 'e3da229d-ce53-4668-beb9-9364093ce367',
                 'name' => 'Rina Nurlaela',
                 'email' => 'rinanurlaela804@gmail.com',
                 'account_index_number' => '01-2023221-kms003-12',
@@ -196,6 +208,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '0e44a46d-7e39-486e-864f-5d8c38532ef7',
             ],
             [
+                'id' => 'e6bdbda3-a32a-4008-8bc2-d5ec1e0a43f8',
                 'name' => 'Siti Mawadah',
                 'email' => 'symawadah05@gmail.com',
                 'account_index_number' => '01-202321-kms002-7',
@@ -211,6 +224,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '0e44a46d-7e39-486e-864f-5d8c38532ef7',
             ],
             [
+                'id' => '6d8f9f92-a490-4cda-a7e9-73c4139d4ef0',
                 'name' => 'Dian Jumardiansyah',
                 'email' => 'dede.zahrah212@gmail.com',
                 'account_index_number' => '01-2023131-kms003-4',
@@ -226,6 +240,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => 'bbe3f191-5ea9-4df1-b413-45ce1dbd4668',
                 'name' => 'Helly Armiandri',
                 'email' => 'hellyarmiandri2401@gmail.com',
                 'account_index_number' => '01-2023131-kms002-3',
@@ -241,6 +256,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => '17fa4c8d-8afd-4d33-bb33-889ae67ebf66',
                 'name' => 'Agustari',
                 'email' => 'agussukses72@gmail.com',
                 'account_index_number' => '01-2023131-kms002-2',
@@ -256,6 +272,7 @@ class KaryawanSeeder extends Seeder
                 'attendance_type_id' => '00356e90-c673-4d24-a786-aee985b0c038',
             ],
             [
+                'id' => '741b88ac-133e-453d-9efe-f186e7aa9a91',
                 'name' => 'Sugeng Riyadi',
                 'email' => 'suririyade@gmail.com',
                 'account_index_number' => '01-2023131-kms001-1',
@@ -292,10 +309,20 @@ class KaryawanSeeder extends Seeder
                 'is_active' => true,
             ];
 
-            $user = User::updateOrCreate(
-                ['email' => $it['email']],
-                $data
-            );
+            // Look up existing user by email
+            $user = User::where('email', $it['email'])->first();
+            if ($user) {
+                // Ensure uuid is set on existing user if missing or different
+                if (!empty($it['id']) && ($user->uuid !== $it['id'])) {
+                    $user->update(array_merge($data, ['uuid' => $it['id']]));
+                } else {
+                    $user->update($data);
+                }
+            } else {
+                // For new users, set the provided UUID in `uuid` column
+                $data['uuid'] = $it['id'] ?? null;
+                $user = User::create($data);
+            }
 
             // assign role by position name if exists
             if (!empty($it['position_name'])) {

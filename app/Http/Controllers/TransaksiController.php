@@ -34,7 +34,7 @@ class TransaksiController extends Controller
             return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-        $isAdmin = $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
+        $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
@@ -225,7 +225,7 @@ class TransaksiController extends Controller
             return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-        $isAdmin = $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
+        $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
@@ -259,7 +259,7 @@ class TransaksiController extends Controller
 
         // Filter berdasarkan user yang login (kecuali admin/superadmin)
         $user = auth()->user();
-        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+        if (! $this->userIsAdmin($user)) {
             $query->where('created_by', $user->id);
         }
 
@@ -330,7 +330,7 @@ class TransaksiController extends Controller
 
         // Filter berdasarkan user yang login (kecuali admin/superadmin)
         $user = auth()->user();
-        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+        if (! $this->userIsAdmin($user)) {
             $query->where('created_by', $user->id);
         }
 

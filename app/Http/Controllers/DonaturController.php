@@ -69,7 +69,7 @@ class DonaturController extends Controller
             return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-        $isAdmin = $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
+        $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
@@ -217,7 +217,7 @@ class DonaturController extends Controller
             return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
+        if (! $this->userIsAdmin($user)) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
             $query->where(function ($q) use ($allowed, $user) {

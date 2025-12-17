@@ -158,6 +158,10 @@ class DonaturController extends Controller
             'jenis_donatur.*' => ['string', Rule::in($this->allowedDonorTypes)],
             'pic' => 'nullable|exists:users,id',
             'alamat' => 'nullable|string|max:1000',
+            'provinsi' => 'nullable|string|max:255',
+            'kota_kab' => 'nullable|string|max:255',
+            'kecamatan' => 'nullable|string|max:255',
+            'kelurahan' => 'nullable|string|max:255',
             'no_handphone' => 'nullable|string|max:30',
             'email' => 'nullable|email|max:255|unique:donaturs,email',
             'tanggal_lahir' => 'nullable|date',
@@ -275,6 +279,10 @@ class DonaturController extends Controller
             'jenis_donatur.*' => ['string', Rule::in($this->allowedDonorTypes)],
             'pic' => 'nullable|exists:users,id',
             'alamat' => 'nullable|string|max:1000',
+            'provinsi' => 'nullable|string|max:255',
+            'kota_kab' => 'nullable|string|max:255',
+            'kecamatan' => 'nullable|string|max:255',
+            'kelurahan' => 'nullable|string|max:255',
             'no_handphone' => 'nullable|string|max:30',
             'email' => ['nullable', 'email', 'max:255', Rule::unique('donaturs', 'email')->ignore($id)],
             'tanggal_lahir' => 'nullable|date',
@@ -372,6 +380,10 @@ class DonaturController extends Controller
                 'nama' => $donatur->picUser->name,
             ] : null,
             'alamat' => $donatur->alamat,
+            'provinsi' => $donatur->provinsi,
+            'kota_kab' => $donatur->kota_kab,
+            'kecamatan' => $donatur->kecamatan,
+            'kelurahan' => $donatur->kelurahan,
             'no_handphone' => $donatur->no_handphone,
             'email' => $donatur->email,
             'tanggal_lahir' => optional($donatur->tanggal_lahir)->toDateString(),
@@ -392,7 +404,7 @@ class DonaturController extends Controller
      */
     protected function sanitizePayload(array $data): array
     {
-        $stringKeys = ['kode', 'nama', 'pic', 'alamat', 'no_handphone', 'email'];
+        $stringKeys = ['kode', 'nama', 'pic', 'alamat', 'provinsi', 'kota_kab', 'kecamatan', 'kelurahan', 'no_handphone', 'email'];
 
         foreach ($stringKeys as $key) {
             if (array_key_exists($key, $data) && is_string($data[$key])) {
@@ -404,7 +416,7 @@ class DonaturController extends Controller
             $data['alamat'] = null;
         }
 
-        $nullableKeys = ['kode', 'pic', 'alamat', 'no_handphone', 'email', 'tanggal_lahir', 'kantor_cabang_id', 'status'];
+        $nullableKeys = ['kode', 'pic', 'alamat', 'provinsi', 'kota_kab', 'kecamatan', 'kelurahan', 'no_handphone', 'email', 'tanggal_lahir', 'kantor_cabang_id', 'status'];
 
         foreach ($nullableKeys as $key) {
             if (array_key_exists($key, $data)) {

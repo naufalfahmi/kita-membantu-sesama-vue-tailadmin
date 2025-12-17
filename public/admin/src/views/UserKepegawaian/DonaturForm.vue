@@ -162,7 +162,25 @@
               class="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             ></textarea>
           </div>
-        </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Provinsi</label>
+            <input type="text" v-model="formData.provinsi" placeholder="Provinsi" class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800" />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kota / Kabupaten</label>
+            <input type="text" v-model="formData.kota_kab" placeholder="Kota / Kabupaten" class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800" />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kecamatan</label>
+            <input type="text" v-model="formData.kecamatan" placeholder="Kecamatan" class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800" />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kelurahan</label>
+            <input type="text" v-model="formData.kelurahan" placeholder="Kelurahan" class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800" />
+          </div>        </div>
 
         <div class="mt-6 flex items-center gap-3 lg:justify-end">
           <button
@@ -271,6 +289,10 @@ const formData = reactive({
   nama: '',
   jenis_donatur: [] as string[],
   pic: '',
+  provinsi: '',
+  kota_kab: '',
+  kecamatan: '',
+  kelurahan: '',
   alamat: '',
   no_handphone: '',
   email: '',
@@ -349,6 +371,10 @@ const loadData = async (id: string) => {
       // PIC returned as pic (id) and pic_user (object) — prefer id from pic_user
       formData.pic = data.pic_user?.id ? String(data.pic_user.id) : (data.pic || '')
       formData.alamat = data.alamat || ''
+      formData.provinsi = data.provinsi || ''
+      formData.kota_kab = data.kota_kab || ''
+      formData.kecamatan = data.kecamatan || ''
+      formData.kelurahan = data.kelurahan || ''
       formData.no_handphone = data.no_handphone || ''
       formData.email = data.email || ''
       formData.tanggal_lahir = data.tanggal_lahir || ''
@@ -399,6 +425,10 @@ const handleSave = async () => {
       jenis_donatur: formData.jenis_donatur,
       pic: toNullable(formData.pic),
       alamat: toNullable(formData.alamat),
+      provinsi: toNullable(formData.provinsi),
+      kota_kab: toNullable(formData.kota_kab),
+      kecamatan: toNullable(formData.kecamatan),
+      kelurahan: toNullable(formData.kelurahan),
       no_handphone: toNullable(formData.no_handphone),
       email: toNullable(formData.email),
       tanggal_lahir: formData.tanggal_lahir || null,

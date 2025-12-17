@@ -19,7 +19,7 @@ class DonaturVisibilityTest extends TestCase
         $userA = User::factory()->create(['kantor_cabang_id' => $kantor->id, 'tipe_user' => 'karyawan']);
         $userB = User::factory()->create(['kantor_cabang_id' => $kantor->id, 'tipe_user' => 'karyawan']);
 
-        Donatur::create(['nama' => 'Donatur A1', 'jenis_donatur' => ['komunitas'], 'kantor_cabang_id' => $kantor->id, 'created_by' => $userA->id]);
+        Donatur::create(['nama' => 'Donatur A1', 'jenis_donatur' => ['komunitas'], 'kantor_cabang_id' => $kantor->id, 'created_by' => $userA->id, 'provinsi' => 'Jawa Barat', 'kota_kab' => 'Bandung', 'kecamatan' => 'Coblong', 'kelurahan' => 'Dago']);
         Donatur::create(['nama' => 'Donatur B1', 'jenis_donatur' => ['komunitas'], 'kantor_cabang_id' => $kantor->id, 'created_by' => $userB->id]);
 
         $res = $this->actingAs($userA)->getJson('/admin/api/donatur?per_page=10');

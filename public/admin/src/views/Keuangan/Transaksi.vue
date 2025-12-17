@@ -288,13 +288,10 @@ const resolveDonaturInfo = (transaksi: any) => {
     merged.kantor_cabang
 
   if (kantorSource) {
+    // Keep kantor cabang reference but do NOT copy address fields from kantor cabang.
+    // Address fields (provinsi, kota_kab, kecamatan, kelurahan) should come
+    // exclusively from the donatur record itself to match export requirements.
     merged.kantor_cabang = merged.kantor_cabang || kantorSource
-    merged.kelurahan = merged.kelurahan || kantorSource.kelurahan
-    merged.kecamatan = merged.kecamatan || kantorSource.kecamatan
-    const resolvedKota = kantorSource.kota || kantorSource.kota_kab
-    merged.kota = merged.kota || resolvedKota
-    merged.kota_kab = merged.kota_kab || resolvedKota
-    merged.provinsi = merged.provinsi || kantorSource.provinsi
   }
 
   return merged

@@ -134,6 +134,10 @@ interface DonaturRow {
   jenis_donatur: string[]
   pic: string | null
   pic_user?: { id: string; nama?: string }
+  provinsi?: string | null
+  kota_kab?: string | null
+  kecamatan?: string | null
+  kelurahan?: string | null
   status: string
   tanggal_dibuat: string | null
   kantor_cabang: { id: string; nama: string } | null

@@ -55,4 +55,36 @@ class TransaksiVisibilityTest extends TestCase
         $this->assertContains('TS1', $kodes);
         $this->assertContains('TS2', $kodes);
     }
+
+    public function test_user_who_is_pic_sees_transaksi_even_if_not_creator()
+    {
+        $kantor = KantorCabang::create(['kode' => 'KC12', 'nama' => 'Cabang PIC TX']);
+
+        $creator = User::factory()->create(['kantor_cabang_id' => $kantor->id, 'tipe_user' => 'karyawan']);
+        $picUser = User::factory()->create(['kantor_cabang_id' => $kantor->id, 'tipe_user' => 'karyawan']);
+
+        $don = \App\Models\Donatur::create(['kode' => 'DPIC', 'nama' => 'Donatur PIC TX', 'jenis_donatur' => 'perorangan', 'pic' => $picUser->id]);
+        $prog = \App\Models\Program::create(['nama_program' => 'Program TX']);
+
+        $trx = Transaksi::create([
+            'kantor_cabang_id' => $kantor->id,
+            'donatur_id' => $don->id,
+            'program_id' => $prog->id,
+            'nominal' => 500,
+            'tanggal_transaksi' => now(),
+            'created_by' => $creator->id,
+            'kode' => 'TPIC'
+        ]);
+
+        // Index should include trx for PIC
+        $res = $this->actingAs($picUser)->getJson('/admin/api/transaksi?per_page=10');
+        $res->assertStatus(200);
+        $data = $res->json('data');
+        $this->assertCount(1, $data);
+        $this->assertEquals('TPIC', $data[0]['kode']);
+
+        // Show should also be accessible
+        $show = $this->actingAs($picUser)->getJson('/admin/api/transaksi/' . $trx->id);
+        $show->assertStatus(200)->assertJson(['success' => true]);
+    }
 }

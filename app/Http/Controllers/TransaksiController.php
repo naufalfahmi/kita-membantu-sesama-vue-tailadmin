@@ -36,7 +36,12 @@ class TransaksiController extends Controller
         if (! $isAdmin) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
-            $query->whereIn('created_by', $allowed);
+            // Allow users to see transaksis they created, their subordinates created,
+            // or any transaksi where they are the PIC of the related donatur.
+            $query->where(function ($q) use ($allowed, $user) {
+                $q->whereIn('created_by', $allowed)
+                    ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
+            });
         }
 
         if ($request->filled('search')) {
@@ -80,7 +85,11 @@ class TransaksiController extends Controller
         if ($request->filled('tanggal_from') && $request->filled('tanggal_to')) {
             $from = $request->input('tanggal_from');
             $to = $request->input('tanggal_to');
-            $query->whereBetween('tanggal_transaksi', [$from, $to]);
+            // Use date-only comparison to be DB-agnostic (SQLite stores timestamps as
+            // ISO strings which can break string BETWEEN comparisons). Compare using
+            // WHERE DATE(tanggal_transaksi) >= from AND DATE(tanggal_transaksi) <= to.
+            $query->whereDate('tanggal_transaksi', '>=', $from)
+                ->whereDate('tanggal_transaksi', '<=', $to);
         } elseif ($request->filled('tanggal')) {
             $tanggal = trim((string) $request->input('tanggal'));
 
@@ -90,7 +99,8 @@ class TransaksiController extends Controller
                 [$from, $to] = array_map('trim', $parts);
                 // Basic YYYY-MM-DD validation
                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
-                    $query->whereBetween('tanggal_transaksi', [$from, $to]);
+                    $query->whereDate('tanggal_transaksi', '>=', $from)
+                        ->whereDate('tanggal_transaksi', '<=', $to);
                 } else {
                     // fallback to equality if parsing fails
                     $query->whereDate('tanggal_transaksi', $tanggal);
@@ -210,7 +220,10 @@ class TransaksiController extends Controller
         if (! $isAdmin) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
-            $query->whereIn('created_by', $allowed);
+            $query->where(function ($q) use ($allowed, $user) {
+                $q->whereIn('created_by', $allowed)
+                    ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
+            });
         }
 
         $transaksi = $query->find($id);

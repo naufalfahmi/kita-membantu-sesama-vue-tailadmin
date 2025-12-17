@@ -44,6 +44,19 @@ class TransaksiFilterTest extends TestCase
         $user = User::factory()->create();
         Transaksi::create(['nominal' => 10, 'tanggal_transaksi' => '2025-12-12', 'created_by' => $user->id]);
 
+        // debug: replicate controller query to inspect SQL and results
+        $query = \App\Models\Transaksi::with(['donatur:id,nama']);
+        $subIds = $user->subordinates()->pluck('id')->toArray();
+        $allowed = array_merge([$user->id], $subIds);
+        $query->where(function ($q) use ($allowed, $user) {
+            $q->whereIn('created_by', $allowed)
+                ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
+        });
+        $query->whereBetween('tanggal_transaksi', ['2025-12-12', '2025-12-12']);
+        // cleanup debug file if present
+file_exists(base_path('tmp/transaksi_debug.sql')) && @unlink(base_path('tmp/transaksi_debug.sql'));
+
+
         $response = $this->actingAs($user)->getJson('/admin/api/transaksi?tanggal_from=2025-12-12&tanggal_to=2025-12-12');
         $response->assertOk()->assertJson(['success' => true]);
         $data = $response->json('data');

@@ -73,7 +73,12 @@ class DonaturController extends Controller
         if (! $isAdmin) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
-            $query->whereIn('created_by', $allowed);
+            // Allow users to see donaturs they created, their subordinates created,
+            // or if they are assigned as PIC for the donatur.
+            $query->where(function ($q) use ($allowed, $user) {
+                $q->whereIn('created_by', $allowed)
+                    ->orWhere('pic', $user->id);
+            });
         }
 
         // General search (nama, email, kode, no_handphone)
@@ -211,7 +216,10 @@ class DonaturController extends Controller
         if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
-            $query->whereIn('created_by', $allowed);
+            $query->where(function ($q) use ($allowed, $user) {
+                $q->whereIn('created_by', $allowed)
+                    ->orWhere('pic', $user->id);
+            });
         }
 
         $donatur = $query->find($id);
@@ -245,7 +253,10 @@ class DonaturController extends Controller
         if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
-            $query->whereIn('created_by', $allowed);
+            $query->where(function ($q) use ($allowed, $user) {
+                $q->whereIn('created_by', $allowed)
+                    ->orWhere('pic', $user->id);
+            });
         }
 
         $donatur = $query->find($id);

@@ -49,4 +49,26 @@ class DonaturVisibilityTest extends TestCase
         $this->assertContains('Donatur S1', $names);
         $this->assertContains('Donatur S2', $names);
     }
+
+    public function test_user_who_is_pic_sees_donatur_even_if_not_creator()
+    {
+        $kantor = KantorCabang::create(['kode' => 'KC22', 'nama' => 'Cabang PIC']);
+
+        $creator = User::factory()->create(['kantor_cabang_id' => $kantor->id, 'tipe_user' => 'karyawan']);
+        $picUser = User::factory()->create(['kantor_cabang_id' => $kantor->id, 'tipe_user' => 'karyawan']);
+
+        Donatur::create([
+            'nama' => 'Donatur PIC',
+            'jenis_donatur' => ['komunitas'],
+            'kantor_cabang_id' => $kantor->id,
+            'created_by' => $creator->id,
+            'pic' => $picUser->id,
+        ]);
+
+        $res = $this->actingAs($picUser)->getJson('/admin/api/donatur?per_page=10');
+        $res->assertStatus(200);
+        $data = $res->json('data');
+        $this->assertCount(1, $data);
+        $this->assertEquals('Donatur PIC', $data[0]['nama']);
+    }
 }

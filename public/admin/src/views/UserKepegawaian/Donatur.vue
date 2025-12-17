@@ -193,125 +193,132 @@ const kantorCabangSelectOptions = computed(() => [
 ])
 
 // Column definitions
-const columnDefs = [
-  {
-    headerName: 'Kode',
-    field: 'kode',
-    sortable: true,
-    width: 120,
-    valueFormatter: (params: any) => params.value || '-',
-  },
-  {
-    headerName: 'Nama',
-    field: 'nama',
-    sortable: true,
-    flex: 1,
-  },
-  {
-    headerName: 'Fundraiser',
-    field: 'pic',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => params.data?.pic_user?.nama || params.value || '-',
-  },
-  {
-    headerName: 'Jenis Donatur',
-    field: 'jenis_donatur',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => {
-      const jenis = params.value as string[]
-      if (!jenis || jenis.length === 0) return '-'
-      return jenis.map((j: string) => j.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')
+const columnDefs = computed(() => {
+  const cols: any[] = [
+    {
+      headerName: 'Kode',
+      field: 'kode',
+      sortable: true,
+      width: 120,
+      valueFormatter: (params: any) => params.value || '-',
     },
-  },
-  {
-    headerName: 'Kantor Cabang',
-    field: 'kantor_cabang',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => params.value?.nama || '-',
-  },
-  {
-    headerName: 'Status',
-    field: 'status',
-    sortable: true,
-    width: 120,
-    cellRenderer: (params: any) => {
-      const status = params.value || 'aktif'
-      const statusColors: Record<string, string> = {
-        'aktif': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        'tidak_aktif': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-        'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      }
-      const colorClass = statusColors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-      const displayStatus = status.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
-      
-      const span = document.createElement('span')
-      span.className = `px-2 py-1 rounded-full text-xs font-medium ${colorClass}`
-      span.textContent = displayStatus
-      return span
+    {
+      headerName: 'Nama',
+      field: 'nama',
+      sortable: true,
+      flex: 1,
     },
-  },
-  {
-    headerName: 'Tanggal',
-    field: 'tanggal_dibuat',
-    sortable: true,
-    width: 150,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Date(params.value).toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        })
-      }
-      return '-'
+    {
+      headerName: 'Fundraiser',
+      field: 'pic',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => params.data?.pic_user?.nama || params.value || '-',
     },
-  },
-  {
-    headerName: 'Actions',
-    field: 'actions',
-    sortable: false,
-    filter: false,
-    width: 120,
-    cellRenderer: (params: any) => {
-      const div = document.createElement('div')
-      div.className = 'flex items-center gap-3'
-      
-      const editBtn = document.createElement('button')
-      editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
-      editBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      `
-      editBtn.onclick = () => handleEdit(params.data.id)
-      
-      const deleteBtn = document.createElement('button')
-      deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
-      deleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      if (canUpdate.value) {
-        div.appendChild(editBtn)
-      }
-      if (canDelete.value) {
-        div.appendChild(deleteBtn)
-      }
-      
-      return div
+    {
+      headerName: 'Jenis Donatur',
+      field: 'jenis_donatur',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => {
+        const jenis = params.value as string[]
+        if (!jenis || jenis.length === 0) return '-'
+        return jenis.map((j: string) => j.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')
+      },
     },
-  },
-]
+    {
+      headerName: 'Kantor Cabang',
+      field: 'kantor_cabang',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => params.value?.nama || '-',
+    },
+    {
+      headerName: 'Status',
+      field: 'status',
+      sortable: true,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const status = params.value || 'aktif'
+        const statusColors: Record<string, string> = {
+          'aktif': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+          'tidak_aktif': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+          'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+        }
+        const colorClass = statusColors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+        const displayStatus = status.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+        
+        const span = document.createElement('span')
+        span.className = `px-2 py-1 rounded-full text-xs font-medium ${colorClass}`
+        span.textContent = displayStatus
+        return span
+      },
+    },
+    {
+      headerName: 'Tanggal',
+      field: 'tanggal_dibuat',
+      sortable: true,
+      width: 150,
+      valueFormatter: (params: any) => {
+        if (params.value) {
+          return new Date(params.value).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })
+        }
+        return '-'
+      },
+    },
+  ]
+
+  if (canUpdate.value || canDelete.value) {
+    cols.push({
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const div = document.createElement('div')
+        div.className = 'flex items-center gap-3'
+        
+        const editBtn = document.createElement('button')
+        editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
+        editBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        `
+        editBtn.onclick = () => handleEdit(params.data.id)
+        
+        const deleteBtn = document.createElement('button')
+        deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
+        deleteBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        `
+        deleteBtn.onclick = () => handleDelete(params.data.id)
+        
+        if (canUpdate.value) {
+          div.appendChild(editBtn)
+        }
+        if (canDelete.value) {
+          div.appendChild(deleteBtn)
+        }
+        
+        return div
+      },
+    })
+  }
+
+  return cols
+})
 
 // Default column definition
 const defaultColDef = {

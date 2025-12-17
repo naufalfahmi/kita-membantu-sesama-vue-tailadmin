@@ -158,7 +158,7 @@
           </div>
         </div>
         <div
-          class="relative items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 lg:grid"
+          class="relative items-center hidden w-full h-full lg:w-1/2 bg-brand-950 dark:bg-white/5 lg:grid" style="background-color:#34343b !important"
         >
           <div class="flex items-center justify-center z-1">
             <common-grid-shape />

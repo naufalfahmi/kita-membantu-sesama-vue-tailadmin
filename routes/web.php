@@ -17,11 +17,17 @@ use App\Http\Controllers\TipeDonaturController;
 use App\Http\Controllers\TransaksiController;
 use App\Services\MenuService;
 
-// Serve SVG favicon at /favicon.ico for browsers requesting that path
+// Serve SVG favicon at /favicon.ico for browsers requesting that path and force revalidation
 Route::get('/favicon.ico', function () {
     $path = public_path('favicon.svg');
     if (file_exists($path)) {
-        return response(file_get_contents($path), 200)->header('Content-Type', 'image/svg+xml');
+        $content = file_get_contents($path);
+        $mtime = filemtime($path);
+        return response($content, 200)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Cache-Control', 'no-cache, must-revalidate')
+            ->header('Last-Modified', gmdate('D, d M Y H:i:s', $mtime) . ' GMT')
+            ->header('ETag', md5($content));
     }
     abort(404);
 });

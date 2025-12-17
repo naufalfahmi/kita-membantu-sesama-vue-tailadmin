@@ -7,9 +7,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>@yield('title', config('app.name', 'KMS'))</title>
-  <!-- Prefer scalable SVG favicon, fallback to legacy ICO -->
-  <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
-  <link rel="alternate icon" href="{{ asset('frontend/favicon.ico') }}">
+  <!-- Prefer scalable SVG favicon, fallback to legacy ICO (versioned to bust cache) -->
+  <link rel="icon" href="{{ asset('favicon.svg') }}?v={{ filemtime(public_path('favicon.svg')) }}" type="image/svg+xml">
+  <link rel="alternate icon" href="{{ asset('frontend/favicon.ico') }}?v={{ filemtime(public_path('favicon.svg')) }}">
   <link href="{{ asset('frontend/style.css') }}" rel="stylesheet">
 </head>
 

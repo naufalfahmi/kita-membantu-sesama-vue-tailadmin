@@ -139,6 +139,52 @@
     </section>
     <!-- ===== Visi & Misi End ===== -->
 
+    <!-- ===== Bulletin Start ===== -->
+    <section id="bulletin" class="ji gp uq 2xl:ud-py-20 pg">
+      <div class="bb ze ki xn wq">
+        <div class="tc wf gg qq">
+          <div class="animate_top jn/2">
+            <h4 class="ek yj mk gb">Bulletin</h4>
+            <h2 class="fk vj zp pr kk wm qb">Bulletin Terbaru</h2>
+            @php
+              $bulletins = \App\Models\LandingBulletin::where('is_published', true)
+                ->orderByDesc('date')
+                ->take(5)
+                ->get();
+            @endphp
+
+            @if($bulletins->isEmpty())
+              <p class="uo">Belum ada bulletin yang dipublikasikan.</p>
+            @else
+              <div class="bb ze i va ki xn yq mb en">
+                <div class="wc qf pn xo ng">
+                  @foreach($bulletins as $b)
+                    @php
+                      $fileUrl = $b->file && preg_match('/^https?:\/\//', $b->file) ? $b->file : ($b->file ? asset('storage/' . $b->file) : null);
+                    @endphp
+                    <div class="animate_top sg oi pi zq ml il am cn _m flex items-start justify-between">
+                      <div>
+                        <h4 class="ek zj kk wm nb _b">{{ $b->name }}</h4>
+                        <p class="text-sm text-gray-600">{{ optional($b->date)->format('d F Y') }}</p>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        @if($fileUrl)
+                          <a href="{{ $fileUrl }}" target="_blank" rel="noopener noreferrer" class="ek jk lk gh gi hi rg ml il vc _d _l vc items-center inline-flex">Unduh</a>
+                        @else
+                          <span class="text-sm text-gray-500">(Tidak ada file)</span>
+                        @endif
+                      </div>
+                    </div>
+                  @endforeach
+                </div>
+              </div>
+            @endif
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ===== Bulletin End ===== -->
+
     <!-- ===== Team Start ===== -->
     <section class="i pg ji gp uq">
       <!-- Bg Shapes -->

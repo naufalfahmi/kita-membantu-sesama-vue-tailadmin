@@ -99,18 +99,20 @@
 
           <!-- About Content -->
           <div class="animate_right jn/2">
-            <h4 class="ek yj mk gb">Why Choose Us</h4>
-            <h2 class="fk vj zp pr kk wm qb">We Make Our customers happy by giving Best services.</h2>
-            <p class="uo">It is a long established fact that a reader will be distracted by the readable content of a
-              page when looking at its layout. The point of using Lorem Ipsum.</p>
+            <h4 class="ek yj mk gb">Tentang Kami</h4>
+            <div class="uo text-justify space-y-3">
+              <p><strong>Profil Lembaga:</strong> Kita Membantu Sesama (KMS) adalah lembaga swadaya masyarakat yang berusaha membantu pemerintah dan masyarakat dalam mewujudkan masyarakat yang sejahtera.</p>
 
-            <a href="https://www.youtube.com/watch?v=xcJtL7QggTI" data-fslightbox class="vc wf hg mb">
-              <span class="tc wf xf be dd rg i gh ua">
-                <span class="nf h vc yc vd rg gh qk -ud-z-1"></span>
-                <img src="{{ asset("frontend/images/icon-play.svg") }}" alt="Play" />
-              </span>
-              <span class="kk">SEE HOW WE WORK</span>
-            </a>
+              <p><strong>Tahun Berdiri:</strong> Kita Membantu Sesama (KMS) didirikan tahun 2017.</p>
+
+              <p><strong>Lokasi Kantor:</strong> Kantor kami berpusat di Jl. Flamboyan No. 96 Sinarsari Dramaga Bogor Jawa Barat.</p>
+
+              <p><strong>Legalitas:</strong> Berdasarkan Surat Keputusan Menteri Hukum dan HAM Nomor AHU-0009112.AH.01.04 Tahun 2017 atas nama Yayasan Kita Membantu Sesama.</p>
+
+              <p><strong>Bidang Fokus:</strong> Dalam perkembangannya KMS telah membantu masyarakat dalam bidang Usaha, Pendidikan, Kemanusiaan dan Keagamaan.</p>
+
+              <p><strong>Jangkauan:</strong> Wilayah Penyaluran sudah hampir seluruh Indonesia dari Sumatera sampai Papua.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -124,13 +126,12 @@
           <div class="animate_top jn/2">
             <h4 class="ek yj mk gb">Visi & Misi Kami</h4>
             <h2 class="fk vj zp pr kk wm qb">Visi</h2>
-            <p class="uo">Menjadi organisasi yang memberikan dampak positif dan berkelanjutan untuk masyarakat.</p>
+            <p class="uo">Menjadi Organisasi Sosial Kemanusiaan Internasional yang unggul dan profesional untuk kehidupan Kemanusiaan yang lebih baik.</p>
 
             <h2 class="fk vj zp pr kk wm qb">Misi</h2>
             <ul class="uo">
-              <li>Meningkatkan kualitas program melalui kolaborasi.</li>
-              <li>Mengoptimalkan sumber daya untuk pelayanan publik.</li>
-              <li>Membangun kemitraan yang berkelanjutan.</li>
+              <li>Mengembangkan organisasi sosial kemanusiaan yang humanis dan profesional.</li>
+              <li>Mengembangkan potensi kebaikan masyarakat menjadi potensi perubahan yang lebih baik.</li>
             </ul>
           </div>
         </div>

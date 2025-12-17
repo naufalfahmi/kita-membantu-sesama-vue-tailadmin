@@ -226,7 +226,11 @@
                 <h4 class="wj kk wm cc">Office Location</h4>
                 @if(!empty($profile->address) && is_array($profile->address))
                   @foreach($profile->address as $addr)
-                    <p>{{ $addr['address'] ?? $addr }}</p>
+                    @if(is_array($addr))
+                      <p>{{ $addr['address'] ?? implode(', ', $addr) }}</p>
+                    @else
+                      <p>{{ $addr }}</p>
+                    @endif
                   @endforeach
                 @else
                   <p>{{ $profile->address ?? '-' }}</p>
@@ -243,7 +247,11 @@
                   <h4 class="wj kk wm cc">Bank</h4>
                   @if(is_array($profile->bank_account_1))
                     @foreach($profile->bank_account_1 as $bank)
-                      <p>{{ ($bank['bank_name'] ?? '') }} {{ ($bank['account_number'] ?? '') }}</p>
+                      @if(is_array($bank))
+                        <p>{{ ($bank['bank_name'] ?? '') }} {{ ($bank['account_number'] ?? '') }}</p>
+                      @else
+                        <p>{{ $bank }}</p>
+                      @endif
                     @endforeach
                   @else
                     <p>{{ $profile->bank_account_1 }}</p>

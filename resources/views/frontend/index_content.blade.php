@@ -99,44 +99,23 @@
 
           <!-- About Content -->
           <div class="animate_right jn/2">
-            <h4 class="ek yj mk gb">Why Choose Us</h4>
-            <h2 class="fk vj zp pr kk wm qb">We Make Our customers happy by giving Best services.</h2>
-            <p class="uo">It is a long established fact that a reader will be distracted by the readable content of a
-              page when looking at its layout. The point of using Lorem Ipsum.</p>
-
-            <a href="https://www.youtube.com/watch?v=xcJtL7QggTI" data-fslightbox class="vc wf hg mb">
-              <span class="tc wf xf be dd rg i gh ua">
-                <span class="nf h vc yc vd rg gh qk -ud-z-1"></span>
-                <img src="{{ asset("frontend/images/icon-play.svg") }}" alt="Play" />
-              </span>
-              <span class="kk">SEE HOW WE WORK</span>
-            </a>
+            <h4 class="ek yj mk gb">Visi</h4>
+            <li>
+              <p class="uo">Menjadi Organisasi Sosial Kemanusiaan Internasional yang unggul dan profesional untuk kehidupan Kemanusiaan yang lebih baik.</p>  
+            </li>
+            <br>
+            <h4 class="ek yj mk gb">Misi</h4>
+            <li>
+              <p class="uo">Mengembangkan organisasi sosial kemanusiaan yang humanis dan profesional.</p>  
+            </li>
+            <li>
+              <p class="uo">Mengembangkan potensi kebaikan masyarakat menjadi potensi perubahan yang lebih baik</p>
+            </li>
           </div>
         </div>
       </div>
     </section>
     <!-- ===== About End ===== -->
-
-    <!-- ===== Visi & Misi Start ===== -->
-    <section id="visi-misi" class="ji gp uq 2xl:ud-py-20 pg">
-      <div class="bb ze ki xn wq">
-        <div class="tc wf gg qq">
-          <div class="animate_top jn/2">
-            <h4 class="ek yj mk gb">Visi & Misi Kami</h4>
-            <h2 class="fk vj zp pr kk wm qb">Visi</h2>
-            <p class="uo">Menjadi organisasi yang memberikan dampak positif dan berkelanjutan untuk masyarakat.</p>
-
-            <h2 class="fk vj zp pr kk wm qb">Misi</h2>
-            <ul class="uo">
-              <li>Meningkatkan kualitas program melalui kolaborasi.</li>
-              <li>Mengoptimalkan sumber daya untuk pelayanan publik.</li>
-              <li>Membangun kemitraan yang berkelanjutan.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- ===== Visi & Misi End ===== -->
 
     <!-- ===== Team Start ===== -->
     <section class="i pg ji gp uq">
@@ -149,7 +128,7 @@
 
       <!-- Section Title Start -->
       <div
-        x-data="{ sectionTitle: `Meet With Our Creative Dedicated Team`, sectionTitleText: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor eros. Donec vitae tortor lacus. Phasellus aliquam ante in maximus.`}">
+        x-data="{ sectionTitle: `Pendiri Kita Membantu Sesama`, sectionTitleText: `Pendiri kami adalah individu yang berpengalaman dan berdedikasi, berkomitmen untuk membangun organisasi yang memberikan bantuan serta solusi berkelanjutan bagi masyarakat.` }">
         <div class="animate_top bb ze rj ki xn vq">
           <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
           </h2>
@@ -317,14 +296,12 @@
     <section class="lj tp kr">
       <!-- Section Title Start -->
       <div
-        x-data="{ sectionTitle: `We Offer The Best Quality Service for You`, sectionTitleText: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor eros. Donec vitae tortor lacus. Phasellus aliquam ante in maximus.`}">
+        x-data="{ sectionTitle: `Bulletin`, sectionTitleText: `Bulletin berisi pengumuman, artikel, dan informasi terbaru mengenai kegiatan serta program kami untuk masyarakat.`}">
         <div class="animate_top bb ze rj ki xn vq">
           <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
           </h2>
           <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>
         </div>
-
-
       </div>
       <!-- Section Title End -->
 
@@ -376,79 +353,17 @@
     </section>
     <!-- ===== Services End ===== -->
 
-    <!-- ===== Program Start ===== -->
-    <section id="program" class="ji gp uq 2xl:ud-py-20 pg">
-      <div class="bb ze ki xn wq">
-        <div class="tc wf gg qq">
-          <div class="animate_top jn/2">
-            <h4 class="ek yj mk gb">Program Kami</h4>
-            <h2 class="fk vj zp pr kk wm qb">Program unggulan</h2>
-            <p class="uo">Berikut beberapa program yang kami jalankan. (Konten dinamis bisa ditambahkan melalui admin)</p>
-          </div>
-
-          <div class="bb ze i va ki xn yq mb en">
-            <div class="wc qf pn xo ng">
-              <div class="animate_top sg oi pi zq ml il am cn _m">
-                <h4 class="ek zj kk wm nb _b">Program A</h4>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-              </div>
-
-              <div class="animate_top sg oi pi zq ml il am cn _m">
-                <h4 class="ek zj kk wm nb _b">Program B</h4>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-              </div>
-
-              <div class="animate_top sg oi pi zq ml il am cn _m">
-                <h4 class="ek zj kk wm nb _b">Program C</h4>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- ===== Program End ===== -->
-
-    <!-- ===== Kegiatan Start ===== -->
-    <section id="kegiatan" class="ji gp uq 2xl:ud-py-20 pg">
-      <div class="bb ze ki xn wq">
-        <div class="tc wf gg qq">
-          <div class="animate_top jn/2">
-            <h4 class="ek yj mk gb">Kegiatan</h4>
-            <h2 class="fk vj zp pr kk wm qb">Agenda & Kegiatan Terbaru</h2>
-            <p class="uo">Lihat kegiatan terbaru dan acara yang akan datang.</p>
-          </div>
-
-          <div class="bb ze i va ki xn yq mb en">
-            <div class="wc qf pn xo ng">
-              <div class="animate_top sg oi pi zq ml il am cn _m">
-                <h4 class="ek zj kk wm nb _b">Kegiatan 1</h4>
-                <p>Deskripsi singkat kegiatan.</p>
-              </div>
-
-              <div class="animate_top sg oi pi zq ml il am cn _m">
-                <h4 class="ek zj kk wm nb _b">Kegiatan 2</h4>
-                <p>Deskripsi singkat kegiatan.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- ===== Kegiatan End ===== -->
 
     <!-- ===== Projects Start ===== -->
     <section class="pg pj vp mr oj wp nr">
       <!-- Section Title Start -->
       <div
-        x-data="{ sectionTitle: `We Offer Great Affordable Premium Prices.`, sectionTitleText: `It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using.`}">
+        x-data="{ sectionTitle: `Program Kami`, sectionTitleText: `Program-program unggulan kami meliputi pendidikan, kesehatan, dan bantuan darurat yang dirancang untuk menciptakan dampak berkelanjutan bagi komunitas.` }">
         <div class="animate_top bb ze rj ki xn vq">
           <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
           </h2>
           <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>
         </div>
-
-
       </div>
       <!-- Section Title End -->
 
@@ -566,20 +481,20 @@
       <div class="bb ze i va ki xn br">
         <div class="tc uf sn tn xf un gg">
           <div class="animate_top me/5 ln rj">
-            <h2 class="gk vj zp or kk wm hc">785</h2>
-            <p class="ek bk aq">Global Brands</p>
+            <h2 class="gk vj zp or kk wm hc">4</h2>
+            <p class="ek bk aq">Kantor Cabang</p>
           </div>
           <div class="animate_top me/5 ln rj">
             <h2 class="gk vj zp or kk wm hc">533</h2>
-            <p class="ek bk aq">Happy Clients</p>
+            <p class="ek bk aq">Donatur</p>
           </div>
           <div class="animate_top me/5 ln rj">
             <h2 class="gk vj zp or kk wm hc">865</h2>
-            <p class="ek bk aq">Winning Award</p>
+            <p class="ek bk aq">Fundraiser</p>
           </div>
           <div class="animate_top me/5 ln rj">
             <h2 class="gk vj zp or kk wm hc">346</h2>
-            <p class="ek bk aq">Happy Clients</p>
+            <p class="ek bk aq">Penggalangan Dana</p>
           </div>
         </div>
       </div>
@@ -741,14 +656,12 @@
 
       <!-- Section Title Start -->
       <div
-        x-data="{ sectionTitle: `Let’s Stay Connected`, sectionTitleText: `It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using.`}">
+        x-data="{ sectionTitle: `Kontak`, sectionTitleText: `Hubungi kami untuk informasi lebih lanjut, dukungan, atau kolaborasi—tim kami siap membantu.`}">
         <div class="animate_top bb ze rj ki xn vq">
           <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
           </h2>
           <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>
         </div>
-
-
       </div>
       <!-- Section Title End -->
 
@@ -760,26 +673,26 @@
             <img src="{{ asset("frontend/images/shape-06.svg") }}" alt="Shape" class="h la ma ne kf" />
 
             <div class="fb">
-              <h4 class="wj kk wm cc">Email Address</h4>
+              <h4 class="wj kk wm cc">Alamat Email</h4>
               <p><a href="#!">support@startup.com</a></p>
             </div>
             <div class="fb">
-              <h4 class="wj kk wm cc">Office Location</h4>
+              <h4 class="wj kk wm cc">Lokasi Kantor</h4>
               <p>76/A, Green valle, Califonia USA.</p>
             </div>
             <div class="fb">
-              <h4 class="wj kk wm cc">Phone Number</h4>
+              <h4 class="wj kk wm cc">Nomor Telepon</h4>
               <p><a href="#!">+009 8754 3433 223</a></p>
             </div>
             <div class="fb">
-              <h4 class="wj kk wm cc">Skype Email</h4>
+              <h4 class="wj kk wm cc">Email Skype</h4>
               <p><a href="#!">example@yourmail.com</a></p>
             </div>
 
             <span class="rc nd rh tm lc fb"></span>
 
             <div>
-              <h4 class="wj kk wm qb">Social Media</h4>
+              <h4 class="wj kk wm qb">Media Sosial</h4>
               <ul class="tc wf fg">
                 <li>
                   <a href="#!" class="c tc wf xf ie ld rg ml il tl">
@@ -829,40 +742,40 @@
             <form>
               <div class="tc sf yo ap zf ep qb">
                 <div class="vd to/2">
-                  <label class="rc ac" for="fullname">Full name</label>
-                  <input type="text" name="fullname" id="fullname" placeholder="Devid Wonder"
+                  <label class="rc ac" for="fullname">Nama lengkap</label>
+                  <input type="text" name="fullname" id="fullname" placeholder="Nama Anda"
                     class="vd ph sg zk xm _g ch pm hm dm dn em pl/50 xi mi" />
                 </div>
 
                 <div class="vd to/2">
-                  <label class="rc ac" for="email">Email address</label>
-                  <input type="email" name="email" id="email" placeholder="example@gmail.com"
+                  <label class="rc ac" for="email">Alamat email</label>
+                  <input type="email" name="email" id="email" placeholder="contoh@domain.com"
                     class="vd ph sg zk xm _g ch pm hm dm dn em pl/50 xi mi" />
                 </div>
               </div>
 
               <div class="tc sf yo ap zf ep qb">
                 <div class="vd to/2">
-                  <label class="rc ac" for="phone">Phone number</label>
+                  <label class="rc ac" for="phone">Nomor telepon</label>
                   <input type="text" name="phone" id="phone" placeholder="+009 3342 3432"
                     class="vd ph sg zk xm _g ch pm hm dm dn em pl/50 xi mi" />
                 </div>
 
                 <div class="vd to/2">
-                  <label class="rc ac" for="subject">Subject</label>
-                  <input type="text" for="subject" id="subject" placeholder="Type your subject"
+                  <label class="rc ac" for="subject">Subjek</label>
+                  <input type="text" for="subject" id="subject" placeholder="Ketik subjek Anda"
                     class="vd ph sg zk xm _g ch pm hm dm dn em pl/50 xi mi" />
                 </div>
               </div>
 
               <div class="fb">
-                <label class="rc ac" for="message">Message</label>
-                <textarea placeholder="Message" rows="4" name="message" id="message"
+                <label class="rc ac" for="message">Pesan</label>
+                <textarea placeholder="Pesan Anda" rows="4" name="message" id="message"
                   class="vd ph sg zk xm _g ch pm hm dm dn em pl/50 ci"></textarea>
               </div>
 
               <div class="tc xf">
-                <button class="vc rg lk gh ml il hi gi _l">Send Message</button>
+                <button class="vc rg lk gh ml il hi gi _l">Kirim Pesan</button>
               </div>
             </form>
           </div>
@@ -880,16 +793,16 @@
         <div class="tc uf sn tn un gg">
           <div class="animate_left to/2">
             <h2 class="fk vj zp pr lk ac">
-              Join with 5000+ Startups Growing with Base.
+              Sudah 353+ donatur mari mulai donasi untuk Membantu Sesama
             </h2>
             <p class="lk">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc quis nibh lorem. Duis sed odio lorem. In a
-              efficitur leo. Ut venenatis rhoncus.
+              Bergabunglah untuk mendukung program-program kami — donasi Anda membantu pendidikan, kesehatan, dan respon
+              darurat bagi komunitas yang membutuhkan.
             </p>
           </div>
           <div class="animate_right bf">
             <a href="#!" class="vc ek kk hh rg ol il cm gi hi">
-              Get Started Now
+              Donasi Sekarang
             </a>
           </div>
         </div>

@@ -397,125 +397,132 @@ const formatYMDLocal = (d: any) => {
   return String(d)
 }
 
-const columnDefs = [
-  {
-    headerName: 'Donatur',
-    field: 'donatur',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => params.value || '-',
-  },
-  {
-    headerName: 'Kantor Cabang',
-    field: 'kantor_cabang',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => params.value || '-',
-  },
-  {
-    headerName: 'Dibuat oleh',
-    field: 'fundraiser',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => params.value || '-',
-  },
-  {
-    headerName: 'Fundraiser',
-    field: 'fundraiser_pic',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => (params.data?.fundraiser_pic?.nama || params.data?.fundraiser_pic?.name) || params.value || '-',
-  },
-  {
-    headerName: 'Program',
-    field: 'program',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => params.value || '-',
-  },
-  {
-    headerName: 'Nominal',
-    field: 'nominal_formatted',
-    sortable: true,
-    flex: 1,
-  },
-  {
-    headerName: 'Tanggal Transaksi',
-    field: 'tanggal_transaksi',
-    sortable: true,
-    width: 150,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Date(params.value).toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-        })
-      }
-      return '-'
+const columnDefs = computed(() => {
+  const cols: any[] = [
+    {
+      headerName: 'Donatur',
+      field: 'donatur',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => params.value || '-',
     },
-  },
-  {
-    headerName: 'Tanggal Dibuat',
-    field: 'tanggal_dibuat',
-    sortable: true,
-    width: 180,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Date(params.value).toLocaleString('id-ID', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      }
-      return '-'
+    {
+      headerName: 'Kantor Cabang',
+      field: 'kantor_cabang',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => params.value || '-',
     },
-  },
-  {
-    headerName: 'Actions',
-    field: 'actions',
-    sortable: false,
-    filter: false,
-    width: 120,
-    cellRenderer: (params: any) => {
-      const div = document.createElement('div')
-      div.className = 'flex items-center gap-3'
-
-      const editBtn = document.createElement('button')
-      editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
-      editBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      `
-      editBtn.onclick = () => handleEdit(params.data.id)
-
-      const deleteBtn = document.createElement('button')
-      deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
-      deleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-
-      if (canUpdate.value) {
-        div.appendChild(editBtn)
-      }
-      if (canDelete.value) {
-        div.appendChild(deleteBtn)
-      }
-
-      return div
+    {
+      headerName: 'Dibuat oleh',
+      field: 'fundraiser',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => params.value || '-',
     },
-  },
-]
+    {
+      headerName: 'Fundraiser',
+      field: 'fundraiser_pic',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => (params.data?.fundraiser_pic?.nama || params.data?.fundraiser_pic?.name) || params.value || '-',
+    },
+    {
+      headerName: 'Program',
+      field: 'program',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => params.value || '-',
+    },
+    {
+      headerName: 'Nominal',
+      field: 'nominal_formatted',
+      sortable: true,
+      flex: 1,
+    },
+    {
+      headerName: 'Tanggal Transaksi',
+      field: 'tanggal_transaksi',
+      sortable: true,
+      width: 150,
+      valueFormatter: (params: any) => {
+        if (params.value) {
+          return new Date(params.value).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })
+        }
+        return '-'
+      },
+    },
+    {
+      headerName: 'Tanggal Dibuat',
+      field: 'tanggal_dibuat',
+      sortable: true,
+      width: 180,
+      valueFormatter: (params: any) => {
+        if (params.value) {
+          return new Date(params.value).toLocaleString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        }
+        return '-'
+      },
+    },
+  ]
+
+  if (canUpdate.value || canDelete.value) {
+    cols.push({
+      headerName: 'Actions',
+      field: 'actions',
+      sortable: false,
+      filter: false,
+      width: 120,
+      cellRenderer: (params: any) => {
+        const div = document.createElement('div')
+        div.className = 'flex items-center gap-3'
+
+        const editBtn = document.createElement('button')
+        editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
+        editBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        `
+        editBtn.onclick = () => handleEdit(params.data.id)
+
+        const deleteBtn = document.createElement('button')
+        deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
+        deleteBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 6h18"></path>
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            <line x1="10" y1="11" x2="10" y2="17"></line>
+            <line x1="14" y1="11" x2="14" y2="17"></line>
+          </svg>
+        `
+        deleteBtn.onclick = () => handleDelete(params.data.id)
+
+        if (canUpdate.value) {
+          div.appendChild(editBtn)
+        }
+        if (canDelete.value) {
+          div.appendChild(deleteBtn)
+        }
+
+        return div
+      },
+    })
+  }
+
+  return cols
+})
 
 const defaultColDef = {
   resizable: true,

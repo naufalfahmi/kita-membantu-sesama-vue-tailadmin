@@ -6,11 +6,9 @@
         <img src="{{ asset("frontend/images/shape-01.svg") }}" alt="shape" class="xc 2xl:ud-block h t -ud-left-[10%] ua" />
         <img src="{{ asset("frontend/images/shape-02.svg") }}" alt="shape" class="xc 2xl:ud-block h u p va" />
         <img src="{{ asset("frontend/images/shape-03.svg") }}" alt="shape" class="xc 2xl:ud-block h v w va" />
-        {{-- shape-04.svg removed per request --}}
         <img src="{{ asset("frontend/images/people-who-support-svgrepo-com.svg") }}" alt="People Supporting" class="h q r ua" />
       </div>
-        x-data="{ sectionTitle: `We Offer Great Affordable Premium Prices.`, sectionTitleText: `It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using.`}">
-        <div class="animate_top bb ze rj ki xn vq">
+        <div class="animate_top bb ze rj ki xn vq" x-data="{ sectionTitle: 'We Offer Great Affordable Premium Prices.', sectionTitleText: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using.' }">
           <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
           </h2>
           <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>

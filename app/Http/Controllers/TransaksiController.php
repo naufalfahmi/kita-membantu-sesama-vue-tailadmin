@@ -21,7 +21,9 @@ class TransaksiController extends Controller
     {
         $query = Transaksi::with([
             'kantorCabang:id,nama',
-            'donatur:id,nama',
+            // include donatur.pic so we can show PIC (pic_user) in transactions
+            'donatur:id,nama,pic',
+            'donatur.picUser:id,name',
             'program:id,nama_program',
             'fundraiser:id,name',
         ]);
@@ -68,7 +70,14 @@ class TransaksiController extends Controller
         }
 
         if ($request->filled('fundraiser_id')) {
-            $query->where('fundraiser_id', $request->fundraiser_id);
+            $fid = $request->fundraiser_id;
+            // Allow filtering by the transaction's fundraiser (creator) OR by the donatur's PIC
+            // so selecting a fundraiser will return transaksis where that user is either the
+            // assigned fundraiser or the PIC of the related donatur.
+            $query->where(function ($q) use ($fid) {
+                $q->where('fundraiser_id', $fid)
+                    ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $fid));
+            });
         }
 
         if ($request->filled('program')) {
@@ -396,6 +405,11 @@ class TransaksiController extends Controller
             'donatur' => $transaksi->donatur ? [
                 'id' => $transaksi->donatur->id,
                 'nama' => $transaksi->donatur->nama,
+            ] : null,
+            // PIC info for the donatur (if available)
+            'donatur_pic' => $transaksi->donatur && $transaksi->donatur->picUser ? [
+                'id' => $transaksi->donatur->picUser->id,
+                'nama' => $transaksi->donatur->picUser->name,
             ] : null,
             'program_id' => $transaksi->program_id,
             'program' => $transaksi->program ? [

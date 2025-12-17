@@ -48,8 +48,8 @@
           </div>
 
           <div>
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">PIC</label>
-            <SearchableSelect v-model="filterPic" :options="picSelectOptions" placeholder="Semua PIC" />
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Fundraiser</label>
+            <SearchableSelect v-model="filterPic" :options="picSelectOptions" placeholder="Semua Fundraiser" />
           </div>
 
           <div>
@@ -179,7 +179,7 @@ const kantorCabangOptions = ref<any[]>([])
 const karyawanOptions = ref<any[]>([])
 
 const picSelectOptions = computed(() => [
-  { value: '', label: 'Semua PIC' },
+  { value: '', label: 'Semua Fundraiser' },
   ...karyawanOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
 ])
 
@@ -204,7 +204,7 @@ const columnDefs = [
     flex: 1,
   },
   {
-    headerName: 'PIC',
+    headerName: 'Fundraiser',
     field: 'pic',
     sortable: true,
     flex: 1,

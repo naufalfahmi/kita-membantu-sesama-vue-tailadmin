@@ -42,12 +42,12 @@
 
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              PIC
+              Fundraiser
             </label>
             <SearchableSelect
               v-model="formData.pic"
               :options="picOptions"
-              placeholder="Pilih PIC"
+              placeholder="Pilih Fundraiser"
               :search-input="picSearchInput"
               @update:search-input="picSearchInput = $event"
               :disabled="isFundrising"

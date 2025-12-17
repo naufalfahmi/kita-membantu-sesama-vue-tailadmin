@@ -80,4 +80,34 @@ file_exists(base_path('tmp/transaksi_debug.sql')) && @unlink(base_path('tmp/tran
         // 3 records in the range
         $this->assertCount(3, $data);
     }
+
+    public function test_filter_by_fundraiser_id_includes_donatur_pic_transactions()
+    {
+        // Create an admin user so filtering isn't constrained by the default visibility rules
+        $admin = User::factory()->create();
+        // Ensure the 'admin' role exists in test DB
+        if (!\Spatie\Permission\Models\Role::where('name', 'admin')->exists()) {
+            \Spatie\Permission\Models\Role::create(['name' => 'admin']);
+        }
+        $admin->assignRole('admin');
+
+        $fundraiser = User::factory()->create();
+        $other = User::factory()->create();
+
+        // Donatur whose PIC is $fundraiser
+        $donatur = \App\Models\Donatur::create(['nama' => 'Donor A', 'jenis_donatur' => ['retail'], 'pic' => $fundraiser->id, 'created_by' => $other->id]);
+
+        // Transaksi associated with donor (PIC should match $fundraiser)
+        Transaksi::create(['nominal' => 50, 'donatur_id' => $donatur->id, 'tanggal_transaksi' => '2025-12-12', 'created_by' => $other->id]);
+
+        // Transaksi where fundraiser_id equals $fundraiser (explicitly assigned)
+        Transaksi::create(['nominal' => 60, 'fundraiser_id' => $fundraiser->id, 'tanggal_transaksi' => '2025-12-13', 'created_by' => $other->id]);
+
+        $response = $this->actingAs($admin)->getJson('/admin/api/transaksi?fundraiser_id=' . $fundraiser->id);
+        $response->assertOk()->assertJson(['success' => true]);
+        $data = $response->json('data');
+
+        // both records should be returned when filtering by fundraiser_id
+        $this->assertCount(2, $data);
+    }
 }

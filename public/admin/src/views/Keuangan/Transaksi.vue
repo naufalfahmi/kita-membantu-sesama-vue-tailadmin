@@ -336,13 +336,35 @@ const programOptions = computed(() => [
   })),
 ])
 
-const fundraiserOptions = computed(() => [
-  { value: '', label: 'Semua Fundraiser' },
-  ...fundraiserList.value.map((item) => ({
-    value: String(item.id),
-    label: item.name || '-',
-  })),
-])
+const fundraiserOptions = computed(() => {
+  const map = new Map()
+  // Placeholder
+  map.set('', 'Semua Fundraiser')
+
+  // Add fundraisers (karyawan) first
+  for (const item of fundraiserList.value) {
+    if (item?.id) {
+      map.set(String(item.id), item.name || item.nama || '-')
+    }
+  }
+
+  // Add unique PIC users from donatur list
+  for (const donor of donaturList.value) {
+    const pic = donor?.pic_user || (donor?.pic ? { id: donor.pic, nama: donor.pic_nama || donor.pic_name || '' } : null)
+    if (pic && pic.id) {
+      const key = String(pic.id)
+      if (!map.has(key)) {
+        map.set(key, pic.nama || pic.name || '-')
+      }
+    }
+  }
+
+  const options: any[] = []
+  for (const [value, label] of map.entries()) {
+    options.push({ value, label })
+  }
+  return options
+})
 
 const kantorCabangOptions = computed(() => [
   { value: '', label: 'Semua Kantor Cabang' },
@@ -377,13 +399,6 @@ const formatYMDLocal = (d: any) => {
 
 const columnDefs = [
   {
-    headerName: 'Kode',
-    field: 'kode',
-    sortable: true,
-    width: 160,
-    valueFormatter: (params: any) => params.value || '-',
-  },
-  {
     headerName: 'Donatur',
     field: 'donatur',
     sortable: true,
@@ -398,11 +413,18 @@ const columnDefs = [
     valueFormatter: (params: any) => params.value || '-',
   },
   {
-    headerName: 'Fundraiser',
+    headerName: 'Dibuat oleh',
     field: 'fundraiser',
     sortable: true,
     flex: 1,
     valueFormatter: (params: any) => params.value || '-',
+  },
+  {
+    headerName: 'Fundraiser',
+    field: 'fundraiser_pic',
+    sortable: true,
+    flex: 1,
+    valueFormatter: (params: any) => (params.data?.fundraiser_pic?.nama || params.data?.fundraiser_pic?.name) || params.value || '-',
   },
   {
     headerName: 'Program',
@@ -603,7 +625,10 @@ const fetchData = async () => {
         kode: item.kode,
         donatur: item.donatur?.nama || null,
         kantor_cabang: item.kantor_cabang?.nama || null,
+        // 'Dibuat oleh' (creator)
         fundraiser: item.fundraiser?.nama || null,
+        // new column: donatur PIC
+        fundraiser_pic: item.donatur_pic?.nama || item.donatur?.pic_user?.nama || item.donatur?.pic_user?.name || null,
         program: item.program?.nama || null,
         nominal: item.nominal,
         nominal_formatted: item.nominal_formatted,
@@ -726,10 +751,10 @@ const handleExportExcel = async () => {
     if (!tplRes || !tplRes.ok) {
       // Fallback to previous simple export
       const data = transaksiList.map((item: any) => ({
-        'Kode': item.kode || '-',
         'Donatur': item.donatur?.nama || '-',
         'Kantor Cabang': item.kantor_cabang?.nama || '-',
-        'Fundraiser': (item.fundraiser?.name || item.fundraiser?.nama || item.fundraiser?.label) || '-',
+        'Dibuat oleh': (item.fundraiser?.name || item.fundraiser?.nama || item.fundraiser?.label) || '-',
+        'Fundraiser': item.donatur_pic?.nama || item.donatur?.pic_user?.nama || item.donatur?.pic_user?.name || '-',
         'Program': item.program?.nama_program || '-',
         'Nominal': item.nominal_formatted,
         'Tanggal': item.tanggal_transaksi
@@ -1039,7 +1064,7 @@ const handleExportExcel = async () => {
       // Build per-donor aggregates for this fund
       const donorMap = new Map()
       for (const t of fundTransaksi) {
-        const donorKey = t.donatur?.id || t.donatur_id || t.donatur?.nama || `unknown_${t.kode}`
+        const donorKey = t.donatur?.id || t.donatur_id || t.donatur?.nama || `unknown_${t.id}`
         if (!donorMap.has(donorKey)) donorMap.set(donorKey, { info: resolveDonaturInfo(t), months: new Map(), total: 0 })
         const rec = donorMap.get(donorKey)
         rec.info = resolveDonaturInfo(t)
@@ -1252,20 +1277,32 @@ const handleExportCsv = async () => {
 
     const transaksiList = (json.data || [])
 
-    // Group by fundraiser (same logic as Excel export)
-    const getFundraiserName = (t: any) => {
+    // Group by donatur PIC (PIC name resolved from donatur_pic or donatur.pic_user)
+    const getPicName = (t: any) => {
       if (!t) return 'Unassigned'
-      const f = t.fundraiser || (t.fundraiser_id ? { id: t.fundraiser_id } : null)
-      return (f && (f.name || f.nama || f.label)) ? (f.name || f.nama || f.label) : 'Unassigned'
+      const pic = t.donatur_pic || (t.donatur?.pic_user ? t.donatur.pic_user : (t.donatur && t.donatur.pic ? { id: t.donatur.pic, nama: t.donatur.pic_nama || t.donatur.pic_name || '' } : null))
+      return (pic && (pic.nama || pic.name)) ? (pic.nama || pic.name) : 'Unassigned'
     }
 
     const fundMap = new Map<string, any[]>()
     if (filterFundraiser.value) {
-      const fName = (filterFundraiser.value && typeof filterFundraiser.value === 'string') ? String(filterFundraiser.value) : (filterFundraiser.value?.label || 'Filtered')
+      // When a fundraiser filter is applied, try to resolve it to a PIC name (could be a karyawan id or a PIC id)
+      let fName = String(filterFundraiser.value)
+      const foundKaryawan = fundraiserList.value.find((u: any) => String(u.id) === String(filterFundraiser.value))
+      if (foundKaryawan) {
+        fName = foundKaryawan.name || foundKaryawan.nama || String(filterFundraiser.value)
+      } else {
+        // search donatur list for matching pic
+        const foundPicDonor = donaturList.value.find((d: any) => (d.pic && String(d.pic) === String(filterFundraiser.value)) || (d.pic_user && String(d.pic_user.id) === String(filterFundraiser.value)))
+        if (foundPicDonor) {
+          const pic = foundPicDonor.pic_user || (foundPicDonor.pic ? { id: foundPicDonor.pic, nama: foundPicDonor.pic_nama || foundPicDonor.pic_name || '' } : null)
+          if (pic) fName = pic.nama || pic.name || fName
+        }
+      }
       fundMap.set(String(fName || 'Filtered'), transaksiList)
     } else {
       for (const t of transaksiList) {
-        const name = getFundraiserName(t)
+        const name = getPicName(t)
         if (!fundMap.has(name)) fundMap.set(name, [])
         fundMap.get(name).push(t)
       }
@@ -1421,7 +1458,7 @@ const handleExportCsv = async () => {
     a.remove()
     URL.revokeObjectURL(url)
 
-    toast.success('Export CSV per-fundraiser berhasil (ZIP)')
+    toast.success('Export CSV per-PIC berhasil (ZIP)')
   } catch (err) {
     console.error('CSV export failed', err)
     toast.error('Gagal mengekspor CSV: ' + (err?.message || 'lihat console'))

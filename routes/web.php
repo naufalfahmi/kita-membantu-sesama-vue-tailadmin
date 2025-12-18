@@ -132,9 +132,27 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::apiResource('pangkat', \App\Http\Controllers\PangkatController::class);
     // Gaji API
     Route::apiResource('gaji', \App\Http\Controllers\GajiController::class);
-    // Remunerasi API
-    Route::apiResource('operasional/remunerasi', \App\Http\Controllers\Api\RemunerasiController::class);
-    
+
+    // Payroll / Rekap Gaji per Periode
+    Route::get('operasional/payroll/periods', [\App\Http\Controllers\Api\PayrollController::class, 'index']);
+    Route::post('operasional/payroll/periods/generate', [\App\Http\Controllers\Api\PayrollController::class, 'generate']);
+    Route::get('operasional/payroll/periods/{id}', [\App\Http\Controllers\Api\PayrollController::class, 'show']);
+    Route::post('operasional/payroll/periods/{id}/transfer', [\App\Http\Controllers\Api\PayrollController::class, 'transferPeriod']);
+
+    // Return the current authenticated user's latest payroll period + record
+    Route::get('operasional/payroll/me', [\App\Http\Controllers\Api\PayrollController::class, 'me']);
+
+    // Return ALL payroll records for the current authenticated user
+    Route::get('operasional/payroll/me/list', [\App\Http\Controllers\Api\PayrollController::class, 'myRecords']);
+
+    // Record and items endpoints
+    Route::get('operasional/payroll/periods/{periodId}/records/{recordId}', [\App\Http\Controllers\Api\PayrollController::class, 'showRecord']);
+    Route::post('operasional/payroll/periods/{periodId}/records/{recordId}/items', [\App\Http\Controllers\Api\PayrollController::class, 'addItem']);
+    Route::put('operasional/payroll/periods/{periodId}/records/{recordId}/items/{itemId}', [\App\Http\Controllers\Api\PayrollController::class, 'updateItem']);
+    Route::delete('operasional/payroll/periods/{periodId}/records/{recordId}/items/{itemId}', [\App\Http\Controllers\Api\PayrollController::class, 'deleteItem']);
+    // Update record (status, notes)
+    Route::put('operasional/payroll/periods/{periodId}/records/{recordId}', [\App\Http\Controllers\Api\PayrollController::class, 'updateRecord']);
+
     // Karyawan API
     Route::get('karyawan-next-no-induk', [\App\Http\Controllers\KaryawanController::class, 'getNextNoInduk'])->name('admin.api.karyawan.next-no-induk');
     Route::apiResource('karyawan', \App\Http\Controllers\KaryawanController::class);
@@ -190,6 +208,9 @@ Route::middleware(['auth'])->group(function () {
         return view('admin.index');
     })->name('admin.index');
     
+    // Specific admin routes that are server-rendered (printable views) should be declared BEFORE the catch-all Vue route
+    Route::get('/admin/operasional/payroll/periods/{periodId}/records/{recordId}/slip', [\App\Http\Controllers\PayrollSlipController::class, 'slip'])->name('admin.operasional.payroll.slip');
+
     // The {any} parameter will match everything except signin/signup and api/*
     Route::get('/admin/{any}', function () {
         return view('admin.index');

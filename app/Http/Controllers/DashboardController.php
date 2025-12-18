@@ -60,7 +60,7 @@ class DashboardController extends Controller
                     ],
                     'operasional' => [
                         'absensi' => DB::table('absensis')->count(),
-                        'remunerasi' => DB::table('remunerasis')->count(),
+                        'remunerasi' => $this->safeCount('remunerasis'),
                     ],
                     'keuangan' => [
                         'transaksi' => $this->safeCount('transaksis'),

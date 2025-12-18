@@ -507,23 +507,30 @@ const router = createRouter({
       component: () => import('../views/Operasional/AbsensiDetail.vue'),
       meta: { title: 'Detail Absensi' },
     },
+
     {
-      path: '/operasional/remunerasi',
-      name: 'Remunerasi',
-      component: () => import('../views/Operasional/Remunerasi.vue'),
-      meta: { title: 'Remunerasi', permission: 'view remunerasi' },
+      path: '/operasional/payroll',
+      name: 'Payroll',
+      component: () => import('../views/Operasional/Payroll.vue'),
+      meta: { title: 'Rekap Gaji (Payroll)', permission: 'view remunerasi' },
     },
     {
-      path: '/operasional/remunerasi/new',
-      name: 'Tambah Remunerasi',
-      component: () => import('../views/Operasional/RemunerasiForm.vue'),
-      meta: { title: 'Tambah Remunerasi', permission: 'create remunerasi' },
+      path: '/operasional/payroll/:id',
+      name: 'Payroll Detail',
+      component: () => import('../views/Operasional/PayrollDetail.vue'),
+      meta: { title: 'Detail Payroll', permission: 'view remunerasi' },
     },
     {
-      path: '/operasional/remunerasi/:id/edit',
-      name: 'Edit Remunerasi',
-      component: () => import('../views/Operasional/RemunerasiForm.vue'),
-      meta: { title: 'Edit Remunerasi', permission: 'update remunerasi' },
+      path: '/operasional/payroll/mine',
+      name: 'Payroll Mine',
+      component: () => import('../views/Operasional/PayrollMine.vue'),
+      meta: { title: 'Slip Gaji Saya', permission: 'view remunerasi' },
+    },
+    {
+      path: '/operasional/payroll/:periodId/records/:recordId/edit',
+      name: 'Edit Payroll Record',
+      component: () => import('../views/Operasional/PayrollRecordEdit.vue'),
+      meta: { title: 'Edit Payroll Record', permission: 'update remunerasi' },
     },
     
     // Keuangan routes
@@ -750,9 +757,27 @@ router.beforeEach(async (to, from, next) => {
   try {
     const { fetchUser, hasPermission, isAdmin, user } = useAuth()
     await fetchUser()
-    const allowed = isAdmin() || hasPermission(permission)
+
+    // Build permission candidates (support aliases and 'show'->'view')
+    const permsToCheck = new Set<string>()
+    permsToCheck.add(permission)
+    // alias remunerasi <-> payroll
+    permsToCheck.add(permission.replace('remunerasi', 'payroll'))
+    permsToCheck.add(permission.replace('payroll', 'remunerasi'))
+    // map show -> view
+    permsToCheck.add(permission.replace(/^show\s+/, 'view '))
+    permsToCheck.add(permission.replace(/^view\s+/, 'show '))
+
+    let allowed = isAdmin()
+    if (!allowed) {
+      for (const p of permsToCheck) {
+        if (!p) continue
+        if (hasPermission(p)) { allowed = true; break }
+      }
+    }
+
     if (allowed) return next()
-    console.warn('Router guard: access denied', { path: to.path, permission, userPermissions: (user.value as any)?.permissions })
+    console.warn('Router guard: access denied', { path: to.path, permission, permsToCheck: Array.from(permsToCheck), userPermissions: (user.value as any)?.permissions })
     return next({ name: 'Restricted' })
   } catch (e) {
     // On error (e.g., not authenticated) redirect to signin

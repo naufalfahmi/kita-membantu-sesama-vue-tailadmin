@@ -873,13 +873,14 @@ const handleExportExcel = async () => {
     // Build fundraiser groups: if a fundraiser filter is selected, use single group; otherwise group by fundraiser name
     const fundMap = new Map<string, any[]>()
     if (filterFundraiser.value) {
-      const fName = (filterFundraiser.value && typeof filterFundraiser.value === 'string') ? String(filterFundraiser.value) : (filterFundraiser.value?.label || 'Filtered')
+      const fName = (filterFundraiser.value && typeof filterFundraiser.value === 'string') ? String(filterFundraiser.value) : ((filterFundraiser.value as any)?.label || 'Filtered')
       fundMap.set(String(fName || 'Filtered'), transaksiList)
     } else {
       for (const t of transaksiList) {
         const name = getFundraiserName(t)
-        if (!fundMap.has(name)) fundMap.set(name, [])
-        fundMap.get(name).push(t)
+        let arr = fundMap.get(name) as any[] | undefined
+        if (!arr) { arr = []; fundMap.set(name, arr) }
+        arr.push(t)
       }
     }
 
@@ -1223,7 +1224,7 @@ const handleExportExcel = async () => {
         XLSX.read(buffer, { type: 'array' })
       } catch (readErr) {
         console.error('Validation read failed', readErr)
-        toast.error('Validasi file gagal: ' + (readErr?.message || 'lihat console'))
+        toast.error('Validasi file gagal: ' + ((readErr as any)?.message || 'lihat console'))
         return
       }
 
@@ -1241,12 +1242,12 @@ const handleExportExcel = async () => {
       toast.success('Export Excel berhasil (menggunakan template)')
     } catch (writeErr) {
       console.error('Write error', writeErr)
-      toast.error('Gagal menulis file: ' + (writeErr?.message || 'lihat console'))
+      toast.error('Gagal menulis file: ' + ((writeErr as any)?.message || 'lihat console'))
       throw writeErr
     }
   } catch (err) {
     console.error('Export failed', err)
-    toast.error('Gagal mengekspor data: ' + (err?.message || 'lihat console'))
+    toast.error('Gagal mengekspor data: ' + ((err as any)?.message || 'lihat console'))
   }
 }
 
@@ -1307,8 +1308,9 @@ const handleExportCsv = async () => {
     } else {
       for (const t of transaksiList) {
         const name = getPicName(t)
-        if (!fundMap.has(name)) fundMap.set(name, [])
-        fundMap.get(name).push(t)
+        let arr = fundMap.get(name) as any[] | undefined
+        if (!arr) { arr = []; fundMap.set(name, arr) }
+        arr.push(t)
       }
     }
 
@@ -1465,7 +1467,7 @@ const handleExportCsv = async () => {
     toast.success('Export CSV per-PIC berhasil (ZIP)')
   } catch (err) {
     console.error('CSV export failed', err)
-    toast.error('Gagal mengekspor CSV: ' + (err?.message || 'lihat console'))
+    toast.error('Gagal mengekspor CSV: ' + ((err as any)?.message || 'lihat console'))
   }
 }
 

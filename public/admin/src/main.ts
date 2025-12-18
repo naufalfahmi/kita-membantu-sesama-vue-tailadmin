@@ -12,8 +12,14 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
 import VueApexCharts from 'vue3-apexcharts'
+import { AgGridVue } from 'ag-grid-vue3'
+import 'ag-grid-community/styles/ag-grid.css'
+import 'ag-grid-community/styles/ag-theme-alpine.css'
 
 const app = createApp(App)
+
+// Register AG Grid globally so lazy-loaded views can use <ag-grid-vue>
+app.component('AgGridVue', AgGridVue)
 
 app.use(router)
 app.use(VueApexCharts)

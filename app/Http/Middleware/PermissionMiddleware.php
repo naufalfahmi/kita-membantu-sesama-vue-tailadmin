@@ -24,8 +24,14 @@ class PermissionMiddleware
             return $next($request);
         }
 
-        if ($permission && $user->can($permission)) {
-            return $next($request);
+        if ($permission) {
+            // support multiple permissions separated by | (OR semantics)
+            $perms = array_map('trim', explode('|', $permission));
+            foreach ($perms as $perm) {
+                if ($user->can($perm)) {
+                    return $next($request);
+                }
+            }
         }
 
         abort(403);

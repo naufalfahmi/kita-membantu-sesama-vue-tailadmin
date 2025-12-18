@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\PayrollPeriod;
+use App\Models\PayrollRecord;
+use App\Models\PayrollItem;
+use App\Models\User;
+use App\Models\Remunerasi;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+
+class PayrollService
+{
+    /**
+     * Generate payroll period for a given year and month.
+     * Creates PayrollPeriod, PayrollRecord per active employee, and initial PayrollItem(s).
+     * Re-generating an existing period in 'draft' will delete its records and recreate.
+     * If period already 'generated' or 'transferred' this will throw an exception.
+     */
+    public function generatePeriod(int $year, int $month, ?int $actorId = null): PayrollPeriod
+    {
+        return DB::transaction(function () use ($year, $month, $actorId) {
+            $period = PayrollPeriod::where('year', $year)->where('month', $month)->first();
+
+            if ($period && in_array($period->status, ['generated', 'transferred'])) {
+                throw new \RuntimeException('Payroll period already generated or transferred');
+            }
+
+            if (!$period) {
+                $period = PayrollPeriod::create([
+                    'year' => $year,
+                    'month' => $month,
+                    'status' => 'generated',
+                    'generated_at' => now(),
+                    'created_by' => $actorId,
+                ]);
+            } else {
+                // cleanup existing draft records
+                $period->records()->delete();
+                $period->update(['status' => 'generated', 'generated_at' => now()]);
+            }
+
+            // fetch all active employees (karyawan)
+            $employees = User::karyawan()->active()->get();
+
+            foreach ($employees as $emp) {
+                $record = PayrollRecord::create([
+                    'payroll_period_id' => $period->id,
+                    'employee_id' => $emp->id,
+                    'status' => PayrollRecord::STATUS_PENDING,
+                    'total_amount' => 0,
+                    'created_by' => $actorId,
+                ]);
+
+                // Try find existing Remunerasi entry as base salary for the given month/year
+                $gajiValue = 0;
+                // Try find existing Remunerasi entry as base salary for the given month/year if table exists
+                if (\Illuminate\Support\Facades\Schema::hasTable('remunerasis')) {
+                    $rem = Remunerasi::where('karyawan_id', $emp->id)
+                        ->where('bulan_remunerasi', $month)
+                        ->where('tahun_remunerasi', $year)
+                        ->first();
+
+                    if ($rem) {
+                        $gajiValue = (int)($rem->gaji_pokok ?? 0);
+                    }
+                }
+
+                // create single payroll item for gaji pokok (use found value or 0)
+                PayrollItem::create([
+                    'payroll_record_id' => $record->id,
+                    'description' => 'Gaji Pokok',
+                    'qty' => 1,
+                    'qty_type' => 'fixed',
+                    'unit' => 'bulan',
+                    'unit_value' => $gajiValue,
+                    'amount' => $gajiValue,
+                    'order_index' => 1,
+                ]);
+
+                $record->total_amount = $gajiValue;
+                $record->save();
+            }
+
+            return $period->load('records.items');
+        });
+    }
+
+    /**
+     * Recomputes total of a payroll record based on its items.
+     */
+    public function recomputeRecordTotal(PayrollRecord $record): int
+    {
+        $total = 0;
+        foreach ($record->items as $item) {
+            $amount = $this->computeItemAmount($item, $record);
+            $item->amount = (int)round($amount);
+            $item->save();
+            $total += $item->amount;
+        }
+
+        $record->total_amount = $total;
+        $record->save();
+
+        return $total;
+    }
+
+    /**
+     * Compute single item amount.
+     * - For 'multiplier' (previously fixed) we multiply qty * unit_value
+     * - For 'percent' we treat qty as a percentage of the item's own unit_value (qty% * unit_value)
+     */
+    public function computeItemAmount(PayrollItem $item, PayrollRecord $record): float
+    {
+        if ($item->qty_type === 'fixed' || $item->qty_type === 'multiplier') {
+            return (float)$item->qty * (float)$item->unit_value;
+        }
+
+        if ($item->qty_type === 'percent') {
+            // percent now applies to the item's own unit_value
+            return ($item->qty / 100.0) * (float)$item->unit_value;
+        }
+
+        return 0.0;
+    }
+}

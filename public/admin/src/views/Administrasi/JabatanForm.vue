@@ -315,7 +315,7 @@ const menuStructure = [
     name: 'Operasional',
     subItems: [
       { name: 'Absensi', permission: 'absensi' },
-      { name: 'Remunerasi', permission: 'remunerasi' },
+      { name: 'Payroll', permission: 'payroll' },
     ],
   },
   {

@@ -196,9 +196,9 @@ class MenuService
                                 'pro' => false,
                             ],
                             [
-                                'name' => 'Remunerasi',
-                                'path' => '/operasional/remunerasi',
-                                'permission' => 'view remunerasi',
+                                'name' => 'Payroll',
+                                'path' => '/operasional/payroll',
+                                'permission' => 'view payroll',
                                 'pro' => false,
                             ],
                         ],

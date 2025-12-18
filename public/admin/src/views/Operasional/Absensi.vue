@@ -186,7 +186,7 @@ const handleFilterTanggalChange = () => {
   filterTimeout = window.setTimeout(() => {
     if (gridApi.value) gridApi.value.purgeInfiniteCache()
     else fetchData()
-  }, 400)
+  }, 400) as unknown as ReturnType<typeof setTimeout>
 }
 // debug panel removed
 

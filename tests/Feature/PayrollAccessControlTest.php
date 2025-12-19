@@ -99,4 +99,20 @@ class PayrollAccessControlTest extends TestCase
         $this->assertEquals(200, $res->json('data')[0]['total']);
         $this->assertEquals(100, $res->json('data')[1]['total']);
     }
+
+    public function test_admin_sees_transfer_proof_in_period_detail()
+    {
+        $admin = User::factory()->create();
+        $admin->givePermissionTo('create payroll');
+
+        $period = PayrollPeriod::create(['month' => 12, 'year' => 2025, 'status' => 'generated']);
+        $employee = User::factory()->create();
+        $record = PayrollRecord::create(['payroll_period_id' => $period->id, 'employee_id' => $employee->id, 'status' => 'locked', 'transfer_proof' => 'payroll_proofs/proof_admin.jpg']);
+
+        $res = $this->actingAs($admin)->getJson("/admin/api/operasional/payroll/periods/{$period->id}");
+        $res->assertStatus(200);
+        $json = $res->json('data');
+        $this->assertNotEmpty($json['records']);
+        $this->assertEquals('payroll_proofs/proof_admin.jpg', $json['records'][0]['transfer_proof']);
+    }
 }

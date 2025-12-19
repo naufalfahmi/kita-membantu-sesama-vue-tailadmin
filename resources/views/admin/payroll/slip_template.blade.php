@@ -43,6 +43,7 @@
     <div class="header">
       <h2>SLIP GAJI KARYAWAN</h2>
       <div class="company-info">
+        {{ config('app.name') }}
       </div>
     </div>
 

@@ -101,6 +101,8 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::get('/user', [LoginController::class, 'user'])->name('admin.api.user');
     Route::post('/user/avatar', [LoginController::class, 'avatar'])->name('admin.api.user.avatar');
     Route::post('/user/social', [LoginController::class, 'updateSocial'])->name('admin.api.user.social');
+    // Update authenticated user's personal information
+    Route::post('/user/profile', [LoginController::class, 'updateProfile'])->name('admin.api.user.profile');
     Route::post('/user/password', [LoginController::class, 'changePassword'])->name('admin.api.user.password');
     
     // Dashboard API
@@ -152,6 +154,10 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::delete('operasional/payroll/periods/{periodId}/records/{recordId}/items/{itemId}', [\App\Http\Controllers\Api\PayrollController::class, 'deleteItem']);
     // Update record (status, notes)
     Route::put('operasional/payroll/periods/{periodId}/records/{recordId}', [\App\Http\Controllers\Api\PayrollController::class, 'updateRecord']);
+
+    // Admin: upload/replace/delete transfer proof for a record
+    Route::post('operasional/payroll/periods/{periodId}/records/{recordId}/transfer-proof', [\App\Http\Controllers\Api\PayrollController::class, 'uploadTransferProof']);
+    Route::delete('operasional/payroll/periods/{periodId}/records/{recordId}/transfer-proof', [\App\Http\Controllers\Api\PayrollController::class, 'deleteTransferProof']);
 
     // Karyawan API
     Route::get('karyawan-next-no-induk', [\App\Http\Controllers\KaryawanController::class, 'getNextNoInduk'])->name('admin.api.karyawan.next-no-induk');

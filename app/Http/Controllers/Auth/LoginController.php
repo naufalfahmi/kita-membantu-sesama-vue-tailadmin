@@ -227,6 +227,59 @@ class LoginController extends Controller
     }
 
     /**
+     * Update authenticated user's personal information
+     */
+    public function updateProfile(Request $request)
+    {
+        $request->validate([
+            'no_induk' => 'nullable|string|max:50',
+            'pangkat_id' => 'nullable|exists:pangkats,id',
+            'posisi' => 'nullable|string|max:255',
+            'no_handphone' => 'nullable|string|max:30',
+            'nama_bank' => 'nullable|string|max:255',
+            'no_rekening' => 'nullable|string|max:255',
+            'tanggal_lahir' => 'nullable|date',
+            'pendidikan' => 'nullable|string|max:255',
+            'tanggal_masuk' => 'nullable|date',
+            'tipe_absensi_id' => 'nullable|exists:tipe_absensis,id',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        $user = Auth::user();
+
+        $data = $request->only([
+            'no_induk', 'pangkat_id', 'posisi', 'no_handphone', 'nama_bank', 'no_rekening',
+            'tanggal_lahir', 'pendidikan', 'tanggal_masuk', 'tipe_absensi_id',
+            'first_name', 'last_name', 'email'
+        ]);
+
+        $user->update($data);
+
+        $user->load(['pangkat', 'tipeAbsensi', 'kantorCabang', 'roles']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'no_induk' => $user->no_induk,
+                'no_handphone' => $user->no_handphone,
+                'pendidikan' => $user->pendidikan,
+                'nama_bank' => $user->nama_bank,
+                'no_rekening' => $user->no_rekening,
+                'tanggal_lahir' => $user->tanggal_lahir,
+                'tanggal_masuk' => $user->tanggal_masuk,
+                'pangkat' => $user->pangkat,
+                'tipe_absensi' => $user->tipeAbsensi,
+            ],
+        ]);
+    }
+
+    /**
      * Change authenticated user's password
      */
     public function changePassword(Request $request)

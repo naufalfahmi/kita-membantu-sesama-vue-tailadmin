@@ -181,9 +181,33 @@ const handleClickOutside = (event: Event) => {
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   fetchUser()
+
+  // listen for global user updates (e.g., avatar changed elsewhere)
+  const handler = (e: Event) => {
+    const ev = e as CustomEvent
+    if (ev?.detail) {
+      const data = ev.detail
+      // normalize avatar (absolute/relative)
+      let url = data.avatar_url || data.avatar || null
+      if (url && !/^https?:\/\//i.test(url)) {
+        url = (window.location.origin || '') + (url.startsWith('/') ? url : '/' + url)
+      }
+      if (url) {
+        if (!user.value) user.value = { id: 0, name: '', email: '', avatar: url }
+        else user.value.avatar = url
+        imageError.value = false
+      }
+    }
+  }
+  window.addEventListener('user-updated', handler)
+
+  // store for cleanup
+  ;(window as any).__userUpdatedHandler = handler
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  const h = (window as any).__userUpdatedHandler
+  if (h) window.removeEventListener('user-updated', h)
 })
 </script>

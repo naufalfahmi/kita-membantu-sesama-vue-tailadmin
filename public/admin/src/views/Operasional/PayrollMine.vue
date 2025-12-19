@@ -40,6 +40,23 @@ const columnDefs = [
     span.textContent = params.value ? `Rp ${params.value.toLocaleString()}` : 'Rp 0'
     return span
   }},
+  { headerName: 'Bukti', field: 'transfer_proof', width: 140, cellRenderer: (params: any) => {
+    const div = document.createElement('div')
+    if (params.data && params.data.transfer_proof) {
+      const link = document.createElement('a')
+      link.href = `/storage/${params.data.transfer_proof}`
+      link.target = '_blank'
+      link.className = 'text-sm text-brand-500 hover:underline'
+      link.textContent = 'Lihat Bukti'
+      div.appendChild(link)
+    } else {
+      const span = document.createElement('span')
+      span.className = 'text-sm text-gray-500'
+      span.textContent = '—'
+      div.appendChild(span)
+    }
+    return div
+  }},
   { headerName: 'Actions', field: 'actions', width: 160, cellStyle: { display: 'flex', justifyContent: 'center', alignItems: 'center' }, cellRenderer: (params: any) => {
     const div = document.createElement('div')
     div.className = 'flex items-center justify-center gap-3'
@@ -61,6 +78,9 @@ const columnDefs = [
       }
     }
     div.appendChild(printBtn)
+
+
+
     return div
   }}
 ]

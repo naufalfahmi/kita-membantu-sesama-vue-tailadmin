@@ -24,7 +24,7 @@ class PayrollController extends Controller
         $this->middleware('permission:view payroll|view remunerasi|manage payroll|manage remunerasi|create payroll|update payroll|delete payroll|create remunerasi|update remunerasi|delete remunerasi')->only(['index', 'show', 'showRecord', 'me']);
 
         $this->middleware('permission:generate payroll|generate remunerasi')->only(['generate']);
-        $this->middleware('permission:manage payroll|manage remunerasi')->only(['addItem', 'updateItem', 'deleteItem', 'updateRecord']);
+        $this->middleware('permission:manage payroll|manage remunerasi')->only(['addItem', 'updateItem', 'deleteItem', 'updateRecord', 'uploadTransferProof', 'deleteTransferProof']);
         $this->middleware('permission:transfer payroll|transfer remunerasi')->only(['transferPeriod']);
     }
 
@@ -191,8 +191,13 @@ class PayrollController extends Controller
 
         $records = PayrollRecord::with('period')
             ->where('employee_id', $user->id)
-            ->orderByDesc('id')
             ->get()
+            // sort by period year/month descending so the latest period appears first
+            ->sortByDesc(function ($r) {
+                $year = optional($r->period)->year ?? 0;
+                $month = optional($r->period)->month ?? 0;
+                return ($year * 100) + $month;
+            })->values()
             ->map(function ($r) {
                 return [
                     'id' => $r->id,
@@ -200,6 +205,8 @@ class PayrollController extends Controller
                     'period_label' => optional($r->period) ? optional($r->period)->month . '/' . optional($r->period)->year : null,
                     'status' => $r->status,
                     'total' => $r->total_amount ?? 0,
+                    'transfer_proof' => $r->transfer_proof ?? null,
+                    'has_transfer_proof' => !empty($r->transfer_proof),
                 ];
             });
 
@@ -301,17 +308,47 @@ class PayrollController extends Controller
         $record = PayrollRecord::where('payroll_period_id', $periodId)->where('id', $recordId)->first();
         if (!$record) return response()->json(['success' => false, 'message' => 'Record not found'], 404);
 
+        // Log incoming request for debugging transfer_proof uploads
+        \Illuminate\Support\Facades\Log::info('PayrollController@updateRecord called', [
+            'user_id' => optional(auth()->user())->id,
+            'period_id' => $periodId,
+            'record_id' => $recordId,
+            'has_file' => $request->hasFile('transfer_proof')
+        ]);
+
         $v = Validator::make($request->all(), [
             'status' => ['sometimes','required', \Illuminate\Validation\Rule::in(PayrollRecord::getStatuses())],
             'notes' => 'nullable|string',
+            'transfer_proof' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120'
         ]);
 
-        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        if ($v->fails()) {
+            \Illuminate\Support\Facades\Log::warning('PayrollController@updateRecord validation failed', [
+                'errors' => $v->errors()->toArray(),
+                'input' => $request->except('transfer_proof')
+            ]);
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
 
         $payload = $v->validated();
 
+        // Handle file upload if present
+        if ($request->hasFile('transfer_proof')) {
+            $file = $request->file('transfer_proof');
+            \Illuminate\Support\Facades\Log::info('PayrollController@updateRecord storing file', [
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime' => $file->getMimeType()
+            ]);
+            $path = $file->store('payroll_proofs', 'public');
+            \Illuminate\Support\Facades\Log::info('PayrollController@updateRecord file stored', ['path' => $path]);
+            $payload['transfer_proof'] = $path;
+        }
+
         $record->fill($payload);
         $record->save();
+
+        \Illuminate\Support\Facades\Log::info('PayrollController@updateRecord saved record', ['record_id' => $record->id, 'transfer_proof' => $record->transfer_proof]);
 
         return response()->json(['success' => true, 'data' => $record]);
     }
@@ -326,5 +363,93 @@ class PayrollController extends Controller
         \App\Jobs\ExecutePayrollTransfer::dispatch($period->id);
 
         return response()->json(['success' => true, 'message' => 'Transfer job dispatched']);
+    }
+
+    /**
+     * Admin-only: upload a transfer proof file for a specific record
+     */
+    public function uploadTransferProof(Request $request, $periodId, $recordId)
+    {
+        \Illuminate\Support\Facades\Log::info('PayrollController@uploadTransferProof called', [
+            'user_id' => optional(auth()->user())->id,
+            'period_id' => $periodId,
+            'record_id' => $recordId,
+            'has_file' => $request->hasFile('transfer_proof')
+        ]);
+
+        $record = PayrollRecord::where('payroll_period_id', $periodId)->where('id', $recordId)->first();
+        if (!$record) return response()->json(['success' => false, 'message' => 'Record not found'], 404);
+
+        $v = Validator::make($request->all(), [
+            'transfer_proof' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'status' => ['sometimes', \Illuminate\Validation\Rule::in(PayrollRecord::getStatuses())]
+        ]);
+
+        if ($v->fails()) {
+            \Illuminate\Support\Facades\Log::warning('PayrollController@uploadTransferProof validation failed', [
+                'errors' => $v->errors()->toArray(),
+            ]);
+            return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+        }
+
+        if ($request->hasFile('transfer_proof')) {
+            $file = $request->file('transfer_proof');
+
+            // if an existing proof exists, try to delete it to avoid orphaned files
+            if (!empty($record->transfer_proof)) {
+                try {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($record->transfer_proof);
+                    \Illuminate\Support\Facades\Log::info('PayrollController@uploadTransferProof deleted previous proof', ['old_path' => $record->transfer_proof]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Failed deleting previous transfer_proof during replace', ['path' => $record->transfer_proof, 'exception' => $e->getMessage()]);
+                }
+            }
+
+            $path = $file->store('payroll_proofs', 'public');
+            $record->transfer_proof = $path;
+        }
+
+        if ($request->filled('status')) {
+            $record->status = $request->input('status');
+        }
+
+        $record->save();
+
+        \Illuminate\Support\Facades\Log::info('PayrollController@uploadTransferProof saved', ['record_id' => $record->id, 'transfer_proof' => $record->transfer_proof]);
+
+        return response()->json(['success' => true, 'data' => $record]);
+    }
+
+    /**
+     * Admin-only: delete transfer proof file for a specific record
+     */
+    public function deleteTransferProof(Request $request, $periodId, $recordId)
+    {
+        \Illuminate\Support\Facades\Log::info('PayrollController@deleteTransferProof called', [
+            'user_id' => optional(auth()->user())->id,
+            'period_id' => $periodId,
+            'record_id' => $recordId,
+        ]);
+
+        $record = PayrollRecord::where('payroll_period_id', $periodId)->where('id', $recordId)->first();
+        if (!$record) return response()->json(['success' => false, 'message' => 'Record not found'], 404);
+
+        if (empty($record->transfer_proof)) {
+            return response()->json(['success' => false, 'message' => 'No transfer proof to delete'], 422);
+        }
+
+        // delete file from public disk if exists
+        try {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($record->transfer_proof);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to delete transfer_proof file', ['path' => $record->transfer_proof, 'exception' => $e->getMessage()]);
+        }
+
+        $record->transfer_proof = null;
+        $record->save();
+
+        \Illuminate\Support\Facades\Log::info('PayrollController@deleteTransferProof removed proof', ['record_id' => $record->id]);
+
+        return response()->json(['success' => true, 'data' => $record]);
     }
 }

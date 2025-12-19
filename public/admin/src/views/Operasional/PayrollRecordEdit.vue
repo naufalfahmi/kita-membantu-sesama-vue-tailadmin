@@ -294,14 +294,18 @@
             </div>
 
             <div class="flex items-center gap-3">
-              <select v-model="record.status" class="h-11 rounded-lg border px-4 py-2 text-sm text-gray-800">
-                <option value="pending">pending</option>
-                <option value="locked">locked</option>
-                <option value="transferred">transferred</option>
-              </select>
+                  <div class="flex items-center gap-3">
+                
 
-              <button @click="saveAll" class="rounded bg-brand-500 px-4 py-2 text-white">Simpan</button>
-              <button @click="router.back()" class="rounded border px-4 py-2">Kembali</button>
+                <select v-model="record.status" class="h-11 rounded-lg border px-4 py-2 text-sm text-gray-800">
+                  <option value="pending">pending</option>
+                  <option value="locked">locked</option>
+                  <option value="transferred">transferred</option>
+                </select>
+
+                <button @click="saveAll" class="rounded bg-brand-500 px-4 py-2 text-white">Simpan</button>
+                <button @click="router.back()" class="rounded border px-4 py-2">Kembali</button>
+              </div>
             </div>
           </div>
         </div>
@@ -412,6 +416,76 @@ const removeItem = async (it: any) => {
   }
 }
 
+const fileRef = ref<File | null>(null)
+const replaceFileInput = ref<HTMLInputElement | null>(null)
+
+const onFileChange = (e: any) => {
+  const f = e.target.files && e.target.files[0]
+  fileRef.value = f || null
+}
+
+const onDeleteProof = async () => {
+  if (!confirm('Hapus bukti transfer? Tindakan ini tidak dapat dibatalkan.')) return
+  const periodId = route.params.periodId
+  const recordId = route.params.recordId
+  try {
+    const csrf = await getCsrfToken()
+    const res = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}/transfer-proof`, {
+      method: 'DELETE',
+      headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    })
+    const json = await res.json()
+    if (!json.success) { toast.error(json.message || 'Gagal menghapus bukti'); return }
+    // update UI
+    record.value.transfer_proof = null
+    toast.success('Bukti transfer dihapus')
+  } catch (err) {
+    toast.error('Gagal menghapus bukti')
+  }
+}
+
+const onReplaceProof = () => {
+  const input: any = replaceFileInput.value || null
+  if (input) input.click()
+}
+
+const onReplaceFileChange = async (e: any) => {
+  const f = e.target.files && e.target.files[0]
+  if (!f) return
+  const fd = new FormData()
+  fd.append('transfer_proof', f)
+
+  try {
+    const periodId = route.params.periodId
+    const recordId = route.params.recordId
+    const csrf = await getCsrfToken()
+    const resp = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}/transfer-proof`, {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+      body: fd
+    })
+    const json = await resp.json()
+    if (!json.success) {
+      if (json.errors) {
+        const first = Object.keys(json.errors)[0]
+        toast.error(json.errors[first][0])
+      } else if (json.message) {
+        toast.error(json.message)
+      } else {
+        toast.error('Gagal mengganti bukti')
+      }
+      return
+    }
+    // Refresh record
+    await loadRecord()
+    toast.success('Bukti transfer berhasil diperbarui')
+  } catch (err) {
+    toast.error('Gagal mengganti bukti')
+  }
+}
+
 const saveAll = async () => {
   const periodId = route.params.periodId
   const recordId = route.params.recordId
@@ -421,14 +495,41 @@ const saveAll = async () => {
   if (record.value.status && record.value.status !== 'pending') {
     try {
       const csrfFirst = await getCsrfToken()
-      const resFirst = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfFirst, 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'same-origin',
-        body: JSON.stringify({ status: record.value.status })
-      })
+
+      // If there's a file selected, use FormData, otherwise JSON
+      let resFirst
+      if (fileRef.value) {
+        const fd = new FormData()
+        fd.append('status', record.value.status)
+        fd.append('transfer_proof', fileRef.value)
+        resFirst = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}`, {
+          method: 'PUT',
+          headers: { 'X-CSRF-TOKEN': csrfFirst, 'X-Requested-With': 'XMLHttpRequest' },
+          credentials: 'same-origin',
+          body: fd
+        })
+      } else {
+        resFirst = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfFirst, 'X-Requested-With': 'XMLHttpRequest' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ status: record.value.status })
+        })
+      }
+
       const jsonFirst = await resFirst.json()
-      if (!jsonFirst.success) { toast.error('Gagal mengubah status'); return }
+      if (!jsonFirst.success) {
+        // show detailed validation errors if present
+        if (jsonFirst.errors) {
+          const firstKey = Object.keys(jsonFirst.errors)[0]
+          toast.error(jsonFirst.errors[firstKey][0])
+        } else if (jsonFirst.message) {
+          toast.error(jsonFirst.message)
+        } else {
+          toast.error('Gagal mengubah status')
+        }
+        return
+      }
 
       // reload record to reflect the locked/transferred state
       await loadRecord()
@@ -489,12 +590,25 @@ const saveAll = async () => {
 
   // After saving items, update the record (status/notes) if changed
   const csrf2 = await getCsrfToken()
-  const res2 = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf2, 'X-Requested-With': 'XMLHttpRequest' },
-    credentials: 'same-origin',
-    body: JSON.stringify({ status: record.value.status })
-  })
+  let res2
+  if (fileRef.value) {
+    const fd = new FormData()
+    fd.append('status', record.value.status)
+    fd.append('transfer_proof', fileRef.value)
+    res2 = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}`, {
+      method: 'PUT',
+      headers: { 'X-CSRF-TOKEN': csrf2, 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+      body: fd
+    })
+  } else {
+    res2 = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf2, 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ status: record.value.status })
+    })
+  }
   const json2 = await res2.json()
   if (!json2.success) { toast.error('Gagal mengubah status'); return }
 

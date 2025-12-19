@@ -8,6 +8,8 @@
       <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width:100%; min-height:400px;">
         <ag-grid-vue class="ag-theme-alpine" style="width:100%;" :columnDefs="columnDefs" :rowData="gridRowData" :defaultColDef="defaultColDef" :pagination="true" :paginationPageSize="20" :animateRows="true" :domLayout="'autoHeight'"/>
       </div>
+
+      <!-- Bukti modal removed — clicking 'Lihat Bukti' now opens file in new tab -->
     </div>
   </AdminLayout>
 </template>
@@ -76,6 +78,122 @@ const columnDefs = [
     printBtn.onclick = async (e: any) => { e.stopPropagation(); try { const res = await fetch('/admin/api/debug-auth', { credentials: 'same-origin' }); const j = await res.json(); if (j.authenticated) { window.open(`/admin/operasional/payroll/periods/${periodId}/records/${params.data.record_id}/slip?format=pdf`, '_blank') } else { toast.error('Sesi kadaluarsa, silakan masuk kembali'); router.push('/signin') } } catch (err) { toast.error('Gagal memeriksa status autentikasi'); } }
     div.appendChild(printBtn)
 
+    // Transfer proof button - Lihat bukti opens file in new tab; admins can also re-upload
+    if (params.data && params.data.transfer_proof) {
+      const proofBtn = document.createElement('button')
+      proofBtn.type = 'button'
+      proofBtn.title = 'Lihat Bukti Transfer'
+      proofBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-gray-700 hover:bg-gray-100'
+      proofBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`
+      proofBtn.onclick = (e: any) => { e.stopPropagation(); window.open(`/storage/${params.data.transfer_proof}`, '_blank') }
+      div.appendChild(proofBtn)
+
+      // If user can update, show a replace button to re-upload/replace the proof
+      if (canUpdate.value) {
+        const replaceBtn = document.createElement('button')
+        replaceBtn.type = 'button'
+        replaceBtn.title = 'Ubah Bukti'
+        replaceBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50'
+        replaceBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a8.93 8.93 0 1 1-2.1-9.1"></path></svg>`
+
+        const replaceInput = document.createElement('input')
+        replaceInput.type = 'file'
+        replaceInput.accept = '.pdf,.jpg,.jpeg,.png'
+        replaceInput.style.display = 'none'
+
+        replaceInput.onchange = async (e: any) => {
+          const f = e.target.files && e.target.files[0]
+          if (!f) return
+          const fd = new FormData()
+          fd.append('transfer_proof', f)
+
+          try {
+            const csrf = await getCsrfToken()
+            const resp = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${params.data.record_id}/transfer-proof`, {
+              method: 'POST',
+              headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+              credentials: 'same-origin',
+              body: fd
+            })
+            const json = await resp.json()
+            if (!json.success) {
+              if (json.errors) {
+                const first = Object.keys(json.errors)[0]
+                toast.error(json.errors[first][0])
+              } else if (json.message) {
+                toast.error(json.message)
+              } else {
+                toast.error('Gagal upload bukti')
+              }
+              return
+            }
+            toast.success('Bukti transfer berhasil diubah')
+            loadDetail()
+          } catch (err) {
+            toast.error('Gagal upload bukti')
+          }
+        }
+
+        replaceBtn.onclick = (e: any) => { e.stopPropagation(); replaceInput.click() }
+        div.appendChild(replaceBtn)
+        div.appendChild(replaceInput)
+      }
+
+    } else if (canUpdate.value) {
+      // Admin: quick upload button to attach a transfer proof without leaving this view
+      const uploadBtn = document.createElement('button')
+      uploadBtn.type = 'button'
+      uploadBtn.title = 'Upload Bukti'
+      uploadBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50'
+      uploadBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>`
+
+      // hidden file input
+      const fileInput = document.createElement('input')
+      fileInput.type = 'file'
+      fileInput.accept = '.pdf,.jpg,.jpeg,.png'
+      fileInput.style.display = 'none'
+
+      fileInput.onchange = async (e: any) => {
+        const f = e.target.files && e.target.files[0]
+        if (!f) return
+        const fd = new FormData()
+        fd.append('transfer_proof', f)
+        // optional: set status to transferred when uploading
+        fd.append('status', 'transferred')
+
+        try {
+          const csrf = await getCsrfToken()
+          const resp = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${params.data.record_id}/transfer-proof`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+            body: fd
+          })
+          const json = await resp.json()
+          if (!json.success) {
+            if (json.errors) {
+              const first = Object.keys(json.errors)[0]
+              toast.error(json.errors[first][0])
+            } else if (json.message) {
+              toast.error(json.message)
+            } else {
+              toast.error('Gagal upload bukti')
+            }
+            return
+          }
+          toast.success('Bukti transfer ter-upload')
+          // refresh the grid row data to show icon
+          loadDetail()
+        } catch (err) {
+          toast.error('Gagal upload bukti')
+        }
+      }
+
+      uploadBtn.onclick = (e: any) => { e.stopPropagation(); fileInput.click() }
+      div.appendChild(uploadBtn)
+      div.appendChild(fileInput)
+    }
+
     return div
   }}
 ]
@@ -92,7 +210,9 @@ const loadDetail = async () => {
     record_id: r.id,
     name: r.employee ? r.employee.name : '',
     total: r.total_amount || 0,
-    status: r.status
+    status: r.status,
+    transfer_proof: r.transfer_proof || null,
+    has_transfer_proof: !!r.transfer_proof
   }))
 }
 
@@ -101,6 +221,8 @@ const formatCurrency = (v: number) => {
   const formatted = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)
   return `Rp. ${formatted}`
 }
+
+
 
 onMounted(loadDetail)
 

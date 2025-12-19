@@ -16,7 +16,7 @@ class PayrollRecord extends Model
 
     protected $table = 'payroll_records';
 
-    protected $fillable = ['id', 'payroll_period_id', 'employee_id', 'status', 'total_amount', 'notes', 'created_by', 'updated_by'];
+    protected $fillable = ['id', 'payroll_period_id', 'employee_id', 'status', 'total_amount', 'notes', 'transfer_proof', 'created_by', 'updated_by'];
 
     protected $casts = [
         'total_amount' => 'integer',

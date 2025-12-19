@@ -5,6 +5,29 @@
         <h3 class="font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">Detail Periode</h3>
       </div>
 
+      <!-- Filters -->
+      <div class="mb-6 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">Nama Karyawan</label>
+          <input v-model="filterName" @input="onFilterNameInput" type="text" placeholder="Cari nama..." class="w-full h-11 rounded-lg border border-gray-300 px-3 text-sm" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">Status</label>
+          <SearchableSelect :modelValue="filterStatus" :options="statusOptions" placeholder="Semua" @update:modelValue="val => { filterStatus = val; applyFilters() }" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
+          <SearchableSelect :modelValue="filterKantor" :options="kantorOptions" placeholder="Semua" @update:modelValue="val => { filterKantor = val; applyFilters() }" />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="button" @click="resetFilters" class="h-11 rounded border px-4 py-2 text-sm">Reset</button>
+          <div class="text-sm text-gray-500">&nbsp;</div>
+        </div>
+      </div>
+
       <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width:100%; min-height:400px;">
         <ag-grid-vue class="ag-theme-alpine" style="width:100%;" :columnDefs="columnDefs" :rowData="gridRowData" :defaultColDef="defaultColDef" :pagination="true" :paginationPageSize="20" :animateRows="true" :domLayout="'autoHeight'"/>
       </div>
@@ -17,6 +40,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import { AgGridVue } from 'ag-grid-vue3'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
@@ -28,7 +52,81 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 
-const gridRowData = ref([])
+const gridRowData = ref<any[]>([])
+const originalRecords = ref<any[]>([])
+
+// Filters
+const filterName = ref('')
+const filterStatus = ref('') // '' means all
+const filterKantor = ref('') // '' means all
+const kantorOptions = ref<Array<{ value: string, label: string }>>([])
+const statusOptions = [
+  { value: '', label: 'Semua' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'locked', label: 'Locked' },
+  { value: 'transferred', label: 'Ditransfer' }
+]
+let filterNameTimeout: any = null
+
+const onFilterNameInput = () => {
+  if (filterNameTimeout) clearTimeout(filterNameTimeout)
+  filterNameTimeout = setTimeout(() => {
+    applyFilters()
+  }, 300)
+}
+
+const resetFilters = () => {
+  filterName.value = ''
+  filterStatus.value = ''
+  filterKantor.value = ''
+  applyFilters()
+}
+
+const fetchKantorOptions = async () => {
+  try {
+    const res = await fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' })
+    const json = await res.json()
+    if (res.ok && json.success) {
+      const items = Array.isArray(json.data) ? json.data : (json.data?.data || [])
+      kantorOptions.value = [{ value: '', label: 'Semua' }, ...items.map((k: any) => ({ value: k.id, label: k.nama || k.name || '-' }))]
+    } else {
+      kantorOptions.value = [{ value: '', label: 'Semua' }]
+    }
+  } catch (err) {
+    kantorOptions.value = [{ value: '', label: 'Semua' }]
+  }
+}
+
+const applyFilters = () => {
+  const name = filterName.value.trim().toLowerCase()
+  const status = filterStatus.value
+  const kantor = filterKantor.value
+
+  const filtered = originalRecords.value.filter((r: any) => {
+    if (name) {
+      const empName = (r.employee && r.employee.name) ? String(r.employee.name).toLowerCase() : ''
+      if (!empName.includes(name)) return false
+    }
+    if (status) {
+      if ((r.status || '') !== status) return false
+    }
+    if (kantor) {
+      const empKantor = (r.employee && r.employee.kantor_cabang_id) ? String(r.employee.kantor_cabang_id) : ''
+      if (empKantor !== kantor) return false
+    }
+    return true
+  })
+
+  gridRowData.value = filtered.map((r: any) => ({
+    record_id: r.id,
+    name: r.employee ? r.employee.name : '',
+    total: r.total_amount || 0,
+    status: r.status,
+    transfer_proof: r.transfer_proof || null,
+    has_transfer_proof: !!r.transfer_proof
+  }))
+}
+
 
 const columnDefs = [
   { headerName: 'Nama Karyawan', field: 'name', flex: 1 },
@@ -206,14 +304,10 @@ const loadDetail = async () => {
   const json = await res.json()
   const period = json.data
   if (!period) return
-  gridRowData.value = (period.records || []).map((r: any) => ({
-    record_id: r.id,
-    name: r.employee ? r.employee.name : '',
-    total: r.total_amount || 0,
-    status: r.status,
-    transfer_proof: r.transfer_proof || null,
-    has_transfer_proof: !!r.transfer_proof
-  }))
+  // Keep original records for client-side filtering
+  originalRecords.value = (period.records || [])
+  // Apply any active filters
+  applyFilters()
 }
 
 const formatCurrency = (v: number) => {
@@ -224,7 +318,7 @@ const formatCurrency = (v: number) => {
 
 
 
-onMounted(loadDetail)
+onMounted(async () => { await fetchKantorOptions(); await loadDetail(); })
 
 const getCsrfToken = async (): Promise<string> => {
   const meta = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')

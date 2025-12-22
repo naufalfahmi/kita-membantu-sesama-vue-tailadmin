@@ -76,7 +76,8 @@ class DonaturController extends Controller
             // Allow users to see donaturs they created, their subordinates created,
             // or if they are assigned as PIC for the donatur.
             $query->where(function ($q) use ($allowed, $user) {
-                $q->whereIn('created_by', $allowed)
+                // Qualify column to avoid ambiguity
+                $q->whereIn('donaturs.created_by', $allowed)
                     ->orWhere('pic', $user->id);
             });
         }
@@ -221,7 +222,8 @@ class DonaturController extends Controller
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
             $query->where(function ($q) use ($allowed, $user) {
-                $q->whereIn('created_by', $allowed)
+                // Qualify column to avoid ambiguity
+                $q->whereIn('donaturs.created_by', $allowed)
                     ->orWhere('pic', $user->id);
             });
         }
@@ -258,7 +260,8 @@ class DonaturController extends Controller
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
             $query->where(function ($q) use ($allowed, $user) {
-                $q->whereIn('created_by', $allowed)
+                // Qualify column to avoid ambiguity
+                $q->whereIn('donaturs.created_by', $allowed)
                     ->orWhere('pic', $user->id);
             });
         }

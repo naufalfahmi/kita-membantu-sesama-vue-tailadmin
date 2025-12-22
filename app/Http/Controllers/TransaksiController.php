@@ -41,7 +41,8 @@ class TransaksiController extends Controller
             // Allow users to see transaksis they created, their subordinates created,
             // or any transaksi where they are the PIC of the related donatur.
             $query->where(function ($q) use ($allowed, $user) {
-                $q->whereIn('created_by', $allowed)
+                // Qualify column to avoid ambiguity when query uses joins
+                $q->whereIn('transaksis.created_by', $allowed)
                     ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
             });
         }
@@ -270,7 +271,8 @@ class TransaksiController extends Controller
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
             $query->where(function ($q) use ($allowed, $user) {
-                $q->whereIn('created_by', $allowed)
+                // Qualify column to avoid ambiguity when query uses joins
+                $q->whereIn('transaksis.created_by', $allowed)
                     ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
             });
         }

@@ -26,7 +26,8 @@ class MitraController extends Controller
         if (! $isAdmin) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
-            $query->whereIn('created_by', $allowed);
+            // Qualify column to avoid ambiguity when joins are used
+            $query->whereIn('mitras.created_by', $allowed);
         }
 
         if ($request->filled('search')) {

@@ -139,8 +139,11 @@ class LoginController extends Controller
             ], 401);
         }
 
-        // Load relationships
-        $user->load(['pangkat', 'tipeAbsensi', 'kantorCabang', 'roles']);
+        // Load relationships (include pivot list for determining primary)
+        $user->load(['pangkat', 'tipeAbsensi', 'kantorCabangs', 'roles']);
+
+        // For backward compatibility, pick a primary kantor cabang (first pivot or legacy single column)
+        $primaryKantor = $user->kantorCabangs->first() ?? $user->kantorCabang;
 
         return response()->json([
             'success' => true,
@@ -157,7 +160,7 @@ class LoginController extends Controller
                 'tanggal_lahir' => $user->tanggal_lahir,
                 'tanggal_masuk' => $user->tanggal_masuk,
                 'role' => $user->roles->first(),
-                'kantor_cabang' => $user->kantorCabang,
+                'kantor_cabang' => $primaryKantor,
                 'jabatan' => $user->posisi,
                 'pangkat' => $user->pangkat,
                 'tipe_absensi' => $user->tipeAbsensi,

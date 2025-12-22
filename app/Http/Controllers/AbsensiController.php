@@ -196,8 +196,8 @@ class AbsensiController extends Controller
 
             $todayAttendance = Absensi::getTodayAttendance($userId);
 
-            // Get user's tipe absensi and kantor cabang
-            $userWithRelations = \App\Models\User::with(['tipeAbsensi', 'kantorCabang'])->find($userId);
+            // Get user's tipe absensi and kantor cabang(s)
+            $userWithRelations = \App\Models\User::with(['tipeAbsensi', 'kantorCabangs', 'kantorCabang'])->find($userId);
 
             return response()->json([
                 'success' => true,
@@ -205,7 +205,7 @@ class AbsensiController extends Controller
                     'has_clock_in' => $todayAttendance !== null,
                     'has_clock_out' => $todayAttendance && $todayAttendance->jam_keluar !== null,
                     'attendance' => $todayAttendance,
-                    'tipe_absensi' => $userWithRelations?->tipeAbsensi,
+                            'tipe_absensi' => $userWithRelations?->tipeAbsensi,
                     'kantor_cabang' => $userWithRelations?->kantorCabang,
                 ],
             ]);
@@ -226,6 +226,7 @@ class AbsensiController extends Controller
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
             'catatan' => 'nullable|string|max:500',
+            'kantor_cabang_id' => 'nullable|uuid|exists:kantor_cabang,id',
         ]);
 
         if ($validator->fails()) {
@@ -246,8 +247,23 @@ class AbsensiController extends Controller
             ], 400);
         }
 
-        // Get user's kantor cabang
-        $kantorCabang = $user->kantorCabang;
+        // Determine kantor cabang to use: request > first pivot assignment > legacy column
+        $selectedId = $request->input('kantor_cabang_id');
+        $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+
+        if ($selectedId) {
+            // ensure user is assigned to the selected kantor cabang (or has legacy single assignment)
+            if (!in_array($selectedId, $assignedIds) && $user->kantor_cabang_id !== $selectedId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke kantor cabang yang dipilih',
+                ], 400);
+            }
+            $kantorCabang = KantorCabang::find($selectedId);
+        } else {
+            $kantorCabang = $user->kantorCabangs()->first() ?? $user->kantorCabang;
+        }
+
         if (!$kantorCabang) {
             return response()->json([
                 'success' => false,
@@ -336,6 +352,7 @@ class AbsensiController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
             'alasan' => 'nullable|string|max:500',
             'catatan' => 'nullable|string|max:500',
+            'kantor_cabang_id' => 'nullable|uuid|exists:kantor_cabang,id',
         ]);
 
         if ($validator->fails()) {
@@ -365,9 +382,24 @@ class AbsensiController extends Controller
             ], 400);
         }
 
-        // Get user's kantor cabang
-        $kantorCabang = $user->kantorCabang;
-        if (!$kantorCabang) {
+        // Determine kantor cabang to use: request > today's absensi's kantor > first pivot assignment > legacy column
+        $selectedId = $request->input('kantor_cabang_id');
+        $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+
+        if ($selectedId) {
+            if (!in_array($selectedId, $assignedIds) && $user->kantor_cabang_id !== $selectedId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke kantor cabang yang dipilih',
+                ], 400);
+            }
+            $kantorCabang = KantorCabang::find($selectedId);
+        } else {
+            // Prefer kantor set on today's absensi if available
+            $kantorCabang = $absensi->kantorCabang ?? $user->kantorCabangs()->first() ?? $user->kantorCabang;
+        }
+
+        if (! $kantorCabang) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kantor cabang tidak ditemukan',

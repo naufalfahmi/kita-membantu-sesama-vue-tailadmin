@@ -196,8 +196,28 @@ class AbsensiController extends Controller
 
             $todayAttendance = Absensi::getTodayAttendance($userId);
 
-            // Get user's tipe absensi and kantor cabang(s)
-            $userWithRelations = \App\Models\User::with(['tipeAbsensi', 'kantorCabangs', 'kantorCabang'])->find($userId);
+            // Get target user's relations (including pivot list) to determine kantor selection
+            $targetUser = \App\Models\User::with(['tipeAbsensi', 'kantorCabangs', 'kantorCabang'])->find($userId);
+
+            // Allow optional kantor_cabang_id parameter to inspect a specific branch's status
+            $requestedKantorId = $request->input('kantor_cabang_id');
+            if ($requestedKantorId) {
+                $requesterIsAdmin = $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
+                $assignedIds = $targetUser->kantorCabangs->pluck('id')->toArray();
+
+                // when requester is not admin, ensure requested kantor belongs to target user
+                if (! $requesterIsAdmin && ! in_array($requestedKantorId, $assignedIds) && $targetUser->kantor_cabang_id !== $requestedKantorId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Anda tidak memiliki akses ke kantor cabang yang dipilih',
+                    ], 400);
+                }
+
+                $kantorCabang = \App\Models\KantorCabang::find($requestedKantorId);
+            } else {
+                // Fallback: prefer kantor set on today's absensi, then first pivot assignment, then legacy column
+                $kantorCabang = $todayAttendance?->kantorCabang ?? $targetUser->kantorCabangs->first() ?? $targetUser->kantorCabang;
+            }
 
             return response()->json([
                 'success' => true,
@@ -205,8 +225,8 @@ class AbsensiController extends Controller
                     'has_clock_in' => $todayAttendance !== null,
                     'has_clock_out' => $todayAttendance && $todayAttendance->jam_keluar !== null,
                     'attendance' => $todayAttendance,
-                            'tipe_absensi' => $userWithRelations?->tipeAbsensi,
-                    'kantor_cabang' => $userWithRelations?->kantorCabang,
+                    'tipe_absensi' => $targetUser?->tipeAbsensi,
+                    'kantor_cabang' => $kantorCabang,
                 ],
             ]);
         } catch (\Exception $e) {

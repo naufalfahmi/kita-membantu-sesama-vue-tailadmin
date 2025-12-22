@@ -82,12 +82,12 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Donatur
             </label>
-            <SearchableSelect
+            <AsyncSearchableSelect
               v-model="filterDonatur"
-              :options="donaturOptions"
+              fetch-url="/admin/api/donatur"
               placeholder="Semua Donatur"
-              :search-input="donaturSearchInput"
-              @update:search-input="donaturSearchInput = $event"
+              :include-all="true"
+              all-label="Semua Donatur"
               @update:model-value="fetchData"
             />
           </div>
@@ -192,6 +192,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import AsyncSearchableSelect from '@/components/forms/AsyncSearchableSelect.vue'
 import { useAuth } from '@/composables/useAuth'
 
 interface TransaksiRow {
@@ -529,9 +530,8 @@ const defaultColDef = {
 
 const fetchFilterOptions = async () => {
   try {
-    const [kantorRes, donaturRes, programRes, fundraiserRes] = await Promise.all([
+    const [kantorRes, programRes, fundraiserRes] = await Promise.all([
       fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' }),
-      fetch('/admin/api/donatur?per_page=1000', { credentials: 'same-origin' }),
       fetch('/admin/api/program?per_page=1000', { credentials: 'same-origin' }),
       fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
     ])
@@ -540,13 +540,6 @@ const fetchFilterOptions = async () => {
       const json = await kantorRes.json()
       if (json.success) {
         kantorCabangList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
-      }
-    }
-
-    if (donaturRes.ok) {
-      const json = await donaturRes.json()
-      if (json.success) {
-        donaturList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
       }
     }
 

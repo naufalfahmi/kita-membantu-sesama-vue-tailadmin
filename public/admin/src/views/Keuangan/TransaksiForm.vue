@@ -48,12 +48,10 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Donatur <span class="text-red-500">*</span>
             </label>
-            <SearchableSelect
+            <AsyncSearchableSelect
               v-model="formData.donorId"
-              :options="donaturList"
+              fetch-url="/admin/api/donatur"
               placeholder="Donatur"
-              :search-input="donaturSearchInput"
-              @update:search-input="donaturSearchInput = $event"
             />
           </div>
 
@@ -163,6 +161,7 @@ import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import AsyncSearchableSelect from '@/components/forms/AsyncSearchableSelect.vue' 
 
 interface SelectOption {
   value: string
@@ -199,12 +198,10 @@ const flatpickrDateConfig = {
 
 // Options from API
 const kantorCabangList = ref<SelectOption[]>([])
-const donaturList = ref<SelectOption[]>([])
 const programList = ref<SelectOption[]>([])
 
 // Search input refs
 const kantorCabangSearchInput = ref('')
-const donaturSearchInput = ref('')
 const programSearchInput = ref('')
 
 // Form data
@@ -235,9 +232,8 @@ const fetchCurrentUser = async () => {
 // Fetch dropdown options from APIs
 const fetchOptions = async () => {
   try {
-    const [kantorRes, donaturRes, programRes] = await Promise.all([
+    const [kantorRes, programRes] = await Promise.all([
       fetch('/admin/api/kantor-cabang?per_page=100', { credentials: 'same-origin' }),
-      fetch('/admin/api/donatur?per_page=100', { credentials: 'same-origin' }),
       fetch('/admin/api/program?per_page=100', { credentials: 'same-origin' }),
     ])
 
@@ -245,15 +241,6 @@ const fetchOptions = async () => {
       const json = await kantorRes.json()
       const dataArray = json.success && json.data ? (Array.isArray(json.data) ? json.data : json.data.data || []) : []
       kantorCabangList.value = dataArray.map((item: any) => ({
-        value: item.id,
-        label: item.nama,
-      }))
-    }
-
-    if (donaturRes.ok) {
-      const json = await donaturRes.json()
-      const dataArray = json.success && json.data ? (Array.isArray(json.data) ? json.data : json.data.data || []) : []
-      donaturList.value = dataArray.map((item: any) => ({
         value: item.id,
         label: item.nama,
       }))

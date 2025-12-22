@@ -147,20 +147,20 @@
         <span class="ml-3 text-gray-600 dark:text-gray-400">Memuat data...</span>
       </div>
 
-      <div v-else class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
+      <div v-else class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 600px;">
         <ag-grid-vue
           ref="agGridRef"
           class="ag-theme-alpine"
-          style="width: 100%;"
+          style="width: 100%; height: 100%;"
           :columnDefs="columnDefs"
-          :rowData="rowData"
           :defaultColDef="defaultColDef"
-          :pagination="true"
-          :paginationPageSize="20"
+          :rowModelType="'infinite'"
+          :cacheBlockSize="pageSize"
+          :maxBlocksInCache="5"
           theme="legacy"
           :animateRows="true"
           :suppressHorizontalScroll="true"
-          :domLayout="'autoHeight'"
+          @grid-ready="onGridReady"
         />
       </div>
     </div>
@@ -223,6 +223,11 @@ const canDelete = computed(() => isAdmin() || hasPermission('delete transaksi'))
 const canView = computed(() => isAdmin() || hasPermission('view transaksi'))
 
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
+
+// AG Grid server-side/infinite settings
+const gridApi = ref<any | null>(null)
+const gridColumnApi = ref<any | null>(null)
+const pageSize = 20
 
 const loading = ref(false)
 const rowData = ref<TransaksiRow[]>([])
@@ -434,9 +439,10 @@ const columnDefs = computed(() => {
     },
     {
       headerName: 'Nominal',
-      field: 'nominal_formatted',
+      field: 'nominal',
       sortable: true,
       flex: 1,
+      valueFormatter: (params: any) => params.data?.nominal_formatted || params.value || '-',
     },
     {
       headerName: 'Tanggal Transaksi',
@@ -526,6 +532,145 @@ const defaultColDef = {
   resizable: true,
   sortable: true,
   filter: false,
+}
+
+// AG Grid infinite datasource (server side paging)
+const buildQueryFromParams = (startRow: number, endRow: number) => {
+  const perPage = endRow - startRow || pageSize
+  const page = Math.floor(startRow / perPage) + 1
+  const params = new URLSearchParams()
+  params.append('per_page', String(perPage))
+  params.append('page', String(page))
+
+  if (filterSearch.value) params.append('search', filterSearch.value)
+
+  if (Array.isArray(filterTanggal.value) && filterTanggal.value.length === 2) {
+    const [from, to] = filterTanggal.value
+    params.append('tanggal_from', formatYMDLocal(from))
+    params.append('tanggal_to', formatYMDLocal(to))
+  } else if (filterTanggal.value) {
+    params.append('tanggal', formatYMDLocal(filterTanggal.value))
+  }
+
+  if (filterDonatur.value) params.append('donatur_id', filterDonatur.value)
+  if (filterProgram.value) params.append('program_id', filterProgram.value)
+  if (filterKantorCabang.value) params.append('kantor_cabang_id', filterKantorCabang.value)
+  if (filterFundraiser.value) params.append('fundraiser_id', filterFundraiser.value)
+
+  return params
+}
+
+// Simple in-memory page cache keyed by filter params (excluding page)
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+interface CacheEntry {
+  ts: number
+  total: number
+  pages: Map<number, any[]>
+}
+const transaksiCache = new Map<string, CacheEntry>()
+
+const evictOldestCacheEntry = () => {
+  if (transaksiCache.size <= 50) return
+  let oldestKey: string | null = null
+  let oldestTs = Infinity
+  for (const [k, v] of transaksiCache.entries()) {
+    if (v.ts < oldestTs) {
+      oldestTs = v.ts
+      oldestKey = k
+    }
+  }
+  if (oldestKey) transaksiCache.delete(oldestKey)
+}
+
+const createDatasource = () => {
+  return {
+    async getRows(params: any) {
+      try {
+        const startRow = params.startRow || 0
+        const endRow = params.endRow || (startRow + pageSize)
+        const query = buildQueryFromParams(startRow, endRow)
+
+        // Include AG Grid sort model (first sort only) into request; this affects cache key
+        if (params.sortModel && params.sortModel.length > 0) {
+          const s = params.sortModel[0]
+          if (s.colId) {
+            query.append('sort_by', s.colId)
+            query.append('sort_dir', (s.sort || '').toLowerCase() === 'asc' ? 'asc' : 'desc')
+          }
+        }
+
+        // Build baseKey (filter + sort params excluding page) to reuse cached pages when available
+        const baseParams = new URLSearchParams(query.toString())
+        baseParams.delete('page') // remove page so we can cache per-filter+sort
+        const baseKey = baseParams.toString()
+        const pageNum = parseInt(query.get('page') || '1', 10)
+
+        const now = Date.now()
+        const cached = transaksiCache.get(baseKey)
+        if (cached && (now - cached.ts) < CACHE_TTL_MS && cached.pages.has(pageNum)) {
+          const rowsThisPage = cached.pages.get(pageNum) || []
+          const lastRow = cached.total >= 0 ? cached.total : undefined
+          params.successCallback(rowsThisPage, lastRow)
+          return
+        }
+
+        const res = await fetch(`/admin/api/transaksi?${query.toString()}`, { credentials: 'same-origin' })
+        if (!res.ok) throw new Error('Failed to fetch transaksi')
+        const json = await res.json()
+        if (!json.success) throw new Error(json.message || 'Failed to fetch transaksi')
+
+        const dataArray = Array.isArray(json.data) ? json.data : json.data?.data || []
+
+        const rowsThisPage = dataArray.map((item: any) => ({
+          id: item.id,
+          kode: item.kode,
+          donatur: item.donatur?.nama || null,
+          kantor_cabang: item.kantor_cabang?.nama || null,
+          fundraiser: item.fundraiser?.nama || null,
+          fundraiser_pic: item.donatur_pic?.nama || item.donatur?.pic_user?.nama || item.donatur?.pic_user?.name || null,
+          program: item.program?.nama || null,
+          nominal: item.nominal,
+          nominal_formatted: item.nominal_formatted,
+          tanggal_transaksi: item.tanggal_transaksi,
+          tanggal_dibuat: item.created_at || null,
+          keterangan: item.keterangan,
+        }))
+
+        const total = json.pagination?.total ?? (json.data?.total ?? -1)
+
+        // Store in cache
+        let entry = transaksiCache.get(baseKey)
+        if (!entry) {
+          entry = { ts: now, total: total, pages: new Map<number, any[]>() }
+          transaksiCache.set(baseKey, entry)
+        }
+        entry.ts = now
+        entry.total = total
+        entry.pages.set(pageNum, rowsThisPage)
+        evictOldestCacheEntry()
+
+        const lastRow = total >= 0 ? total : undefined
+        params.successCallback(rowsThisPage, lastRow)
+      } catch (err) {
+        console.error('AG Grid datasource error', err)
+        params.failCallback()
+      }
+    },
+  }
+}
+
+const onGridReady = (event: any) => {
+  gridApi.value = event.api
+  gridColumnApi.value = event.columnApi
+  const ds = createDatasource()
+  gridApi.value.setDatasource(ds)
+}
+
+const refreshGrid = () => {
+  if (gridApi.value) {
+    const ds = createDatasource()
+    gridApi.value.setDatasource(ds)
+  }
 }
 
 const fetchFilterOptions = async () => {
@@ -644,7 +789,8 @@ const fetchData = async () => {
 const debouncedFetch = () => {
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
-    fetchData()
+    // Refresh the AG Grid datasource when filters change
+    refreshGrid()
   }, 300)
 }
 
@@ -692,7 +838,9 @@ const confirmDelete = async () => {
 
     if (json.success) {
       toast.success(json.message || 'Transaksi berhasil dihapus')
-      fetchData()
+      // Clear cache to avoid stale data then refresh grid
+      transaksiCache.clear()
+      refreshGrid()
     } else {
       toast.error(json.message || 'Gagal menghapus transaksi')
     }

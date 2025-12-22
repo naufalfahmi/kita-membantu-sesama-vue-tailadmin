@@ -130,10 +130,50 @@ class TransaksiController extends Controller
             $query->where('kantor_cabang_id', $request->kantor_cabang_id);
         }
 
-        $transaksis = $query
-            ->orderByDesc('tanggal_transaksi')
-            ->orderByDesc('created_at')
-            ->paginate($request->integer('per_page', 20));
+        // Server-side sorting support via `sort_by` and `sort_dir` params
+        $sortBy = $request->input('sort_by') ? (string) $request->input('sort_by') : null;
+        $sortDir = strtolower($request->input('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $joined = false;
+        if ($sortBy) {
+            // Map frontend field names to DB columns
+            $sortMapping = [
+                'kode' => 'transaksis.kode',
+                'nominal' => 'transaksis.nominal',
+                'tanggal_transaksi' => 'transaksis.tanggal_transaksi',
+                'tanggal_dibuat' => 'transaksis.created_at',
+                'donatur' => ['table' => 'donaturs', 'local' => 'donaturs.id', 'foreign' => 'transaksis.donatur_id', 'column' => 'donaturs.nama'],
+                'program' => ['table' => 'program', 'local' => 'program.id', 'foreign' => 'transaksis.program_id', 'column' => 'program.nama_program'],
+                'kantor_cabang' => ['table' => 'kantor_cabang', 'local' => 'kantor_cabang.id', 'foreign' => 'transaksis.kantor_cabang_id', 'column' => 'kantor_cabang.nama'],
+                'fundraiser' => ['table' => 'users', 'alias' => 'fundraiser', 'local' => 'fundraiser.id', 'foreign' => 'transaksis.fundraiser_id', 'column' => 'fundraiser.name'],
+            ];
+
+            if (isset($sortMapping[$sortBy])) {
+                $map = $sortMapping[$sortBy];
+                if (is_array($map)) {
+                    // join
+                    $table = $map['table'];
+                    $alias = $map['alias'] ?? $table;
+                    $local = $map['local'];
+                    $foreign = $map['foreign'];
+                    $column = $map['column'];
+
+                    // Avoid joining multiple times
+                    $query->leftJoin("{$table} as {$alias}", $local, '=', $foreign);
+                    $query->select('transaksis.*');
+                    $query->orderBy($column, $sortDir);
+                    $joined = true;
+                } else {
+                    $query->orderBy($map, $sortDir);
+                }
+            }
+        }
+
+        if (! $sortBy) {
+            $query->orderByDesc('tanggal_transaksi')->orderByDesc('created_at');
+        }
+
+        $transaksis = $query->paginate($request->integer('per_page', 20));
 
         $transaksis->getCollection()->transform(function (Transaksi $transaksi) {
             return $this->transformTransaksi($transaksi);

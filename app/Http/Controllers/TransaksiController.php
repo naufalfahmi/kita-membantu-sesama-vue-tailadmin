@@ -25,6 +25,7 @@ class TransaksiController extends Controller
             'donatur:id,nama,pic',
             'donatur.picUser:id,name',
             'program:id,nama_program',
+            'mitra:id,nama',
             'fundraiser:id,name',
         ]);
 
@@ -89,6 +90,10 @@ class TransaksiController extends Controller
             $query->where('program_id', $request->program_id);
         }
 
+        if ($request->filled('mitra_id')) {
+            $query->where('mitra_id', $request->mitra_id);
+        }
+
         // Support both single-date filter (`tanggal=YYYY-MM-DD`) and
         // a date range via `tanggal_from`/`tanggal_to` or a range passed
         // in the `tanggal` parameter like `YYYY-MM-DD to YYYY-MM-DD`.
@@ -141,6 +146,7 @@ class TransaksiController extends Controller
             $sortMapping = [
                 'kode' => 'transaksis.kode',
                 'nominal' => 'transaksis.nominal',
+                'mitra' => ['table' => 'mitras', 'local' => 'mitras.id', 'foreign' => 'transaksis.mitra_id', 'column' => 'mitras.nama'],
                 'tanggal_transaksi' => 'transaksis.tanggal_transaksi',
                 'tanggal_dibuat' => 'transaksis.created_at',
                 'donatur' => ['table' => 'donaturs', 'local' => 'donaturs.id', 'foreign' => 'transaksis.donatur_id', 'column' => 'donaturs.nama'],
@@ -201,6 +207,7 @@ class TransaksiController extends Controller
             'kantor_cabang_id' => 'required|uuid|exists:kantor_cabang,id',
             'donatur_id' => 'required|uuid|exists:donaturs,id',
             'program_id' => 'required|uuid|exists:program,id',
+            'mitra_id' => 'nullable|uuid|exists:mitras,id',
             'fundraiser_id' => 'nullable|exists:users,id',
             'nominal' => 'required|numeric|min:0',
             'tanggal_transaksi' => 'required|date',
@@ -236,6 +243,7 @@ class TransaksiController extends Controller
                     'kantorCabang:id,nama',
                     'donatur:id,nama',
                     'program:id,nama_program',
+                    'mitra:id,nama',
                     'fundraiser:id,name',
                 ])),
             ], 201);
@@ -257,6 +265,7 @@ class TransaksiController extends Controller
             'kantorCabang:id,nama',
             'donatur:id,nama',
             'program:id,nama_program',
+            'mitra:id,nama',
             'fundraiser:id,name',
         ]);
 
@@ -318,6 +327,7 @@ class TransaksiController extends Controller
             'kantor_cabang_id' => 'required|uuid|exists:kantor_cabang,id',
             'donatur_id' => 'required|uuid|exists:donaturs,id',
             'program_id' => 'required|uuid|exists:program,id',
+            'mitra_id' => 'nullable|uuid|exists:mitras,id',
             'fundraiser_id' => 'nullable|exists:users,id',
             'nominal' => 'required|numeric|min:0',
             'tanggal_transaksi' => 'required|date',
@@ -351,6 +361,7 @@ class TransaksiController extends Controller
                     'kantorCabang:id,nama',
                     'donatur:id,nama',
                     'program:id,nama_program',
+                    'mitra:id,nama',
                     'fundraiser:id,name',
                 ])),
             ]);
@@ -458,6 +469,11 @@ class TransaksiController extends Controller
                 'id' => $transaksi->program->id,
                 'nama' => $transaksi->program->nama_program,
             ] : null,
+            'mitra_id' => $transaksi->mitra_id,
+            'mitra' => $transaksi->mitra ? [
+                'id' => $transaksi->mitra->id,
+                'nama' => $transaksi->mitra->nama,
+            ] : null,
             'fundraiser_id' => $transaksi->fundraiser_id,
             'fundraiser' => $transaksi->fundraiser ? [
                 'id' => $transaksi->fundraiser->id,
@@ -480,7 +496,7 @@ class TransaksiController extends Controller
             }
         }
 
-        $nullableKeys = ['fundraiser_id', 'keterangan', 'status'];
+        $nullableKeys = ['fundraiser_id', 'keterangan', 'status', 'mitra_id'];
 
         foreach ($nullableKeys as $key) {
             if (array_key_exists($key, $data)) {

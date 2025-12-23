@@ -18,6 +18,8 @@ class LandingProgramTest extends TestCase
         Storage::fake('public');
 
         $user = User::factory()->create();
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'create landing program']);
+        $user->givePermissionTo('create landing program');
 
         $file = UploadedFile::fake()->image('program.jpg');
 
@@ -46,8 +48,12 @@ class LandingProgramTest extends TestCase
         Storage::fake('public');
 
         $user = User::factory()->create();
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'create landing program']);
+        $user->givePermissionTo('create landing program');
 
         // create initial program
+        \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'update landing program']);
+        $user->givePermissionTo('update landing program');
         $initialFile = UploadedFile::fake()->image('a.jpg');
         $this->actingAs($user)->withHeaders(['X-CSRF-TOKEN' => csrf_token()])->post('/admin/api/landing-program', [
             'name' => 'Program Update',
@@ -79,5 +85,25 @@ class LandingProgramTest extends TestCase
         $this->assertEquals('new', strip_tags($program->description));
         $this->assertTrue((bool) $program->is_highlight);
         Storage::disk('public')->assertExists($program->image_url);
+    }
+
+    public function test_public_index_returns_default_four_and_has_more_flag()
+    {
+        $total = 6;
+        for ($i = 1; $i <= $total; $i++) {
+            LandingProgram::create([
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                'name' => 'Program '.$i,
+                'description' => 'Desc '.$i,
+                'image_url' => null,
+            ]);
+        }
+
+        $res = $this->getJson('/api/landing-programs');
+        $res->assertStatus(200)->assertJson(['success' => true]);
+        $json = $res->json();
+        $this->assertCount(4, $json['data']);
+        $this->assertEquals($total, $json['total']);
+        $this->assertTrue($json['has_more']);
     }
 }

@@ -292,6 +292,7 @@
     </section>
     <!-- ===== Team End ===== -->
 
+@if(($landingBulletinsTotal ?? 0) > 0)
     <!-- ===== Services Start ===== -->
     <section class="lj tp kr">
       <!-- Section Title Start -->
@@ -306,166 +307,163 @@
       <!-- Section Title End -->
 
       <div class="bb ze ki xn yq mb en">
-        <div class="wc qf pn xo ng">
-          <!-- Service Item -->
-          <div class="animate_top sg oi pi zq ml il am cn _m">
-            <img src="{{ asset("frontend/images/icon-04.svg") }}" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">Crafted for Startups</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
-          </div>
-
-          <!-- Service Item -->
-          <div class="animate_top sg oi pi zq ml il am cn _m">
-            <img src="{{ asset("frontend/images/icon-05.svg") }}" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">High-quality Design</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
-          </div>
-
-          <!-- Service Item -->
-          <div class="animate_top sg oi pi zq ml il am cn _m">
-            <img src="{{ asset("frontend/images/icon-06.svg") }}" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">All Essential Sections</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
-          </div>
-
-          <!-- Service Item -->
-          <div class="animate_top sg oi pi zq ml il am cn _m">
-            <img src="{{ asset("frontend/images/icon-07.svg") }}" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">Speed Optimized</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
-          </div>
-
-          <!-- Service Item -->
-          <div class="animate_top sg oi pi zq ml il am cn _m">
-            <img src="{{ asset("frontend/images/icon-05.svg") }}" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">Fully Customizable</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
-          </div>
-
-          <!-- Service Item -->
-          <div class="animate_top sg oi pi zq ml il am cn _m">
-            <img src="{{ asset("frontend/images/icon-06.svg") }}" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">Regular Updates</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
-          </div>
+        <div id="bulletins" class="wc qf pn xo ng">
+          @foreach($landingBulletins ?? [] as $b)
+            <div class="animate_top sg oi pi zq ml il am cn _m bulletin-item">
+              <img src="{{ asset('frontend/images/icon-04.svg') }}" alt="Bulletin" />
+              @php
+                $fileUrl = '#';
+                if (!empty($b->file)) {
+                    $fileUrl = preg_match('/^https?:\/\//', $b->file) ? $b->file : asset('storage/' . $b->file);
+                }
+              @endphp
+              <h4 class="ek zj kk wm nb _b"><a href="{{ $fileUrl }}" target="_blank" rel="noopener noreferrer">{{ $b->name }}</a></h4>
+              <p class="text-sm text-gray-600">{{ $b->date->format('d M Y') }}</p>
+            </div>
+          @endforeach
         </div>
+
+        @if(!empty($landingBulletinsTotal) && $landingBulletinsTotal > 6)
+          <div class="tc mt-6">
+            <button id="load-more-bulletins" class="ek rg ml il vi mi">Load more</button>
+          </div>
+        @endif
       </div>
+
+      @push('scripts')
+      <script>
+        (function(){
+          let currentPage = 1;
+          const perPage = 6;
+          const btn = document.getElementById('load-more-bulletins');
+          const container = document.getElementById('bulletins');
+
+          if (btn) {
+            btn.addEventListener('click', async function(){
+              currentPage++;
+              btn.disabled = true;
+              btn.textContent = 'Loading...';
+              try {
+                const res = await fetch(`/api/landing-bulletins?page=${currentPage}&per_page=${perPage}`);
+                const json = await res.json();
+                if (json.success && json.data.length) {
+                  json.data.forEach(function(b){
+                    const div = document.createElement('div');
+                    div.className = 'animate_top sg oi pi zq ml il am cn _m bulletin-item';
+                    const file = b.file && /^https?:\/\//.test(b.file) ? b.file : (b.file ? `/storage/${b.file}` : '#');
+                    const date = new Date(b.date).toLocaleDateString('id-ID',{day:'2-digit', month:'short', year:'numeric'});
+                    div.innerHTML = `<img src="/frontend/images/icon-04.svg" alt="Bulletin" /><h4 class="ek zj kk wm nb _b"><a href="${file}" target="_blank" rel="noopener noreferrer">${b.name}</a></h4><p class="text-sm text-gray-600">${date}</p>`;
+                    container.appendChild(div);
+                  });
+                  if (!json.has_more) {
+                    btn.remove();
+                  } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Load more';
+                  }
+                } else {
+                  btn.remove();
+                }
+              } catch (e) {
+                console.error(e);
+                btn.disabled = false;
+                btn.textContent = 'Load more';
+              }
+            });
+          }
+        })();
+      </script>
+      @endpush
     </section>
     <!-- ===== Services End ===== -->
+@endif
 
-
-    <!-- ===== Projects Start ===== -->
-    <section class="pg pj vp mr oj wp nr">
-      <!-- Section Title Start -->
-      <div
-        x-data="{ sectionTitle: `Program Kami`, sectionTitleText: `Program-program unggulan kami meliputi pendidikan, kesehatan, dan bantuan darurat yang dirancang untuk menciptakan dampak berkelanjutan bagi komunitas.` }">
+@if(($landingProgramsTotal ?? 0) > 0)
+      <div class="bb ze ki xn 2xl:ud-px-0 jb">
         <div class="animate_top bb ze rj ki xn vq">
-          <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
-          </h2>
-          <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>
+          <h2 class="fk vj pr kk wm on/5 gq/2 bb _b">Program Kami <span class="text-sm text-gray-500">({{ $landingProgramsTotal ?? 0 }})</span></h2>
+          <p class="bb on/5 wo/5 hq">Program-program unggulan kami meliputi pendidikan, kesehatan, dan bantuan darurat yang dirancang untuk menciptakan dampak berkelanjutan bagi komunitas.</p>
+        </div>
+
+        <div class="bb ze ki xn 2xl:ud-px-0 jb">
+          <div id="programs" class="projects-wrapper tc -ud-mx-5">
+            @foreach($landingPrograms ?? [] as $p)
+              @php
+                $image = asset('frontend/images/project-01.png');
+                if (!empty($p->image_url)) {
+                    $image = preg_match('/^https?:\/\//', $p->image_url) ? $p->image_url : asset('storage/' . $p->image_url);
+                }
+                $excerpt = strip_tags($p->description ?? '');
+                if (strlen($excerpt) > 120) $excerpt = substr($excerpt, 0, 117) . '...';
+              @endphp
+
+              <div class="project-item wi fb vd jn/2 to/3">
+                <div class="c i pg sg z-1">
+                  <img src="{{ $image }}" alt="{{ $p->name }}" />
+
+                  <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
+                    <h4 class="ek tj kk hc">{{ $p->name }}</h4>
+                    <p>{{ $excerpt }}</p>
+                  </div>
+                </div>
+              </div>
+            @endforeach
+          </div>
+
+          @if(!empty($landingProgramsTotal) && $landingProgramsTotal > 4)
+            <div class="tc mt-6">
+              <button id="load-more-programs" class="ek rg ml il vi mi">Load more</button>
+            </div>
+          @endif
         </div>
       </div>
-      <!-- Section Title End -->
 
-      <div class="bb ze ki xn 2xl:ud-px-0 jb" x-data="{filterTab: 1}">
-        <!-- Porject Tab -->
-        <div class="projects-tab _e bb tc uf wf xf cg rg hh rm vk xm si ti fc">
-          <button data-filter="*" @click="filterTab = 1" :class="{ 'gh lk' : filterTab === 1 }"
-            class="project-tab-btn ek rg ml il vi mi">
-            All
-          </button>
-          <button data-filter=".branding" @click="filterTab = 2" :class="{ 'gh lk' : filterTab === 2 }"
-            class="project-tab-btn ek rg ml il vi mi">
-            Branding Strategy
-          </button>
-          <button data-filter=".digital" @click="filterTab = 3" :class="{ 'gh lk' : filterTab === 3 }"
-            class="project-tab-btn ek rg ml il vi mi">
-            Digital Experiences
-          </button>
-          <button data-filter=".ecommerce" @click="filterTab = 4" :class="{ 'gh lk' : filterTab === 4 }"
-            class="project-tab-btn ek rg ml il vi mi">
-            Ecommerce
-          </button>
-        </div>
+      @push('scripts')
+      <script>
+        (function(){
+          let currentPage = 1;
+          const perPage = 4;
+          const btn = document.getElementById('load-more-programs');
+          const container = document.getElementById('programs');
 
-        <!-- Projects item wrapper -->
-        <div class="projects-wrapper tc -ud-mx-5">
-          <div class="project-sizer"></div>
-          <!-- Project Item -->
-          <div class="project-item wi fb vd jn/2 to/3 branding ecommerce">
-            <div class="c i pg sg z-1">
-              <img src="{{ asset("frontend/images/project-01.png") }}" alt="Project" />
+          if (btn) {
+            btn.addEventListener('click', async function(){
+              currentPage++;
+              btn.disabled = true;
+              btn.textContent = 'Loading...';
+              try {
+                const res = await fetch(`/api/landing-programs?page=${currentPage}&per_page=${perPage}`);
+                const json = await res.json();
+                if (json.success && json.data.length) {
+                  json.data.forEach(function(p){
+                    const div = document.createElement('div');
+                    div.className = 'project-item wi fb vd jn/2 to/3';
+                    const img = p.image_url && /^https?:\/\//.test(p.image_url) ? p.image_url : (p.image_url ? `/storage/${p.image_url}` : '/frontend/images/project-01.png');
+                    const excerpt = (p.description || '').replace(/<[^>]+>/g, '').slice(0, 117) + (p.description && p.description.length > 120 ? '...' : '');
+                    div.innerHTML = `<div class="c i pg sg z-1"><img src="${img}" alt="${p.name}" /><div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10"><h4 class="ek tj kk hc">${p.name}</h4><p>${excerpt}</p></div></div>`;
+                    container.appendChild(div);
+                  });
+                  if (!json.has_more) {
+                    btn.remove();
+                  } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Load more';
+                  }
+                } else {
+                  btn.remove();
+                }
+              } catch (e) {
+                console.error(e);
+                btn.disabled = false;
+                btn.textContent = 'Load more';
+              }
+            });
+          }
+        })();
+      </script>
+      @endpush
+@endif
 
-              <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                <h4 class="ek tj kk hc">Photo Retouching</h4>
-                <p>Branded Ecommerce</p>
-                <a class="c tc wf xf ie ld rg _g dh ml il ph jm km jc" href="#!">
-                  <svg class="th lm ml il" width="14" height="14" viewBox="0 0 14 14" fill="none"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M10.4763 6.16664L6.00634 1.69664L7.18467 0.518311L13.6663 6.99998L7.18467 13.4816L6.00634 12.3033L10.4763 7.83331H0.333008V6.16664H10.4763Z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <!-- Project Item -->
-          <div class="project-item wi fb vd jn/2 to/3 digital">
-            <div class="c i pg sg z-1">
-              <img src="{{ asset("frontend/images/project-02.png") }}" alt="Project" />
-
-              <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                <h4 class="ek tj kk hc">Photo Retouching</h4>
-                <p>Branded Ecommerce</p>
-                <a class="c tc wf xf ie ld rg _g dh ml il ph jm km jc" href="#!">
-                  <svg class="th lm ml il" width="14" height="14" viewBox="0 0 14 14" fill="none"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M10.4763 6.16664L6.00634 1.69664L7.18467 0.518311L13.6663 6.99998L7.18467 13.4816L6.00634 12.3033L10.4763 7.83331H0.333008V6.16664H10.4763Z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <!-- Project Item -->
-          <div class="project-item wi fb vd jn/2 to/3 branding ecommerce">
-            <div class="c i pg sg z-1">
-              <img src="{{ asset("frontend/images/project-04.png") }}" alt="Project" />
-
-              <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                <h4 class="ek tj kk hc">Photo Retouching</h4>
-                <p>Branded Ecommerce</p>
-                <a class="c tc wf xf ie ld rg _g dh ml il ph jm km jc" href="#!">
-                  <svg class="th lm ml il" width="14" height="14" viewBox="0 0 14 14" fill="none"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M10.4763 6.16664L6.00634 1.69664L7.18467 0.518311L13.6663 6.99998L7.18467 13.4816L6.00634 12.3033L10.4763 7.83331H0.333008V6.16664H10.4763Z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <!-- Project Item -->
-          <div class="project-item wi fb vd vo/3 digital ecommerce">
-            <div class="c i pg sg z-1">
-              <img src="{{ asset("frontend/images/project-03.png") }}" alt="Project" />
-
-              <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                <h4 class="ek tj kk hc">Photo Retouching</h4>
-                <p>Branded Ecommerce</p>
-                <a class="c tc wf xf ie ld rg _g dh ml il ph jm km jc" href="#!">
-                  <svg class="th lm ml il" width="14" height="14" viewBox="0 0 14 14" fill="none"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M10.4763 6.16664L6.00634 1.69664L7.18467 0.518311L13.6663 6.99998L7.18467 13.4816L6.00634 12.3033L10.4763 7.83331H0.333008V6.16664H10.4763Z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -481,19 +479,19 @@
       <div class="bb ze i va ki xn br">
         <div class="tc uf sn tn xf un gg">
           <div class="animate_top me/5 ln rj">
-            <h2 class="gk vj zp or kk wm hc">4</h2>
+            <h2 class="gk vj zp or kk wm hc">{{ number_format($kantorCabangCount ?? 0) }}</h2>
             <p class="ek bk aq">Kantor Cabang</p>
           </div>
           <div class="animate_top me/5 ln rj">
-            <h2 class="gk vj zp or kk wm hc">533</h2>
+            <h2 class="gk vj zp or kk wm hc">{{ number_format($donaturCount ?? 0) }}</h2>
             <p class="ek bk aq">Donatur</p>
           </div>
           <div class="animate_top me/5 ln rj">
-            <h2 class="gk vj zp or kk wm hc">865</h2>
+            <h2 class="gk vj zp or kk wm hc">{{ number_format($fundraiserCount ?? 0) }}</h2>
             <p class="ek bk aq">Fundraiser</p>
           </div>
           <div class="animate_top me/5 ln rj">
-            <h2 class="gk vj zp or kk wm hc">346</h2>
+            <h2 class="gk vj zp or kk wm hc">{{ number_format($penggalanganDanaCount ?? 0) }}</h2>
             <p class="ek bk aq">Penggalangan Dana</p>
           </div>
         </div>
@@ -559,89 +557,104 @@
       <!-- Section Title End -->
 
       <div class="bb ye ki xn vq jb jo">
-        <div class="wc qf pn xo zf iq">
-          <!-- Blog Item -->
-          <div class="animate_top sg vk rm xm">
-            <div class="c rc i z-1 pg">
-              <img class="w-full" src="{{ asset("frontend/images/blog-01.png") }}" alt="Blog" />
+        <div id="kegiatans" class="wc qf pn xo zf iq">
+          @foreach($landingKegiatan ?? [] as $k)
+            @php
+              $img = asset('frontend/images/blog-01.png');
+              if (!empty($k->images)) {
+                  $imgs = json_decode($k->images, true) ?: [];
+                  if (is_array($imgs) && count($imgs) > 0 && $imgs[0]) {
+                      $img = preg_match('/^https?:\/\//', $imgs[0]) ? $imgs[0] : asset('storage/' . $imgs[0]);
+                  }
+              }
+              $date = $k->activity_date ? \Carbon\Carbon::parse($k->activity_date)->format('d M, Y') : '';
+              $excerpt = strip_tags($k->description ?? '');
+              if (strlen($excerpt) > 120) $excerpt = substr($excerpt, 0, 117) . '...';
+            @endphp
 
-              <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
-                <a href="{{ route("frontend.blog-single") }}" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
-              </div>
-            </div>
+            <div class="animate_top sg vk rm xm">
+              <div class="c rc i z-1 pg">
+                <img class="w-full" src="{{ $img }}" alt="Kegiatan" />
 
-            <div class="yh">
-              <div class="tc uf wf ag jq">
-                <div class="tc wf ag">
-                  <img src="{{ asset("frontend/images/icon-man.svg") }}" alt="User" />
-                  <p>Musharof Chy</p>
-                </div>
-                <div class="tc wf ag">
-                  <img src="{{ asset("frontend/images/icon-calender.svg") }}" alt="Calender" />
-                  <p>25 Dec, 2025</p>
-                </div>
-              </div>
-              <h4 class="ek tj ml il kk wm xl eq lb">
-                <a href="{{ route("frontend.blog-single") }}">Free advertising for your online business</a>
-              </h4>
-            </div>
-          </div>
-
-          <!-- Blog Item -->
-          <div class="animate_top sg vk rm xm">
-            <div class="c rc i z-1 pg">
-              <img class="w-full" src="{{ asset("frontend/images/blog-02.png") }}" alt="Blog" />
-
-              <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
-                <a href="{{ route("frontend.blog-single") }}" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
-              </div>
-            </div>
-
-            <div class="yh">
-              <div class="tc uf wf ag jq">
-                <div class="tc wf ag">
-                  <img src="{{ asset("frontend/images/icon-man.svg") }}" alt="User" />
-                  <p>Musharof Chy</p>
-                </div>
-                <div class="tc wf ag">
-                  <img src="{{ asset("frontend/images/icon-calender.svg") }}" alt="Calender" />
-                  <p>25 Dec, 2025</p>
+                <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
+                  <a href="{{ route('frontend.blog-single') }}" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
                 </div>
               </div>
-              <h4 class="ek tj ml il kk wm xl eq lb">
-                <a href="{{ route("frontend.blog-single") }}">9 simple ways to improve your design skills</a>
-              </h4>
-            </div>
-          </div>
 
-          <!-- Blog Item -->
-          <div class="animate_top sg vk rm xm">
-            <div class="c rc i z-1 pg">
-              <img class="w-full" src="{{ asset("frontend/images/blog-03.png") }}" alt="Blog" />
-
-              <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
-                <a href="{{ route("frontend.blog-single") }}" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
+              <div class="yh">
+                <div class="tc uf wf ag jq">
+                  <div class="tc wf ag">
+                    <img src="{{ asset('frontend/images/icon-man.svg') }}" alt="User" />
+                    <p>{{ $k->organizer ?? 'Team' }}</p>
+                  </div>
+                  <div class="tc wf ag">
+                    <img src="{{ asset('frontend/images/icon-calender.svg') }}" alt="Calender" />
+                    <p>{{ $date }}</p>
+                  </div>
+                </div>
+                <h4 class="ek tj ml il kk wm xl eq lb">
+                  <a href="{{ route('frontend.blog-single') }}">{{ $k->title }}</a>
+                </h4>
+                <p>{{ $excerpt }}</p>
               </div>
             </div>
-
-            <div class="yh">
-              <div class="tc uf wf ag jq">
-                <div class="tc wf ag">
-                  <img src="{{ asset("frontend/images/icon-man.svg") }}" alt="User" />
-                  <p>Musharof Chy</p>
-                </div>
-                <div class="tc wf ag">
-                  <img src="{{ asset("frontend/images/icon-calender.svg") }}" alt="Calender" />
-                  <p>25 Dec, 2025</p>
-                </div>
-              </div>
-              <h4 class="ek tj ml il kk wm xl eq lb">
-                <a href="{{ route("frontend.blog-single") }}">Tips to quickly improve your coding speed.</a>
-              </h4>
-            </div>
-          </div>
+          @endforeach
         </div>
-      </div>
+
+        @if(!empty($landingKegiatanTotal) && $landingKegiatanTotal > 3)
+          <div class="tc mt-6">
+            <button id="load-more-kegiatan" class="ek rg ml il vi mi">Load more</button>
+          </div>
+        @endif
+      </div> 
+
+      @push('scripts')
+      <script>
+        (function(){
+          let currentPage = 1;
+          const perPage = 3;
+          const btn = document.getElementById('load-more-kegiatan');
+          const container = document.getElementById('kegiatans');
+
+          if (btn) {
+            btn.addEventListener('click', async function(){
+              currentPage++;
+              btn.disabled = true;
+              btn.textContent = 'Loading...';
+              try {
+                const res = await fetch(`/api/landing-kegiatan?page=${currentPage}&per_page=${perPage}`);
+                const json = await res.json();
+                if (json.success && json.data.length) {
+                  json.data.forEach(function(k){
+                    const imgJson = k.images ? (Array.isArray(k.images) ? k.images[0] : (k.images ? JSON.parse(k.images)[0] : null)) : null;
+                    const img = imgJson && /^https?:\/\//.test(imgJson) ? imgJson : (imgJson ? `/storage/${imgJson}` : '/frontend/images/blog-01.png');
+                    const date = k.activity_date ? new Date(k.activity_date).toLocaleDateString('id-ID',{day:'2-digit', month:'short', year:'numeric'}) : '';
+                    const excerpt = (k.description || '').replace(/<[^>]+>/g, '').slice(0, 117) + ((k.description||'').length > 120 ? '...' : '');
+
+                    const div = document.createElement('div');
+                    div.className = 'animate_top sg vk rm xm';
+                    div.innerHTML = `<div class="c rc i z-1 pg"><img class="w-full" src="${img}" alt="Kegiatan" /><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="/blog-single" class="vc ek rg lk gh sl ml il gi hi">Read More</a></div></div><div class="yh"><div class="tc uf wf ag jq"><div class="tc wf ag"><img src="/frontend/images/icon-man.svg" alt="User" /><p>${k.organizer || 'Team'}</p></div><div class="tc wf ag"><img src="/frontend/images/icon-calender.svg" alt="Calender" /><p>${date}</p></div></div><h4 class="ek tj ml il kk wm xl eq lb"><a href="/blog-single">${k.title}</a></h4><p>${excerpt}</p></div>`;
+                    container.appendChild(div);
+                  });
+                  if (!json.has_more) {
+                    btn.remove();
+                  } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Load more';
+                  }
+                } else {
+                  btn.remove();
+                }
+              } catch (e) {
+                console.error(e);
+                btn.disabled = false;
+                btn.textContent = 'Load more';
+              }
+            });
+          }
+        })();
+      </script>
+      @endpush
     </section>
     <!-- ===== Blog End ===== -->
 

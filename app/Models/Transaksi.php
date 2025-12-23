@@ -18,6 +18,7 @@ class Transaksi extends Model
         'kantor_cabang_id',
         'donatur_id',
         'program_id',
+        'mitra_id',
         'fundraiser_id',
         'nominal',
         'tanggal_transaksi',
@@ -58,6 +59,14 @@ class Transaksi extends Model
     public function program()
     {
         return $this->belongsTo(Program::class, 'program_id');
+    }
+
+    /**
+     * Get the mitra that owns the transaksi.
+     */
+    public function mitra()
+    {
+        return $this->belongsTo(Mitra::class, 'mitra_id');
     }
 
     /**

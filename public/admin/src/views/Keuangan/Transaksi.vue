@@ -106,6 +106,19 @@
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Mitra
+            </label>
+            <SearchableSelect
+              v-model="filterMitra"
+              :options="mitraOptions"
+              placeholder="Semua Mitra"
+              :search-input="mitraSearchInput"
+              @update:search-input="mitraSearchInput = $event"
+              @update:model-value="fetchData"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Kantor Cabang
             </label>
             <SearchableSelect
@@ -199,6 +212,7 @@ interface TransaksiRow {
   id: string
   kode: string | null
   donatur: string | null
+  mitra: string | null
   fundraiser: string | null
   program: string | null
   kantor_cabang: string | null
@@ -237,6 +251,7 @@ const filterDonatur = ref('')
 const filterProgram = ref('')
 const filterFundraiser = ref('')
 const filterKantorCabang = ref('')
+const filterMitra = ref('')
 
 // Helpers used by exports: sanitize control characters and CSV escaping (semicolon delimiter)
 const sanitizeString = (s: any) => String(s || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
@@ -305,6 +320,7 @@ const resolveDonaturInfo = (transaksi: any) => {
 const programList = ref<any[]>([])
 const fundraiserList = ref<any[]>([])
 const kantorCabangList = ref<any[]>([])
+const mitraList = ref<any[]>([])
 
 const kantorCabangMap = computed(() => {
   const map = new Map<string, any>()
@@ -321,6 +337,7 @@ const donaturSearchInput = ref('')
 const programSearchInput = ref('')
 const fundraiserSearchInput = ref('')
 const kantorCabangSearchInput = ref('')
+const mitraSearchInput = ref('')
 
 // Computed options for SearchableSelect
 const donaturOptions = computed(() => [
@@ -337,6 +354,11 @@ const programOptions = computed(() => [
     value: item.id,
     label: item.nama_program || '-',
   })),
+])
+
+const mitraOptions = computed(() => [
+  { value: '', label: 'Semua Mitra' },
+  ...mitraList.value.map((item: any) => ({ value: item.id, label: item.nama || item.name || '-' })),
 ])
 
 const fundraiserOptions = computed(() => {
@@ -554,6 +576,7 @@ const buildQueryFromParams = (startRow: number, endRow: number) => {
 
   if (filterDonatur.value) params.append('donatur_id', filterDonatur.value)
   if (filterProgram.value) params.append('program_id', filterProgram.value)
+  if (filterMitra.value) params.append('mitra_id', filterMitra.value)
   if (filterKantorCabang.value) params.append('kantor_cabang_id', filterKantorCabang.value)
   if (filterFundraiser.value) params.append('fundraiser_id', filterFundraiser.value)
 
@@ -625,6 +648,7 @@ const createDatasource = () => {
           id: item.id,
           kode: item.kode,
           donatur: item.donatur?.nama || null,
+          mitra: item.mitra?.nama || null,
           kantor_cabang: item.kantor_cabang?.nama || null,
           fundraiser: item.fundraiser?.nama || null,
           fundraiser_pic: item.donatur_pic?.nama || item.donatur?.pic_user?.nama || item.donatur?.pic_user?.name || null,
@@ -701,6 +725,16 @@ const fetchFilterOptions = async () => {
         fundraiserList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
       }
     }
+    // fetch mitra list
+    try {
+      const mitraRes = await fetch('/admin/api/mitra?per_page=1000', { credentials: 'same-origin' })
+      if (mitraRes.ok) {
+        const json = await mitraRes.json()
+        if (json.success) mitraList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
+      }
+    } catch (e) {
+      console.error('Error fetching mitra options:', e)
+    }
   } catch (error) {
     console.error('Error fetching filter options:', error)
   }
@@ -745,6 +779,10 @@ const fetchData = async () => {
       params.append('program_id', filterProgram.value)
     }
 
+    if (filterMitra.value) {
+      params.append('mitra_id', filterMitra.value)
+    }
+
     if (filterKantorCabang.value) {
       params.append('kantor_cabang_id', filterKantorCabang.value)
     }
@@ -766,6 +804,7 @@ const fetchData = async () => {
         id: item.id,
         kode: item.kode,
         donatur: item.donatur?.nama || null,
+        mitra: item.mitra?.nama || null,
         kantor_cabang: item.kantor_cabang?.nama || null,
         // 'Dibuat oleh' (creator)
         fundraiser: item.fundraiser?.nama || null,
@@ -800,6 +839,7 @@ const resetFilter = () => {
   filterDonatur.value = ''
   filterProgram.value = ''
   filterKantorCabang.value = ''
+  filterMitra.value = ''
   filterFundraiser.value = ''
   fetchData()
 }
@@ -875,6 +915,7 @@ const handleExportExcel = async () => {
 
     if (filterDonatur.value) params.append('donatur_id', filterDonatur.value)
     if (filterProgram.value) params.append('program_id', filterProgram.value)
+    if (filterMitra.value) params.append('mitra_id', filterMitra.value)
     if (filterKantorCabang.value) params.append('kantor_cabang_id', filterKantorCabang.value)
     if (filterFundraiser.value) params.append('fundraiser_id', filterFundraiser.value)
 
@@ -1409,6 +1450,7 @@ const handleExportCsv = async () => {
 
     if (filterDonatur.value) params.append('donatur_id', filterDonatur.value)
     if (filterProgram.value) params.append('program_id', filterProgram.value)
+    if (filterMitra.value) params.append('mitra_id', filterMitra.value)
     if (filterKantorCabang.value) params.append('kantor_cabang_id', filterKantorCabang.value)
     if (filterFundraiser.value) params.append('fundraiser_id', filterFundraiser.value)
 

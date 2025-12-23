@@ -44,6 +44,28 @@ class LandingProgramController extends Controller
         ]);
     }
 
+    // Public endpoint for the frontend to fetch programs with pagination (default 4 per page)
+    public function publicIndex(Request $request)
+    {
+        $perPage = $request->integer('per_page', 4);
+        $page = max(1, $request->integer('page', 1));
+
+        $total = LandingProgram::count();
+        $items = LandingProgram::orderByDesc('created_at')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $items,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => $total > $page * $perPage,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [

@@ -39,6 +39,28 @@ class LandingBulletinController extends Controller
         ]);
     }
 
+    // Public endpoint for the frontend to fetch bulletins with pagination (default 6 per page)
+    public function publicIndex(Request $request)
+    {
+        $perPage = $request->integer('per_page', 6);
+        $page = max(1, $request->integer('page', 1));
+
+        $total = LandingBulletin::count();
+        $items = LandingBulletin::orderByDesc('date')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $items,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => $total > $page * $perPage,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [

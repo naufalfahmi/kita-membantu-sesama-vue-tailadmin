@@ -8,6 +8,9 @@ use App\Http\Controllers\LandingKegiatanController;
 use App\Http\Controllers\LandingProposalController;
 use App\Http\Controllers\LandingBulletinController;
 use App\Http\Controllers\JabatanController;
+use App\Models\LandingBulletin;
+use App\Models\LandingProgram;
+use App\Models\LandingKegiatan;
 use App\Http\Controllers\KantorCabangController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\MitraController;
@@ -33,8 +36,40 @@ Route::get('/favicon.ico', function () {
 });
 
 // Frontend Routes
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
 Route::get('/', function () {
-    return view('frontend.index');
+    $landingBulletins = LandingBulletin::orderByDesc('date')->limit(6)->get();
+    $landingBulletinsTotal = Schema::hasTable('landing_bulletins') ? LandingBulletin::count() : 0;
+
+    $landingPrograms = LandingProgram::orderByDesc('created_at')->limit(4)->get();
+    $landingProgramsTotal = Schema::hasTable('landing_programs') ? LandingProgram::count() : 0;
+
+    $landingKegiatan = LandingKegiatan::orderByDesc('activity_date')->limit(3)->get();
+    $landingKegiatanTotal = Schema::hasTable('landing_kegiatans') ? LandingKegiatan::count() : 0;
+
+    // Dashboard-style public counters
+    $kantorCabangCount = Schema::hasTable('kantor_cabang') ? DB::table('kantor_cabang')->count() : 0;
+    $donaturCount = Schema::hasTable('donaturs') ? DB::table('donaturs')->count() : 0;
+
+    // Count users that have a role named 'fundraiser' (case-insensitive)
+    $fundraiserCount = 0;
+    if (Schema::hasTable('model_has_roles') && Schema::hasTable('roles')) {
+        $fundraiserCount = DB::table('model_has_roles')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->where('model_has_roles.model_type', 'App\\Models\\User')
+            ->whereRaw('LOWER(roles.name) = ?', ['fundrising'])
+            ->count();
+    }
+
+    // Penggalangan Dana = total transaksi count
+    $penggalanganDanaCount = Schema::hasTable('transaksis') ? DB::table('transaksis')->count() : 0;
+
+    return view('frontend.index', compact(
+        'landingBulletins', 'landingBulletinsTotal', 'landingPrograms', 'landingProgramsTotal',
+        'kantorCabangCount', 'donaturCount', 'fundraiserCount', 'penggalanganDanaCount', 'landingKegiatan', 'landingKegiatanTotal'
+    ));
 })->name('frontend.index');
 
 Route::get('/blog-grid', function () {
@@ -44,6 +79,11 @@ Route::get('/blog-grid', function () {
 Route::get('/blog-single', function () {
     return view('frontend.blog-single');
 })->name('frontend.blog-single');
+
+// Public API for frontend landing bulletins (used by home page "Load more")
+Route::get('/api/landing-bulletins', [\App\Http\Controllers\LandingBulletinController::class, 'publicIndex']);
+Route::get('/api/landing-programs', [\App\Http\Controllers\LandingProgramController::class, 'publicIndex']);
+Route::get('/api/landing-kegiatan', [\App\Http\Controllers\LandingKegiatanController::class, 'publicIndex']);
 
 // Frontend auth pages removed (Sign In / Sign Up)
 

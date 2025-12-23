@@ -70,6 +70,19 @@
 
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Mitra
+            </label>
+            <SearchableSelect
+              v-model="formData.mitraId"
+              :options="mitraList"
+              placeholder="Mitra (opsional)"
+              :search-input="mitraSearchInput"
+              @update:search-input="mitraSearchInput = $event"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Tanggal Transaksi <span class="text-red-500">*</span>
             </label>
             <div class="relative">
@@ -199,10 +212,12 @@ const flatpickrDateConfig = {
 // Options from API
 const kantorCabangList = ref<SelectOption[]>([])
 const programList = ref<SelectOption[]>([])
+const mitraList = ref<SelectOption[]>([])
 
 // Search input refs
 const kantorCabangSearchInput = ref('')
 const programSearchInput = ref('')
+const mitraSearchInput = ref('')
 
 // Form data
 const formData = reactive({
@@ -210,6 +225,7 @@ const formData = reactive({
   nominal: null as number | null,
   donorId: '',
   programId: '',
+  mitraId: '',
   transactionDate: '',
   notes: '',
 })
@@ -254,6 +270,18 @@ const fetchOptions = async () => {
         label: item.nama_program,
       }))
     }
+
+    // Fetch mitra list (optional)
+    try {
+      const mitraRes = await fetch('/admin/api/mitra?per_page=100', { credentials: 'same-origin' })
+      if (mitraRes.ok) {
+        const json = await mitraRes.json()
+        const dataArray = json.success && json.data ? (Array.isArray(json.data) ? json.data : json.data.data || []) : []
+        mitraList.value = dataArray.map((item: any) => ({ value: item.id, label: item.nama || item.name || '' }))
+      }
+    } catch (e) {
+      // ignore mitra fetch error; mitra is optional
+    }
   } catch (error) {
     console.error('Error fetching options:', error)
     toast.error('Gagal memuat data opsi')
@@ -278,6 +306,7 @@ const loadData = async () => {
         formData.nominal = data.nominal
         formData.donorId = data.donatur_id || ''
         formData.programId = data.program_id || ''
+        formData.mitraId = data.mitra_id || ''
         formData.transactionDate = data.tanggal_transaksi || ''
         formData.notes = data.keterangan || ''
       }
@@ -336,6 +365,7 @@ const handleSave = async () => {
       nominal: formData.nominal,
       donatur_id: formData.donorId,
       program_id: formData.programId,
+      mitra_id: formData.mitraId || null,
       tanggal_transaksi: formData.transactionDate,
       keterangan: formData.notes || null,
     }

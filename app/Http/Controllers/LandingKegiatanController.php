@@ -55,6 +55,29 @@ class LandingKegiatanController extends Controller
         ]);
     }
 
+    // Public endpoint for frontend to fetch kegiatan with pagination (default 3 per page)
+    public function publicIndex(Request $request)
+    {
+        $perPage = $request->integer('per_page', 3);
+        $page = max(1, $request->integer('page', 1));
+
+        $total = LandingKegiatan::count();
+        $items = LandingKegiatan::orderByDesc('activity_date')
+            ->orderByDesc('created_at')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $items,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => $total > $page * $perPage,
+        ]);
+    }
+
     /**
      * Store a newly created resource in storage.
      */

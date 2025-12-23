@@ -193,6 +193,7 @@ const columnDefs = [
           <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
       ` } catch (e) {}
+      deleteBtn.onclick = () => handleDelete(params.data.id)
       if (canUpdate.value) {
         div.appendChild(editBtn)
       }

@@ -11,11 +11,13 @@ use App\Http\Controllers\JabatanController;
 use App\Models\LandingBulletin;
 use App\Models\LandingProgram;
 use App\Models\LandingKegiatan;
+use App\Models\LandingProfile;
 use App\Http\Controllers\KantorCabangController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\MitraController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TipeAbsensiController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\TipeDonaturController;
 use App\Http\Controllers\TransaksiController;
 use App\Services\MenuService;
@@ -49,6 +51,8 @@ Route::get('/', function () {
     $landingKegiatan = LandingKegiatan::orderByDesc('activity_date')->limit(3)->get();
     $landingKegiatanTotal = Schema::hasTable('landing_kegiatans') ? LandingKegiatan::count() : 0;
 
+    $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
+
     // Dashboard-style public counters
     $kantorCabangCount = Schema::hasTable('kantor_cabang') ? DB::table('kantor_cabang')->count() : 0;
     $donaturCount = Schema::hasTable('donaturs') ? DB::table('donaturs')->count() : 0;
@@ -68,7 +72,7 @@ Route::get('/', function () {
 
     return view('frontend.index', compact(
         'landingBulletins', 'landingBulletinsTotal', 'landingPrograms', 'landingProgramsTotal',
-        'kantorCabangCount', 'donaturCount', 'fundraiserCount', 'penggalanganDanaCount', 'landingKegiatan', 'landingKegiatanTotal'
+        'kantorCabangCount', 'donaturCount', 'fundraiserCount', 'penggalanganDanaCount', 'landingKegiatan', 'landingKegiatanTotal', 'landingProfile'
     ));
 })->name('frontend.index');
 
@@ -79,6 +83,9 @@ Route::get('/blog-grid', function () {
 Route::get('/blog-single', function () {
     return view('frontend.blog-single');
 })->name('frontend.blog-single');
+
+// Contact form endpoint (frontend)
+Route::post('/contact', [ContactController::class, 'store'])->name('frontend.contact.store');
 
 // Public API for frontend landing bulletins (used by home page "Load more")
 Route::get('/api/landing-bulletins', [\App\Http\Controllers\LandingBulletinController::class, 'publicIndex']);

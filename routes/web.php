@@ -80,8 +80,15 @@ Route::get('/blog-grid', function () {
     return view('frontend.blog-grid');
 })->name('frontend.blog-grid');
 
-Route::get('/blog-single', function () {
-    return view('frontend.blog-single');
+Route::get('/blog-single/{id?}', function ($id = null) {
+    $kegiatan = null;
+    if ($id) {
+        $kegiatan = \App\Models\LandingKegiatan::find($id);
+        if (! $kegiatan) {
+            abort(404);
+        }
+    }
+    return view('frontend.blog-single', compact('kegiatan'));
 })->name('frontend.blog-single');
 
 // Contact form endpoint (frontend)

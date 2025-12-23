@@ -638,10 +638,12 @@
 
             <div class="animate_top sg vk rm xm">
               <div class="c rc i z-1 pg">
-                <img class="w-full" src="{{ $img }}" alt="Kegiatan" />
+                <a href="{{ route('frontend.blog-single', ['id' => $k->id]) }}" class="rc">
+                  <img class="w-full kegiatan-image" src="{{ $img }}" alt="Kegiatan" />
+                </a>
 
                 <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
-                  <a href="{{ route('frontend.blog-single') }}" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
+                  <a href="{{ route('frontend.blog-single', ['id' => $k->id]) }}" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
                 </div>
               </div>
 
@@ -657,7 +659,7 @@
                   </div>
                 </div>
                 <h4 class="ek tj ml il kk wm xl eq lb">
-                  <a href="{{ route('frontend.blog-single') }}">{{ $k->title }}</a>
+                  <a href="{{ route('frontend.blog-single', ['id' => $k->id]) }}">{{ $k->title }}</a>
                 </h4>
                 <p>{{ $excerpt }}</p>
               </div>
@@ -671,6 +673,13 @@
           </div>
         @endif
       </div> 
+
+      <style>
+        /* Kegiatan image: fixed height and crop to avoid overly tall images */
+        .kegiatan-image { display: block; width: 100%; height: 220px; object-fit: cover; object-position: center; border-radius: 6px; }
+        @media (min-width: 768px) { .kegiatan-image { height: 260px; } }
+        @media (min-width: 1024px) { .kegiatan-image { height: 220px; } }
+      </style>
 
       @push('scripts')
       <script>
@@ -697,7 +706,7 @@
 
                     const div = document.createElement('div');
                     div.className = 'animate_top sg vk rm xm';
-                    div.innerHTML = `<div class="c rc i z-1 pg"><img class="w-full" src="${img}" alt="Kegiatan" /><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="/blog-single" class="vc ek rg lk gh sl ml il gi hi">Read More</a></div></div><div class="yh"><div class="tc uf wf ag jq"><div class="tc wf ag"><img src="/frontend/images/icon-man.svg" alt="User" /><p>${k.organizer || 'Team'}</p></div><div class="tc wf ag"><img src="/frontend/images/icon-calender.svg" alt="Calender" /><p>${date}</p></div></div><h4 class="ek tj ml il kk wm xl eq lb"><a href="/blog-single">${k.title}</a></h4><p>${excerpt}</p></div>`;
+                    div.innerHTML = `<div class="c rc i z-1 pg"><a href="/blog-single/${k.id}" class="rc"><img class="w-full kegiatan-image" src="${img}" alt="Kegiatan" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="/blog-single/${k.id}" class="vc ek rg lk gh sl ml il gi hi">Read More</a></div></div><div class="yh"><div class="tc uf wf ag jq"><div class="tc wf ag"><img src="/frontend/images/icon-man.svg" alt="User" /><p>${k.organizer || 'Team'}</p></div><div class="tc wf ag"><img src="/frontend/images/icon-calender.svg" alt="Calender" /><p>${date}</p></div></div><h4 class="ek tj ml il kk wm xl eq lb"><a href="/blog-single/${k.id}">${k.title}</a></h4><p>${excerpt}</p></div>`;
                     container.appendChild(div);
                   });
                   if (!json.has_more) {

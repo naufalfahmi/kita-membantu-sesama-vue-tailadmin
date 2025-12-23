@@ -6,43 +6,80 @@
           <div class="ro">
             <div
               class="animate_top rounded-md shadow-solid-13 bg-white dark:bg-blacksection border border-stroke dark:border-strokedark p-7.5 md:p-10">
-              <img src="{{ asset("frontend/images/blog-big.png") }}" alt="Blog" />
+              @if(!empty($kegiatan))
+                @php
+                  $imgs = [];
+                  if (!empty($kegiatan->images)) {
+                    $imgs = json_decode($kegiatan->images, true) ?: [];
+                    if (!is_array($imgs)) $imgs = [];
+                  }
+                  $mainImg = '/frontend/images/blog-big.png';
+                  if (!empty($imgs) && !empty($imgs[0])) {
+                    $mainImg = preg_match('/^https?:\/\//', $imgs[0]) ? $imgs[0] : asset('storage/' . $imgs[0]);
+                  }
+                  $date = $kegiatan->activity_date ? \Carbon\Carbon::parse($kegiatan->activity_date)->format('d M, Y') : '';
+                @endphp
 
-              <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">Kobe Steel plant that supplied</h2>
+                <img src="{{ $mainImg }}" alt="{{ $kegiatan->title }}" />
 
-              <ul class="tc uf cg 2xl:ud-gap-15 fb">
-                <li><span class="rc kk wm">Author: </span> Devid Cleriya</li>
-                <li><span class="rc kk wm">Published On: </span> April 16, 2025</li>
-                <li><span class="rc kk wm">Category: </span> Events</li>
-              </ul>
+                <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">{{ $kegiatan->title }}</h2>
 
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc quis nibh lorem. Duis sed odio lorem. In a
-                efficitur leo. Ut venenatis rhoncus quam sed condimentum. Curabitur vel turpis in dolor volutpat
-                imperdiet in ut mi. Integer non volutpat nulla. Nunc elementum elit viverra, tempus quam non, interdum
-                ipsum.
-              </p>
+                <ul class="tc uf cg 2xl:ud-gap-15 fb">
+                  <li><span class="rc kk wm">Author: </span> {{ $kegiatan->organizer ?? 'Team' }}</li>
+                  <li><span class="rc kk wm">Published On: </span> {{ $date }}</li>
+                  <li><span class="rc kk wm">Category: </span> {{ $kegiatan->city ?? 'Events' }}</li>
+                </ul>
 
-              <p class="ob">
-                Aenean augue ex, condimentum vel metus vitae, aliquam porta elit. Quisque non metus ac orci mollis
-                posuere. Mauris vel ipsum a diam interdum ultricies sed vitae neque. Nulla
-                porttitor quam vitae pulvinar placerat. Nulla fringilla elit sit amet justo feugiat sodales. Morbi
-                eleifend, enim non eleifend laoreet, odio libero lobortis lectus, non porttitor sem
-                urna sit amet metus. In sollicitudin quam est, pellentesque consectetur felis fermentum vitae.
-              </p>
+                <div>{!! $kegiatan->description ?? '' !!}</div>
 
-              <div class="wc qf pn dg cb">
-                <img src="{{ asset("frontend/images/blog-04.png") }}" alt="Blog" />
-                <img src="{{ asset("frontend/images/blog-05.png") }}" alt="Blog" />
-              </div>
+                @if(count($imgs) > 1)
+                  <div class="wc qf pn dg cb">
+                    @foreach(array_slice($imgs, 1, 6) as $si)
+                      @php $simg = preg_match('/^https?:\/\//', $si) ? $si : asset('storage/' . $si); @endphp
+                      <img src="{{ $simg }}" alt="{{ $kegiatan->title }}" />
+                    @endforeach
+                  </div>
+                @endif
 
-              <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb qb">The powerful force of humanity</h2>
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc quis nibh lorem. Duis sed odio lorem. In a
-                efficitur leo. Ut venenatis rhoncus quam sed condimentum. Curabitur vel
-                turpis in dolor volutpat imperdiet in ut mi. Integer non volutpat nulla. Nunc elementum elit viverra,
-                tempus quam non, interdum ipsum.
-              </p>
+              @else
+                <img src="{{ asset("frontend/images/blog-big.png") }}" alt="Blog" />
+
+                <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">Kobe Steel plant that supplied</h2>
+
+                <ul class="tc uf cg 2xl:ud-gap-15 fb">
+                  <li><span class="rc kk wm">Author: </span> Devid Cleriya</li>
+                  <li><span class="rc kk wm">Published On: </span> April 16, 2025</li>
+                  <li><span class="rc kk wm">Category: </span> Events</li>
+                </ul>
+
+                <p>
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc quis nibh lorem. Duis sed odio lorem. In a
+                  efficitur leo. Ut venenatis rhoncus quam sed condimentum. Curabitur vel turpis in dolor volutpat
+                  imperdiet in ut mi. Integer non volutpat nulla. Nunc elementum elit viverra, tempus quam non, interdum
+                  ipsum.
+                </p>
+
+                <p class="ob">
+                  Aenean augue ex, condimentum vel metus vitae, aliquam porta elit. Quisque non metus ac orci mollis
+                  posuere. Mauris vel ipsum a diam interdum ultricies sed vitae neque. Nulla
+                  porttitor quam vitae pulvinar placerat. Nulla fringilla elit sit amet justo feugiat sodales. Morbi
+                  eleifend, enim non eleifend laoreet, odio libero lobortis lectus, non porttitor sem
+                  urna sit amet metus. In sollicitudin quam est, pellentesque consectetur felis fermentum vitae.
+                </p>
+
+                <div class="wc qf pn dg cb">
+                  <img src="{{ asset("frontend/images/blog-04.png") }}" alt="Blog" />
+                  <img src="{{ asset("frontend/images/blog-05.png") }}" alt="Blog" />
+                </div>
+
+                <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb qb">The powerful force of humanity</h2>
+                <p>
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc quis nibh lorem. Duis sed odio lorem. In a
+                  efficitur leo. Ut venenatis rhoncus quam sed condimentum. Curabitur vel
+                  turpis in dolor volutpat imperdiet in ut mi. Integer non volutpat nulla. Nunc elementum elit viverra,
+                  tempus quam non, interdum ipsum.
+                </p>
+              @endif
 
               <ul class="tc wf bg sb">
                 <li>

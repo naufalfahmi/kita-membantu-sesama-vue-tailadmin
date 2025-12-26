@@ -177,6 +177,12 @@ class MenuService
                                 'pro' => false,
                             ],
                             [
+                                'name' => 'Payroll Mitra',
+                                'path' => '/user-kepegawaian/payroll-mitra',
+                                'permission' => 'view payroll mitra',
+                                'pro' => false,
+                            ],
+                            [
                                 'name' => 'Donatur',
                                 'path' => '/user-kepegawaian/donatur',
                                 'permission' => 'view donatur',

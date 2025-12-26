@@ -462,7 +462,8 @@ watch([filterPic, filterJenis, filterKantorCabang], () => {
 const fetchReferenceData = async () => {
   try {
     const [kantorRes, karyawanRes] = await Promise.all([
-      fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' }),
+      // Request only assigned kantor cabang for this user to match backend visibility
+      fetch('/admin/api/kantor-cabang?per_page=1000&only_assigned=1', { credentials: 'same-origin' }),
       fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
     ])
 

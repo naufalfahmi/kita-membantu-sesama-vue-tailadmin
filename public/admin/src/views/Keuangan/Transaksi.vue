@@ -230,7 +230,7 @@ const toast = useToast()
 const currentPageTitle = ref<string>(String(route.meta.title || 'Transaksi'))
 
 // Permissions
-const { fetchUser, hasPermission, isAdmin } = useAuth()
+const { fetchUser, hasPermission, isAdmin, user } = useAuth()
 const canCreate = computed(() => isAdmin() || hasPermission('create transaksi'))
 const canUpdate = computed(() => isAdmin() || hasPermission('update transaksi'))
 const canDelete = computed(() => isAdmin() || hasPermission('delete transaksi'))
@@ -263,6 +263,14 @@ const csvEscape = (v: any) => {
 }
 
 // Shared number formatter for nominal columns
+const formatCurrency = (n: number) => {
+  try {
+    return new Intl.NumberFormat('id-ID').format(Number(n || 0))
+  } catch (e) {
+    return String(n || 0)
+  }
+}
+
 
 // Sanitize sheet name to be a valid Excel sheet/file name, and ensure uniqueness where used
 const sanitizeSheetName = (s: string) => {
@@ -423,6 +431,52 @@ const formatYMDLocal = (d: any) => {
 }
 
 const columnDefs = computed(() => {
+  const roleName = String(user?.value?.role?.name || '').toLowerCase()
+  const isFundrisingRole = roleName === 'fundrising' || roleName === 'fundraising'
+
+  // If the current user's jabatan/role is Fundrising, show only the requested columns
+  if (isFundrisingRole) {
+    return [
+      {
+        headerName: 'Donatur',
+        field: 'donatur',
+        sortable: true,
+        flex: 1,
+        valueFormatter: (params: any) => params.value || '-',
+      },
+      {
+        headerName: 'Program',
+        field: 'program',
+        sortable: true,
+        flex: 1,
+        valueFormatter: (params: any) => params.value || '-',
+      },
+      {
+        headerName: 'Nominal',
+        field: 'nominal',
+        sortable: true,
+        flex: 1,
+        valueFormatter: (params: any) => params.data?.nominal_formatted || params.value || '-',
+      },
+      {
+        headerName: 'Tanggal Transaksi',
+        field: 'tanggal_transaksi',
+        sortable: true,
+        width: 150,
+        valueFormatter: (params: any) => {
+          if (params.value) {
+            return new Date(params.value).toLocaleDateString('id-ID', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          }
+          return '-'
+        },
+      },
+    ]
+  }
+
   const cols: any[] = [
     {
       headerName: 'Donatur',
@@ -510,6 +564,17 @@ const columnDefs = computed(() => {
       filter: false,
       width: 120,
       cellRenderer: (params: any) => {
+        // If this is a pinned row (bottom), show a simple '-' instead of action icons
+        try {
+          if (params?.node?.rowPinned === 'bottom') {
+            const span = document.createElement('span')
+            span.textContent = '-'
+            return span
+          }
+        } catch (e) {
+          // ignore and render normally
+        }
+
         const div = document.createElement('div')
         div.className = 'flex items-center gap-3'
 
@@ -634,6 +699,20 @@ const createDatasource = () => {
           const rowsThisPage = cached.pages.get(pageNum) || []
           const lastRow = cached.total >= 0 ? cached.total : undefined
           params.successCallback(rowsThisPage, lastRow)
+
+          // restore pinned bottom row (total nominal) from cache if present
+          try {
+            const cachedTotalNominal = (cached as any).total_nominal ?? (cached as any).totalNominal ?? 0
+            const cachedTotalNominalFormatted = (cached as any).total_nominal_formatted ?? formatCurrency(cachedTotalNominal)
+            if (gridApi.value) {
+              gridApi.value.setPinnedBottomRowData([
+                { donatur: 'Total', kantor_cabang: '', fundraiser: '', program: '', nominal: cachedTotalNominal, nominal_formatted: cachedTotalNominalFormatted, actions: '' },
+              ])
+            }
+          } catch (e) {
+            // ignore
+          }
+
           return
         }
 
@@ -662,7 +741,7 @@ const createDatasource = () => {
 
         const total = json.pagination?.total ?? (json.data?.total ?? -1)
 
-        // Store in cache
+        // Store in cache (include aggregate total nominal if available)
         let entry = transaksiCache.get(baseKey)
         if (!entry) {
           entry = { ts: now, total: total, pages: new Map<number, any[]>() }
@@ -670,11 +749,31 @@ const createDatasource = () => {
         }
         entry.ts = now
         entry.total = total
+        // store server-provided aggregate if present
+        try {
+          ;(entry as any)["total_nominal"] = json.total_nominal ?? 0
+          ;(entry as any)["total_nominal_formatted"] = json.total_nominal_formatted ?? formatCurrency((entry as any)["total_nominal"])
+        } catch (e) {
+          // ignore
+        }
         entry.pages.set(pageNum, rowsThisPage)
         evictOldestCacheEntry()
 
         const lastRow = total >= 0 ? total : undefined
         params.successCallback(rowsThisPage, lastRow)
+
+        // set pinned bottom row to show total nominal (server-provided or formatted)
+        try {
+          const totalNominal = json.total_nominal ?? 0
+          const totalNominalFormatted = json.total_nominal_formatted ?? formatCurrency(totalNominal)
+          if (gridApi.value) {
+            gridApi.value.setPinnedBottomRowData([
+              { donatur: 'Total', kantor_cabang: '', fundraiser: '', program: '', nominal: totalNominal, nominal_formatted: totalNominalFormatted, actions: '' },
+            ])
+          }
+        } catch (e) {
+          // ignore
+        }
       } catch (err) {
         console.error('AG Grid datasource error', err)
         params.failCallback()
@@ -697,13 +796,15 @@ const refreshGrid = () => {
   }
 }
 
-const fetchFilterOptions = async () => {
-  try {
-    const [kantorRes, programRes, fundraiserRes] = await Promise.all([
-      fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' }),
-      fetch('/admin/api/program?per_page=1000', { credentials: 'same-origin' }),
-      fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
-    ])
+  const fetchFilterOptions = async () => {
+    try {
+      const kantorUrl = isAdmin() ? '/admin/api/kantor-cabang?per_page=1000' : '/admin/api/kantor-cabang?per_page=1000&only_assigned=1'
+      const karyawanUrl = isAdmin() ? '/admin/api/karyawan?per_page=1000' : '/admin/api/karyawan?per_page=1000&only_assigned=1'
+      const [kantorRes, programRes, fundraiserRes] = await Promise.all([
+        fetch(kantorUrl, { credentials: 'same-origin' }),
+        fetch('/admin/api/program?per_page=1000', { credentials: 'same-origin' }),
+        fetch(karyawanUrl, { credentials: 'same-origin' }),
+      ])
 
     if (kantorRes.ok) {
       const json = await kantorRes.json()

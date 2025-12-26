@@ -100,6 +100,7 @@
 // - Usage: <AsyncSearchableSelect v-model="id" fetch-url="/admin/api/donatur" placeholder="Donatur" />
 // - Features: debounced search (300ms), server-side pagination (per_page/page), infinite scroll, and fetching label by id when modelValue is set.
 import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 
 // Lightweight debounce helper to avoid extra dev-dependencies for types
 function debounceFn<T extends (...args: any[]) => any>(fn: T, wait = 300) {
@@ -149,6 +150,9 @@ const emit = defineEmits<{
   'update:search-input': [value: string]
 }>()
 
+// determine admin status to optionally limit donatur results to assigned branches
+const { isAdmin } = useAuth()
+
 const isOpen = ref(false)
 const loading = ref(false)
 const options = ref<Option[]>([])
@@ -182,6 +186,10 @@ const fetchPage = async (q = '', p = 1) => {
     params.append('per_page', String(props.perPage))
     params.append('page', String(p))
 
+    // If fetching donatur and user is not admin, request only assigned kantor cabang
+    if (props.fetchUrl && props.fetchUrl.includes('/admin/api/donatur') && !isAdmin()) {
+      params.append('only_assigned', '1')
+    }
     const res = await fetch(`${props.fetchUrl}?${params.toString()}`, { credentials: 'same-origin' })
     if (!res.ok) throw new Error('Failed to fetch')
     const json = await res.json()

@@ -174,22 +174,25 @@ const columnDefs = [
         div.appendChild(editBtn)
       }
 
-      if (canDelete.value) {
+      // Show delete button for rows that are not the admin role
+      const name = String(params.data?.name || '')
+      const isAdminRow = name.trim().toLowerCase() === 'admin'
+
+      if (canDelete.value && !isAdminRow) {
         const deleteBtn = document.createElement('button')
         deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
         deleteBtn.innerHTML = `
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"></path>
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-            <line x1="10" y1="11" x2="10" y2="17"></line>
-            <line x1="14" y1="11" x2="14" y2="17"></line>
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
           </svg>
         `
         deleteBtn.onclick = () => handleDelete(params.data.id)
         div.appendChild(deleteBtn)
       }
-      
+
       return div
     },
   },

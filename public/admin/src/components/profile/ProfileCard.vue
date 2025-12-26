@@ -29,7 +29,7 @@
             >
               <p class="text-sm text-gray-500 dark:text-gray-400">{{ userData.posisi || (userData.role && userData.role.name) || 'User' }}</p>
               <div class="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ userData.is_admin ? 'Semua Kantor Cabang' : (userData.kantor_cabang && userData.kantor_cabang.nama || 'Kantor Pusat') }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ kantorDisplay }}</p>
             </div>
           </div>
           <div class="flex items-center order-2 gap-2 grow xl:order-3 xl:justify-end">
@@ -242,6 +242,18 @@ const uploadAvatar = async () => {
     uploading.value = false
   }
 }
+
+const kantorDisplay = computed(() => {
+  if (userData.value?.is_admin) return 'Semua Kantor Cabang'
+  // prefer multiple kantor_cabangs relationship
+  const list = userData.value?.kantor_cabangs || userData.value?.kantor_cabangs_raw || []
+  if (Array.isArray(list) && list.length) {
+    if (list.length <= 3) return list.map((k: any) => k.nama).join(', ')
+    return list.slice(0, 2).map((k: any) => k.nama).join(', ') + ` +${list.length - 2}`
+  }
+  // fallback to single kantor_cabang
+  return userData.value?.kantor_cabang?.nama || 'Kantor Pusat'
+})
 
 const loadUserData = async () => {
   try {

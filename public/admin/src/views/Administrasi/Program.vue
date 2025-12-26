@@ -128,21 +128,6 @@ const columnDefs = [
     flex: 1,
   },
   {
-    headerName: 'Tipe Pembagian Marketing',
-    field: 'tipe_pembagian_marketing',
-    sortable: true,
-    flex: 1,
-    valueFormatter: (params: any) => {
-      if (!params.value) return '-'
-      const types: Record<string, string> = {
-        percentage: 'Persentase',
-        fixed: 'Tetap',
-        variable: 'Variabel',
-      }
-      return types[params.value] || params.value
-    },
-  },
-  {
     headerName: 'Tanggal Dibuat',
     field: 'created_at',
     sortable: true,

@@ -161,6 +161,17 @@ class LoginController extends Controller
                 'tanggal_masuk' => $user->tanggal_masuk,
                 'role' => $user->roles->first(),
                 'kantor_cabang' => $primaryKantor,
+                // include full list of kantor cabangs for frontend that supports multiple branches
+                'kantor_cabangs' => $user->kantorCabangs->map(function($k) {
+                    return [
+                        'id' => $k->id,
+                        'nama' => $k->nama,
+                        'latitude' => $k->latitude ?? null,
+                        'longitude' => $k->longitude ?? null,
+                    ];
+                })->toArray(),
+                // backward-compatible alias some frontends expect
+                'kantor_cabangs_raw' => $user->kantorCabangs->toArray(),
                 'jabatan' => $user->posisi,
                 'pangkat' => $user->pangkat,
                 'tipe_absensi' => $user->tipeAbsensi,

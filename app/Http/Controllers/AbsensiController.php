@@ -227,6 +227,8 @@ class AbsensiController extends Controller
                     'attendance' => $todayAttendance,
                     'tipe_absensi' => $targetUser?->tipeAbsensi,
                     'kantor_cabang' => $kantorCabang,
+                    // include all assigned kantor cabangs so frontend can offer choices
+                    'assigned_kantors' => $targetUser?->kantorCabangs ?? [],
                 ],
             ]);
         } catch (\Exception $e) {
@@ -267,9 +269,10 @@ class AbsensiController extends Controller
             ], 400);
         }
 
-        // Determine kantor cabang to use: request > first pivot assignment > legacy column
+        // Determine kantor cabang to use: request > nearest pivot assignment (if multiple) > first pivot assignment > legacy column
         $selectedId = $request->input('kantor_cabang_id');
-        $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+        $assignedKantors = $user->kantorCabangs()->get();
+        $assignedIds = $assignedKantors->pluck('id')->toArray();
 
         if ($selectedId) {
             // ensure user is assigned to the selected kantor cabang (or has legacy single assignment)
@@ -281,7 +284,48 @@ class AbsensiController extends Controller
             }
             $kantorCabang = KantorCabang::find($selectedId);
         } else {
-            $kantorCabang = $user->kantorCabangs()->first() ?? $user->kantorCabang;
+            // If user has multiple assigned kantors, pick the nearest one based on provided coordinates
+            if ($assignedKantors->count() > 1) {
+                $nearest = null;
+                $nearestDist = PHP_INT_MAX;
+                foreach ($assignedKantors as $k) {
+                    if (! isset($request->latitude) || ! isset($request->longitude)) {
+                        continue;
+                    }
+                    $d = Absensi::calculateDistance(
+                        $request->latitude,
+                        $request->longitude,
+                        $k->latitude,
+                        $k->longitude
+                    );
+                    if ($d < $nearestDist) {
+                        $nearestDist = $d;
+                        $nearest = $k;
+                    }
+                }
+
+                if ($nearest) {
+                    $allowedRadius = $nearest->radius ?? 100;
+                    if ($nearestDist > $allowedRadius) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Anda berada di luar radius kantor ({$allowedRadius}m). Jarak terdekat: " . round($nearestDist) . "m",
+                            'data' => [
+                                'nearest_kantor_id' => $nearest->id,
+                                'distance' => round($nearestDist, 2),
+                                'allowed_radius' => $allowedRadius,
+                            ],
+                        ], 400);
+                    }
+
+                    $kantorCabang = $nearest;
+                } else {
+                    // No coordinates provided or unable to determine nearest; fallback to first assigned
+                    $kantorCabang = $assignedKantors->first() ?? $user->kantorCabang;
+                }
+            } else {
+                $kantorCabang = $assignedKantors->first() ?? $user->kantorCabang;
+            }
         }
 
         if (!$kantorCabang) {
@@ -402,9 +446,10 @@ class AbsensiController extends Controller
             ], 400);
         }
 
-        // Determine kantor cabang to use: request > today's absensi's kantor > first pivot assignment > legacy column
+        // Determine kantor cabang to use: request > today's absensi's kantor > nearest pivot assignment (if multiple) > first pivot assignment > legacy column
         $selectedId = $request->input('kantor_cabang_id');
-        $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+        $assignedKantors = $user->kantorCabangs()->get();
+        $assignedIds = $assignedKantors->pluck('id')->toArray();
 
         if ($selectedId) {
             if (!in_array($selectedId, $assignedIds) && $user->kantor_cabang_id !== $selectedId) {
@@ -416,7 +461,49 @@ class AbsensiController extends Controller
             $kantorCabang = KantorCabang::find($selectedId);
         } else {
             // Prefer kantor set on today's absensi if available
-            $kantorCabang = $absensi->kantorCabang ?? $user->kantorCabangs()->first() ?? $user->kantorCabang;
+            if ($absensi->kantorCabang) {
+                $kantorCabang = $absensi->kantorCabang;
+            } elseif ($assignedKantors->count() > 1) {
+                // find nearest assigned kantor based on provided coordinates
+                $nearest = null;
+                $nearestDist = PHP_INT_MAX;
+                foreach ($assignedKantors as $k) {
+                    if (! isset($request->latitude) || ! isset($request->longitude)) {
+                        continue;
+                    }
+                    $d = Absensi::calculateDistance(
+                        $request->latitude,
+                        $request->longitude,
+                        $k->latitude,
+                        $k->longitude
+                    );
+                    if ($d < $nearestDist) {
+                        $nearestDist = $d;
+                        $nearest = $k;
+                    }
+                }
+
+                if ($nearest) {
+                    $allowedRadius = $nearest->radius ?? 100;
+                    if ($nearestDist > $allowedRadius) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Anda berada di luar radius kantor ({$allowedRadius}m). Jarak terdekat: " . round($nearestDist) . "m",
+                            'data' => [
+                                'nearest_kantor_id' => $nearest->id,
+                                'distance' => round($nearestDist, 2),
+                                'allowed_radius' => $allowedRadius,
+                            ],
+                        ], 400);
+                    }
+
+                    $kantorCabang = $nearest;
+                } else {
+                    $kantorCabang = $assignedKantors->first() ?? $user->kantorCabang;
+                }
+            } else {
+                $kantorCabang = $assignedKantors->first() ?? $user->kantorCabang;
+            }
         }
 
         if (! $kantorCabang) {
@@ -508,7 +595,8 @@ class AbsensiController extends Controller
      */
     public function show(string $id)
     {
-        $absensi = Absensi::with(['user', 'tipeAbsensi', 'kantorCabang', 'creator', 'updater'])->find($id);
+        // Include user's assigned kantor cabangs so frontend can display multiple locations
+        $absensi = Absensi::with(['user.kantorCabangs', 'tipeAbsensi', 'kantorCabang', 'creator', 'updater'])->find($id);
 
         if (!$absensi) {
             return response()->json([

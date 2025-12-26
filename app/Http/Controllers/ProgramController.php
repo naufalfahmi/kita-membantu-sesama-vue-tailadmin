@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Program;
+use App\Models\ProgramShare;
+use App\Models\ProgramShareType;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -89,6 +93,48 @@ class ProgramController extends Controller
 
             $program = Program::create($data);
 
+            // handle shares if provided
+            if ($request->has('shares') && is_array($request->shares)) {
+                DB::transaction(function () use ($request, $program) {
+                    foreach ($request->shares as $s) {
+                        $pstId = null;
+
+                        if (!empty($s['program_share_type_id'])) {
+                            $pst = ProgramShareType::find($s['program_share_type_id']);
+                            if ($pst) $pstId = $pst->id;
+                        }
+
+                        if (!$pstId && !empty($s['program_share_type_key'])) {
+                            $pst = ProgramShareType::where('key', $s['program_share_type_key'])->first();
+                            if ($pst) $pstId = $pst->id;
+                        }
+
+                        // create custom program share type when name provided and no existing type
+                        if (!$pstId && !empty($s['name'])) {
+                            $new = ProgramShareType::create([
+                                'name' => $s['name'],
+                                'key' => $s['program_share_type_key'] ?? Str::slug($s['name']) . '-' . Str::random(4),
+                                'default_type' => $s['type'] ?? 'percentage',
+                                'program_id' => $program->id,
+                                'orders' => $s['orders'] ?? null,
+                                'created_by' => auth()->id(),
+                            ]);
+                            $pstId = $new->id;
+                        }
+
+                        if ($pstId) {
+                            ProgramShare::create([
+                                'program_id' => $program->id,
+                                'program_share_type_id' => $pstId,
+                                'type' => $s['type'] ?? 'percentage',
+                                'value' => isset($s['value']) ? $s['value'] : null,
+                                'created_by' => auth()->id(),
+                            ]);
+                        }
+                    }
+                });
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Program berhasil ditambahkan',
@@ -108,7 +154,7 @@ class ProgramController extends Controller
      */
     public function show(string $id)
     {
-        $program = Program::with(['creator', 'updater'])->find($id);
+        $program = Program::with(['creator', 'updater', 'shares.type'])->find($id);
 
         if (!$program) {
             return response()->json([
@@ -117,9 +163,25 @@ class ProgramController extends Controller
             ], 404);
         }
 
+        // return program with shares and their program_share_type object
+        $program->load('shares.type');
+        $data = $program->toArray();
+        // normalize shares to include program_share_type fields at top-level for frontend convenience
+        $data['shares'] = collect($program->shares)->map(function ($s) {
+            $pst = $s->type; // relation to ProgramShareType
+            return [
+                'id' => $s->id,
+                'program_share_type_id' => $s->program_share_type_id,
+                'program_share_type_key' => $pst->key ?? null,
+                'name' => $pst->name ?? null,
+                'type' => $s->type,
+                'value' => $s->value,
+            ];
+        })->values()->all();
+
         return response()->json([
             'success' => true,
-            'data' => $program,
+            'data' => $data,
         ]);
     }
 
@@ -177,6 +239,50 @@ class ProgramController extends Controller
             $data['updated_by'] = auth()->id();
 
             $program->update($data);
+
+            // handle shares: remove existing program_shares for this program and recreate from payload
+            if ($request->has('shares') && is_array($request->shares)) {
+                DB::transaction(function () use ($request, $program) {
+                    // delete existing shares
+                    ProgramShare::where('program_id', $program->id)->delete();
+
+                    foreach ($request->shares as $s) {
+                        $pstId = null;
+
+                        if (!empty($s['program_share_type_id'])) {
+                            $pst = ProgramShareType::find($s['program_share_type_id']);
+                            if ($pst) $pstId = $pst->id;
+                        }
+
+                        if (!$pstId && !empty($s['program_share_type_key'])) {
+                            $pst = ProgramShareType::where('key', $s['program_share_type_key'])->first();
+                            if ($pst) $pstId = $pst->id;
+                        }
+
+                        if (!$pstId && !empty($s['name'])) {
+                            $new = ProgramShareType::create([
+                                'name' => $s['name'],
+                                'key' => $s['program_share_type_key'] ?? Str::slug($s['name']) . '-' . Str::random(4),
+                                'default_type' => $s['type'] ?? 'percentage',
+                                'program_id' => $program->id,
+                                'orders' => $s['orders'] ?? null,
+                                'created_by' => auth()->id(),
+                            ]);
+                            $pstId = $new->id;
+                        }
+
+                        if ($pstId) {
+                            ProgramShare::create([
+                                'program_id' => $program->id,
+                                'program_share_type_id' => $pstId,
+                                'type' => $s['type'] ?? 'percentage',
+                                'value' => isset($s['value']) ? $s['value'] : null,
+                                'created_by' => auth()->id(),
+                            ]);
+                        }
+                    }
+                });
+            }
 
             return response()->json([
                 'success' => true,

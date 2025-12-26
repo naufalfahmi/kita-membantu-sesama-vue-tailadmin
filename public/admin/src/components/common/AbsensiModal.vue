@@ -193,12 +193,29 @@
                   ({{ formatTimeOnly(todayStatus.tipe_absensi.jam_masuk) }} - {{ formatTimeOnly(todayStatus.tipe_absensi.jam_keluar) }})
                 </span>
               </p>
-              <p v-if="todayStatus.kantor_cabang" class="text-gray-600 dark:text-gray-400">
-                <span class="font-medium">Kantor:</span> {{ todayStatus.kantor_cabang.nama }}
-              </p>
-              <p v-if="todayStatus.kantor_cabang?.radius" class="text-gray-600 dark:text-gray-400">
-                <span class="font-medium">Radius:</span> {{ todayStatus.kantor_cabang.radius }} meter
-              </p>
+              <!-- If user has multiple assigned kantors show list with selection -->
+              <div v-if="todayStatus.assigned_kantors && todayStatus.assigned_kantors.length > 1">
+                <p class="text-gray-600 dark:text-gray-400 font-medium mb-1">Kantor (pilih):</p>
+                <div class="space-y-2">
+                  <label v-for="k in todayStatus.assigned_kantors" :key="k.id" class="flex items-center gap-3 cursor-pointer">
+                    <input type="radio" :value="String(k.id)" v-model="selectedKantorId" @change="userSelectedKantor = true" class="w-4 h-4 text-brand-500" />
+                    <div class="text-sm">
+                      <div class="font-semibold text-gray-800 dark:text-white/90">{{ k.nama }}</div>
+                      <div class="text-xs text-gray-600 dark:text-gray-400">Radius: {{ k.radius ?? 100 }} meter</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Single kantor fallback -->
+              <div v-else>
+                <p v-if="todayStatus.kantor_cabang" class="text-gray-600 dark:text-gray-400">
+                  <span class="font-medium">Kantor:</span> {{ todayStatus.kantor_cabang.nama }}
+                </p>
+                <p v-if="todayStatus.kantor_cabang?.radius" class="text-gray-600 dark:text-gray-400">
+                  <span class="font-medium">Radius:</span> {{ todayStatus.kantor_cabang.radius }} meter
+                </p>
+              </div>
             </div>
           </div>
 
@@ -392,6 +409,8 @@ const catatan = ref('')
 const submitting = ref(false)
 const workSummary = ref<any>(null)
 const todayStatus = ref<any>(null)
+const selectedKantorId = ref<string | null>(null)
+const userSelectedKantor = ref(false)
 
 // Manual location state (for development)
 const showManualLocation = ref(false)
@@ -445,6 +464,54 @@ const fetchTodayStatus = async () => {
   }
 }
 
+// initialize selected kantor after fetching today status
+const initSelectedKantor = () => {
+  if (!todayStatus.value) return
+  // prefer explicit kantor_cabang returned by API
+  if (todayStatus.value.kantor_cabang && todayStatus.value.kantor_cabang.id) {
+    selectedKantorId.value = String(todayStatus.value.kantor_cabang.id)
+    return
+  }
+  // else pick first assigned kantor if available
+  if (todayStatus.value.assigned_kantors && todayStatus.value.assigned_kantors.length) {
+    selectedKantorId.value = String(todayStatus.value.assigned_kantors[0].id)
+    return
+  }
+  selectedKantorId.value = null
+}
+
+// Select nearest assigned kantor based on current device location, unless user already selected one.
+const selectNearestKantorIfNeeded = () => {
+  if (!userLocation.value || !todayStatus.value) return
+  if (userSelectedKantor.value) return
+  const assigned = todayStatus.value.assigned_kantors || []
+  if (!assigned || assigned.length === 0) return
+  if (assigned.length === 1) {
+    selectedKantorId.value = String(assigned[0].id)
+    return
+  }
+
+  let nearest = null
+  let nearestDist = Number.POSITIVE_INFINITY
+  for (const k of assigned) {
+    if (!k.latitude || !k.longitude) continue
+    const d = calculateDistance(
+      userLocation.value.latitude,
+      userLocation.value.longitude,
+      parseFloat(k.latitude),
+      parseFloat(k.longitude)
+    )
+    if (d < nearestDist) {
+      nearestDist = d
+      nearest = k
+    }
+  }
+
+  if (nearest) {
+    selectedKantorId.value = String(nearest.id)
+  }
+}
+
 // Calculate distance using Haversine formula
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
   const earthRadius = 6371000 // Earth's radius in meters
@@ -461,12 +528,21 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 // Computed properties
 const distance = computed(() => {
-  if (!userLocation.value || !todayStatus.value?.kantor_cabang) return null
+  if (!userLocation.value) return null
+
+  // determine kantor coordinates based on selectedKantorId, assigned_kantors or today's kantor
+  let kantor = null
+  if (selectedKantorId.value && todayStatus.value?.assigned_kantors) {
+    kantor = todayStatus.value.assigned_kantors.find((k: any) => String(k.id) === String(selectedKantorId.value))
+  }
+  if (!kantor && todayStatus.value?.kantor_cabang) kantor = todayStatus.value.kantor_cabang
+  if (!kantor) return null
+
   return calculateDistance(
     userLocation.value.latitude,
     userLocation.value.longitude,
-    parseFloat(todayStatus.value.kantor_cabang.latitude),
-    parseFloat(todayStatus.value.kantor_cabang.longitude)
+    parseFloat(kantor.latitude),
+    parseFloat(kantor.longitude)
   )
 })
 
@@ -521,6 +597,8 @@ const getLocation = async () => {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
     }
+    // try to auto-select nearest kantor now that we have location
+    selectNearestKantorIfNeeded()
   } catch (err: any) {
     if (err.code === 1) {
       error.value = 'Akses lokasi ditolak. Silakan izinkan akses lokasi di pengaturan browser.'
@@ -544,9 +622,15 @@ const retryGetLocation = () => {
 
 // Manual location methods (for development)
 const useKantorLocation = () => {
-  if (todayStatus.value?.kantor_cabang) {
-    manualLatitude.value = parseFloat(todayStatus.value.kantor_cabang.latitude)
-    manualLongitude.value = parseFloat(todayStatus.value.kantor_cabang.longitude)
+  // use currently selected kantor if available
+  let kantor = null
+  if (selectedKantorId.value && todayStatus.value?.assigned_kantors) {
+    kantor = todayStatus.value.assigned_kantors.find((k: any) => String(k.id) === String(selectedKantorId.value))
+  }
+  if (!kantor && todayStatus.value?.kantor_cabang) kantor = todayStatus.value.kantor_cabang
+  if (kantor) {
+    manualLatitude.value = parseFloat(kantor.latitude)
+    manualLongitude.value = parseFloat(kantor.longitude)
   }
 }
 
@@ -558,6 +642,8 @@ const applyManualLocation = () => {
     }
     showManualLocation.value = false
     error.value = null
+    // user used manual location, still try to auto-select nearest kantor if they didn't pick one
+    selectNearestKantorIfNeeded()
   }
 }
 
@@ -579,6 +665,7 @@ const submitAttendance = async () => {
     const payload: any = {
       latitude: userLocation.value.latitude,
       longitude: userLocation.value.longitude,
+        kantor_cabang_id: selectedKantorId,
     }
 
     if (catatan.value) {
@@ -685,7 +772,11 @@ const handleClose = () => {
 }
 
 onMounted(() => {
-  fetchTodayStatus()
+  fetchTodayStatus().then(() => {
+    initSelectedKantor()
+    // if device already provided a location (e.g. manual/dev), try auto-select
+    selectNearestKantorIfNeeded()
+  })
 })
 </script>
 

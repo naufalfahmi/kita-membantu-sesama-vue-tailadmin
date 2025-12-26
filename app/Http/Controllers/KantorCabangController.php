@@ -52,6 +52,28 @@ class KantorCabangController extends Controller
     {
         $query = KantorCabang::with(['creator', 'updater']);
 
+        // If caller requests only assigned kantor cabang, restrict to current user's assignments
+        if ($request->boolean('only_assigned') && auth()->check()) {
+            $user = auth()->user();
+            try {
+                // Qualify column to avoid ambiguous `id` when joins are present
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+                if (count($assignedIds) > 0) {
+                    $query->whereIn('id', $assignedIds);
+                } else {
+                    // If user has no explicit assignments, fall back to their primary kantor_cabang_id
+                    if ($user->kantor_cabang_id) {
+                        $query->where('id', $user->kantor_cabang_id);
+                    } else {
+                        // No assignments and no primary — return empty
+                        $query->whereRaw('1 = 0');
+                    }
+                }
+            } catch (\Exception $e) {
+                // On any unexpected error, keep unfiltered query to avoid breaking consumers
+            }
+        }
+
         // Search filter
         if ($request->has('search') && $request->search) {
             $search = $request->search;

@@ -318,7 +318,8 @@ const fetchCurrentUser = async () => {
 const fetchReferenceData = async () => {
   try {
     const requests: Promise<Response>[] = [
-      fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' }),
+      // Request only kantor cabang assigned to current user
+      fetch('/admin/api/kantor-cabang?per_page=1000&only_assigned=1', { credentials: 'same-origin' }),
       fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
     ]
 

@@ -308,6 +308,7 @@ const menuStructure = [
     subItems: [
       { name: 'Karyawan', permission: 'karyawan' },
       { name: 'Mitra', permission: 'mitra' },
+      { name: 'Payroll Mitra', permission: 'payroll mitra' },
       { name: 'Donatur', permission: 'donatur' },
     ],
   },

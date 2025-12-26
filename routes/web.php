@@ -184,6 +184,8 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     
     // Program API
     Route::apiResource('program', ProgramController::class);
+    // Program share types (for frontend dynamic shares)
+    Route::get('program-share-types', [\App\Http\Controllers\ProgramShareTypeController::class, 'index']);
     // Pangkat API
     Route::apiResource('pangkat', \App\Http\Controllers\PangkatController::class);
     // Gaji API
@@ -223,7 +225,9 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('admin.api.notifications.readAll');
 
     // Mitra API
+    Route::get('check-email', [MitraController::class, 'checkEmail'])->name('admin.api.check-email');
     Route::apiResource('mitra', MitraController::class);
+    Route::apiResource('mitra-payroll', \App\Http\Controllers\MitraPayrollController::class);
 
     // Donatur API
     Route::get('donatur-next-kode', [DonaturController::class, 'getNextKode'])->name('admin.api.donatur.next-kode');

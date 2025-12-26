@@ -25,6 +25,32 @@ class KaryawanController extends Controller
             ])
             ->karyawan();
 
+        // If caller requests only assigned karyawan, restrict to users assigned to
+        // the current user's kantor cabang assignments (via pivot) or primary kantor_cabang_id.
+        if ($request->boolean('only_assigned') && auth()->check()) {
+            $user = auth()->user();
+            try {
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+                if (!empty($assignedIds)) {
+                    $query->where(function ($q) use ($assignedIds) {
+                        $q->whereIn('kantor_cabang_id', $assignedIds)
+                          ->orWhereHas('kantorCabangs', function ($q2) use ($assignedIds) {
+                              $q2->whereIn('kantor_cabang.id', $assignedIds);
+                          });
+                    });
+                } else {
+                    if ($user->kantor_cabang_id) {
+                        $query->where('kantor_cabang_id', $user->kantor_cabang_id);
+                    } else {
+                        // No assignments -> return empty result set
+                        $query->whereRaw('1 = 0');
+                    }
+                }
+            } catch (\Exception $e) {
+                // swallow to avoid breaking consumers; leave query unfiltered on unexpected error
+            }
+        }
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {

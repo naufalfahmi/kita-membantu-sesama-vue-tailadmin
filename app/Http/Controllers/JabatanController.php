@@ -203,6 +203,14 @@ class JabatanController extends Controller
         }
 
         try {
+            // Prevent deleting admin roles (e.g., "Admin", "Admin Cabang")
+            if (preg_match('/^admin$/i', $role->name)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Jabatan admin tidak dapat dihapus',
+                ], 422);
+            }
+
             // Check if role is assigned to any user
             if ($role->users()->count() > 0) {
                 return response()->json([

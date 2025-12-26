@@ -33,193 +33,77 @@
             />
           </div>
 
-          <!-- 2. Persentase Hak Program -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Persentase Hak Program
+          <!-- Dynamic shares table -->
+          <div class="lg:col-span-2">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Pembagian (DP, OPS 1, OPS 2, Program, Fee Mitra, Bonus, Championship)
             </label>
-            <input
-              type="number"
-              v-model.number="formData.persentase_hak_program"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.01"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
+            <div class="overflow-x-auto mt-2">
+              <table class="w-full table-auto border border-gray-200 dark:border-gray-800 rounded-md">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th class="text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300">Nama</th>
+                    <th class="text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300">Tipe</th>
+                    <th class="text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300">Nilai</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="type in programShareTypes" :key="type.key" class="border-t border-gray-100 dark:border-gray-800">
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-400">{{ type.name }}</td>
+                    <td class="px-4 py-3">
+                      <SearchableSelect
+                        v-model="formData.shares[type.key].type"
+                        :options="shareTypeOptions"
+                        placeholder="Pilih Tipe"
+                        :search-input="shareSearchInputs[type.key]"
+                        @update:search-input="(val: string) => (shareSearchInputs[type.key] = val)"
+                      />
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <input type="number" v-model.number="formData.shares[type.key].value" placeholder="0" min="0" step="0.01" class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:bg-gray-900" />
+                        <span class="text-sm text-gray-600 dark:text-gray-400" v-if="formData.shares[type.key].type === 'percentage'">%</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400" v-else>Rp</span>
+                      </div>
+                    </td>
+                  </tr>
 
-          <!-- 3. Persentase Hak Program Operasional -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Persentase Hak Program Operasional
-            </label>
-            <input
-              type="number"
-              v-model.number="formData.persentase_hak_program_operasional"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.01"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-
-          <!-- 4. Persentase Hak Championship -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Persentase Hak Championship
-            </label>
-            <input
-              type="number"
-              v-model.number="formData.persentase_hak_championship"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.01"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-
-          <!-- Row dengan 2 kolom: Tipe Pembagian Marketing dan Persentase Hak Marketing -->
-          <div class="lg:col-span-1 grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-            <!-- 5. Persentase Hak Marketing (Tipe Pembagian) -->
-            <div class="lg:col-span-1">
-              <label
-                class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-              >
-                Persentase Hak Marketing
-              </label>
-              <SearchableSelect
-                v-model="formData.tipe_pembagian_marketing"
-                :options="tipePembagianOptions"
-                placeholder="Pilih Tipe Pembagian"
-                :search-input="tipePembagianSearchInput"
-                @update:search-input="tipePembagianSearchInput = $event"
-              />
+                  <!-- custom rows -->
+                  <tr v-for="(row, idx) in formData.customRows" :key="row.key" class="border-t border-gray-100 dark:border-gray-800">
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-400">
+                      <input v-model="row.name" placeholder="Nama" class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm" />
+                    </td>
+                    <td class="px-4 py-3">
+                      <SearchableSelect
+                        v-model="row.type"
+                        :options="shareTypeOptions"
+                        placeholder="Pilih Tipe"
+                        :search-input="shareSearchInputs[row.key]"
+                        @update:search-input="(val: string) => (shareSearchInputs[row.key] = val)"
+                      />
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex items-center gap-2">
+                        <input type="number" v-model.number="row.value" placeholder="0" min="0" step="0.01" class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:bg-gray-900" />
+                        <span class="text-sm text-gray-600 dark:text-gray-400" v-if="row.type === 'percentage'">%</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400" v-else>Rp</span>
+                        <button type="button" @click.prevent="() => removeCustomRow(idx)" class="text-red-500 ml-2">Hapus</button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-
-            <!-- 6. Persentase Hak Marketing -->
-            <div class="lg:col-span-1">
-              <label
-                class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-              >
-                Persentase Hak Marketing
-              </label>
-              <input
-                type="number"
-                v-model.number="formData.persentase_hak_marketing"
-                placeholder="0"
-                min="0"
-                max="100"
-                step="0.01"
-                class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-              />
-            </div>
-          </div>
-
-          <!-- 7. Persentase Hak Operasional 1 -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Persentase Hak Operasional 1
-            </label>
-            <input
-              type="number"
-              v-model.number="formData.persentase_hak_operasional_1"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.01"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-
-          <!-- 8. Persentase Hak Iklan -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Persentase Hak Iklan
-            </label>
-            <input
-              type="number"
-              v-model.number="formData.persentase_hak_iklan"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.01"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-
-          <!-- 9. Persentase Hak Operasional 2 -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Persentase Hak Operasional 2
-            </label>
-            <input
-              type="number"
-              v-model.number="formData.persentase_hak_operasional_2"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.01"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-
-          <!-- 10. Persentase Hak Operasional 3 -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Persentase Hak Operasional 3
-            </label>
-            <input
-              type="number"
-              v-model.number="formData.persentase_hak_operasional_3"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.01"
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-
-          <!-- 11. Jumlah Persentase -->
-          <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
-              Jumlah Persentase
-            </label>
-            <input
-              type="number"
-              :value="calculatedJumlahPersentase"
-              placeholder="0"
-              min="0"
-              max="100"
-              step="0.01"
-              readonly
-              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 cursor-not-allowed opacity-60"
-            />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Total dari semua persentase
-            </p>
+            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Jumlah Persentase (hanya menghitung yang tipe "Persentase"): {{ calculatedJumlahPersentase }}</p>
           </div>
         </div>
 
         <div class="flex items-center gap-3 mt-6 lg:justify-end">
+          <div class="flex-1 lg:flex lg:items-center lg:justify-start">
+            <button type="button" @click="addCustomRow" class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]">
+              Tambah Baris
+            </button>
+          </div>
           <button
             @click="handleCancel"
             type="button"
@@ -266,66 +150,75 @@ const currentPageTitle = computed(() => {
 // Form data
 const formData = reactive({
   nama_program: '',
-  persentase_hak_program: null as number | null,
-  persentase_hak_program_operasional: null as number | null,
-  persentase_hak_championship: null as number | null,
   tipe_pembagian_marketing: '',
-  persentase_hak_marketing: null as number | null,
-  persentase_hak_operasional_1: null as number | null,
-  persentase_hak_iklan: null as number | null,
-  persentase_hak_operasional_2: null as number | null,
-  persentase_hak_operasional_3: null as number | null,
   jumlah_persentase: null as number | null,
+  // shares will be an object keyed by program_share_type key
+  shares: {} as Record<string, { type: string | null; value: number | null }>,
+  // custom rows added per-program
+  customRows: [] as Array<{ key: string; name: string; type: string; value: number | null }> ,
 })
 
-// Computed untuk menghitung total jumlah persentase dari semua field persentase
+// Available program share types loaded from API
+const programShareTypes = ref<Array<{ id: string; name: string; key: string; default_type: string; orders?: number }>>([])
+
+// per-row search inputs for SearchableSelect
+const shareSearchInputs = reactive<Record<string, string>>({})
+
+// options for per-share type select
+const shareTypeOptions = [
+  { value: 'percentage', label: 'Persentase' },
+  { value: 'nominal', label: 'Nominal' },
+]
+
+// Computed untuk menghitung total jumlah persentase dari semua shares yang bertipe 'percentage'
 const calculatedJumlahPersentase = computed(() => {
   let total = 0
-  
-  // Menjumlahkan semua persentase yang ada
-  if (formData.persentase_hak_program !== null) {
-    total += formData.persentase_hak_program
+  for (const key of Object.keys(formData.shares)) {
+    const s = formData.shares[key]
+    if (s && s.type === 'percentage' && s.value !== null && !Number.isNaN(s.value)) {
+      total += Number(s.value)
+    }
   }
-  if (formData.persentase_hak_program_operasional !== null) {
-    total += formData.persentase_hak_program_operasional
-  }
-  if (formData.persentase_hak_championship !== null) {
-    total += formData.persentase_hak_championship
-  }
-  if (formData.persentase_hak_marketing !== null) {
-    total += formData.persentase_hak_marketing
-  }
-  if (formData.persentase_hak_operasional_1 !== null) {
-    total += formData.persentase_hak_operasional_1
-  }
-  if (formData.persentase_hak_iklan !== null) {
-    total += formData.persentase_hak_iklan
-  }
-  if (formData.persentase_hak_operasional_2 !== null) {
-    total += formData.persentase_hak_operasional_2
-  }
-  if (formData.persentase_hak_operasional_3 !== null) {
-    total += formData.persentase_hak_operasional_3
-  }
-  
-  // Bulatkan ke 2 desimal
   return total > 0 ? parseFloat(total.toFixed(2)) : 0
 })
 
 // Watch untuk update jumlah_persentase otomatis saat ada perubahan
-watch([
-  () => formData.persentase_hak_program,
-  () => formData.persentase_hak_program_operasional,
-  () => formData.persentase_hak_championship,
-  () => formData.tipe_pembagian_marketing,
-  () => formData.persentase_hak_marketing,
-  () => formData.persentase_hak_operasional_1,
-  () => formData.persentase_hak_iklan,
-  () => formData.persentase_hak_operasional_2,
-  () => formData.persentase_hak_operasional_3,
-], () => {
-  formData.jumlah_persentase = calculatedJumlahPersentase.value
+// Update jumlah_persentase whenever shares change
+watch(() => calculatedJumlahPersentase.value, (val) => {
+  formData.jumlah_persentase = val
 }, { immediate: true })
+
+// Fetch available program share types
+const fetchProgramShareTypes = async () => {
+  try {
+    const response = await fetch('/admin/api/program-share-types', { credentials: 'same-origin' })
+    if (!response.ok) return
+    const res = await response.json()
+    if (res.success && Array.isArray(res.data)) {
+      // sort by orders ascending (lowest first)
+      programShareTypes.value = res.data.slice().sort((a: any, b: any) => {
+        const ao = a.orders ?? 0
+        const bo = b.orders ?? 0
+        return ao - bo
+      })
+      // initialize shares structure with defaults and search inputs
+      for (const t of programShareTypes.value) {
+        if (!formData.shares[t.key]) {
+          formData.shares[t.key] = { type: t.default_type || 'percentage', value: null }
+        }
+        if (shareSearchInputs[t.key] === undefined) {
+          shareSearchInputs[t.key] = ''
+        }
+      }
+      // ensure customRows exists
+      if (!Array.isArray(formData.customRows)) {
+        formData.customRows = []
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load program share types:', e)
+  }
+}
 
 // Get CSRF token
 const getCsrfToken = async (): Promise<string> => {
@@ -354,6 +247,17 @@ const getCsrfToken = async (): Promise<string> => {
   }
 }
 
+// add a new custom row
+const addCustomRow = () => {
+  const key = `custom_${Date.now()}`
+  formData.customRows.push({ key, name: '', type: 'percentage', value: null })
+  shareSearchInputs[key] = ''
+}
+
+const removeCustomRow = (idx: number) => {
+  formData.customRows.splice(idx, 1)
+}
+
 // Load data if edit mode
 const loadData = async () => {
   if (isEditMode.value && route.params.id) {
@@ -375,16 +279,24 @@ const loadData = async () => {
       if (result.success && result.data) {
         const data = result.data
         formData.nama_program = data.nama_program || ''
-        formData.persentase_hak_program = data.persentase_hak_program ? parseFloat(data.persentase_hak_program) : null
-        formData.persentase_hak_program_operasional = data.persentase_hak_program_operasional ? parseFloat(data.persentase_hak_program_operasional) : null
-        formData.persentase_hak_championship = data.persentase_hak_championship ? parseFloat(data.persentase_hak_championship) : null
         formData.tipe_pembagian_marketing = data.tipe_pembagian_marketing || ''
-        formData.persentase_hak_marketing = data.persentase_hak_marketing ? parseFloat(data.persentase_hak_marketing) : null
-        formData.persentase_hak_operasional_1 = data.persentase_hak_operasional_1 ? parseFloat(data.persentase_hak_operasional_1) : null
-        formData.persentase_hak_iklan = data.persentase_hak_iklan ? parseFloat(data.persentase_hak_iklan) : null
-        formData.persentase_hak_operasional_2 = data.persentase_hak_operasional_2 ? parseFloat(data.persentase_hak_operasional_2) : null
-        formData.persentase_hak_operasional_3 = data.persentase_hak_operasional_3 ? parseFloat(data.persentase_hak_operasional_3) : null
         formData.jumlah_persentase = data.jumlah_persentase ? parseFloat(data.jumlah_persentase) : null
+
+        // map shares from API if available
+        if (Array.isArray(data.shares)) {
+          formData.customRows = []
+          for (const s of data.shares) {
+            const key = s.program_share_type_key || (s.program_share_type_id ? programShareTypes.value.find((t) => t.id === s.program_share_type_id)?.key : null)
+            if (key && formData.shares[key] !== undefined) {
+              formData.shares[key] = { type: s.type || 'percentage', value: s.value !== null ? parseFloat(s.value) : null }
+            } else {
+              // treat as custom row (program-specific)
+              const rkey = s.program_share_type_key || `custom_${Date.now()}_${Math.floor(Math.random()*1000)}`
+              formData.customRows.push({ key: rkey, name: s.name || '', type: s.type || 'percentage', value: s.value !== null ? parseFloat(s.value) : null })
+              shareSearchInputs[rkey] = ''
+            }
+          }
+        }
       } else {
         toast.error('Gagal memuat data program')
         router.push('/administrasi/program')
@@ -417,18 +329,36 @@ const handleSave = async () => {
       return
     }
 
-    const payload: Record<string, string | number | null> = {
+    // build payload including dynamic shares
+    const payload: Record<string, any> = {
       nama_program: formData.nama_program,
-      persentase_hak_program: formData.persentase_hak_program || null,
-      persentase_hak_program_operasional: formData.persentase_hak_program_operasional || null,
-      persentase_hak_championship: formData.persentase_hak_championship || null,
       tipe_pembagian_marketing: formData.tipe_pembagian_marketing || null,
-      persentase_hak_marketing: formData.persentase_hak_marketing || null,
-      persentase_hak_operasional_1: formData.persentase_hak_operasional_1 || null,
-      persentase_hak_iklan: formData.persentase_hak_iklan || null,
-      persentase_hak_operasional_2: formData.persentase_hak_operasional_2 || null,
-      persentase_hak_operasional_3: formData.persentase_hak_operasional_3 || null,
       jumlah_persentase: calculatedJumlahPersentase.value || null,
+      shares: [],
+    }
+
+    for (const t of programShareTypes.value) {
+        const s = formData.shares[t.key]
+        payload.shares.push({
+          program_share_type_key: t.key,
+          program_share_type_id: t.id,
+          name: t.name,
+          type: s?.type || t.default_type || 'percentage',
+          value: s?.value !== undefined ? (s?.value ?? null) : null,
+          orders: t.orders ?? null,
+        })
+    }
+
+    // include custom rows
+    for (const row of formData.customRows) {
+      payload.shares.push({
+        program_share_type_key: row.key,
+        program_share_type_id: null,
+        name: row.name || null,
+        type: row.type || 'percentage',
+        value: row.value !== undefined ? (row.value ?? null) : null,
+        is_custom: true,
+      })
     }
 
     const url = isEditMode.value 
@@ -468,8 +398,9 @@ const handleSave = async () => {
   }
 }
 
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  await fetchProgramShareTypes()
+  await loadData()
 })
 </script>
 

@@ -180,6 +180,16 @@ class TransaksiController extends Controller
             $query->orderByDesc('tanggal_transaksi')->orderByDesc('created_at');
         }
 
+        // Compute total nominal for the current filtered query (unpaginated)
+        try {
+            $sumQuery = (clone $query);
+            $totalNominal = $sumQuery->sum('nominal') ?: 0;
+        } catch (\Throwable $e) {
+            $totalNominal = 0;
+        }
+
+        $totalNominalFormatted = number_format($totalNominal, 0, ',', '.');
+
         $transaksis = $query->paginate($request->integer('per_page', 20));
 
         $transaksis->getCollection()->transform(function (Transaksi $transaksi) {
@@ -195,6 +205,8 @@ class TransaksiController extends Controller
                 'per_page' => $transaksis->perPage(),
                 'total' => $transaksis->total(),
             ],
+            'total_nominal' => $totalNominal,
+            'total_nominal_formatted' => $totalNominalFormatted,
         ]);
     }
 

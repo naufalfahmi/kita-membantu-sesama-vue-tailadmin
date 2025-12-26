@@ -63,6 +63,16 @@
                 {{ absensiData.kantor_cabang?.nama || '-' }}
               </p>
             </div>
+              <div v-if="absensiData.user?.kantor_cabangs && absensiData.user.kantor_cabangs.length">
+                <p class="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Kantor Terdaftar (maks 2)</p>
+                <div class="space-y-1">
+                  <template v-for="(k, idx) in absensiData.user.kantor_cabangs.slice(0,2)" :key="k.id">
+                    <p class="text-sm text-gray-800 dark:text-white/90">
+                      {{ k.nama }} <span class="text-xs text-gray-500">- {{ k.latitude }}, {{ k.longitude }}</span>
+                    </p>
+                  </template>
+                </div>
+              </div>
           </div>
         </div>
 

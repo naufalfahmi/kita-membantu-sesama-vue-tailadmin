@@ -476,6 +476,24 @@ const router = createRouter({
       meta: { title: 'Edit Mitra' },
     },
     {
+      path: '/user-kepegawaian/payroll-mitra',
+      name: 'Payroll Mitra',
+      component: () => import('../views/UserKepegawaian/PayrollMitra.vue'),
+      meta: { title: 'Payroll Mitra', permission: 'view payroll mitra' },
+    },
+    {
+      path: '/user-kepegawaian/payroll-mitra/new',
+      name: 'Tambah Payroll Mitra',
+      component: () => import('../views/UserKepegawaian/PayrollMitraForm.vue'),
+      meta: { title: 'Tambah Payroll Mitra', permission: 'create payroll mitra' },
+    },
+    {
+      path: '/user-kepegawaian/payroll-mitra/:id/edit',
+      name: 'Edit Payroll Mitra',
+      component: () => import('../views/UserKepegawaian/PayrollMitraForm.vue'),
+      meta: { title: 'Edit Payroll Mitra', permission: 'update payroll mitra' },
+    },
+    {
       path: '/user-kepegawaian/donatur',
       name: 'Donatur',
       component: () => import('../views/UserKepegawaian/Donatur.vue'),

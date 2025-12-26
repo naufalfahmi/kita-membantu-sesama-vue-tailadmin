@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Mitra;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -70,12 +72,14 @@ class MitraController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'email' => 'nullable|email|max:255|unique:mitras,email',
+            'password' => 'nullable|string|min:6',
             'no_handphone' => 'nullable|string|max:30',
             'nama_bank' => 'nullable|string|max:100',
             'no_rekening' => 'nullable|string|max:50',
             'tanggal_lahir' => 'nullable|date',
             'pendidikan' => 'nullable|string|max:100',
             'kantor_cabang_id' => 'nullable|uuid|exists:kantor_cabang,id',
+            'jabatan_id' => 'nullable|integer|exists:roles,id',
         ]);
 
         if ($validator->fails()) {
@@ -86,21 +90,79 @@ class MitraController extends Controller
             ], 422);
         }
 
+        // Additional business rule: Mitra email must not collide with existing karyawan (users)
+        if ($request->filled('email')) {
+            $email = trim((string) $request->input('email'));
+            if (User::where('email', $email)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['email' => ['Email sudah digunakan oleh karyawan']],
+                ], 422);
+            }
+        }
+
         try {
             $data = $request->only([
                 'nama',
                 'email',
+                'password',
                 'no_handphone',
                 'nama_bank',
                 'no_rekening',
                 'tanggal_lahir',
                 'pendidikan',
                 'kantor_cabang_id',
+                'jabatan_id',
             ]);
 
             $data['created_by'] = auth()->id();
 
+            // preserve plain password for creating user if provided
+            $plainPassword = array_key_exists('password', $data) ? $data['password'] : null;
+
+            if (! empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                unset($data['password']);
+            }
+
             $mitra = Mitra::create($this->sanitizePayload($data));
+
+            // If email + plain password provided and no existing user, create a User account and assign jabatan role
+            if (! empty($mitra->email) && ! empty($plainPassword)) {
+                if (! User::where('email', $mitra->email)->exists()) {
+                    $user = User::create([
+                        'name' => $mitra->nama,
+                        'email' => $mitra->email,
+                        'password' => Hash::make($plainPassword),
+                        'tipe_user' => 'mitra',
+                        'is_active' => true,
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    // Assign role if jabatan_id exists or fallback to role named "mitra"
+                    $role = null;
+                    if (! empty($data['jabatan_id'])) {
+                        $role = \Spatie\Permission\Models\Role::find($data['jabatan_id']);
+                    }
+                    if (! $role) {
+                        $role = \Spatie\Permission\Models\Role::where('name', 'mitra')->first();
+                    }
+                    if ($role) {
+                        $user->assignRole($role->name);
+                        // set mitra.jabatan_id if not set
+                        if (empty($mitra->jabatan_id)) {
+                            $mitra->jabatan_id = $role->id;
+                            $mitra->save();
+                        }
+                    }
+
+                    // link mitra to created user
+                    $mitra->user_id = $user->id;
+                    $mitra->save();
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -178,12 +240,14 @@ class MitraController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'email' => ['nullable', 'email', 'max:255', Rule::unique('mitras', 'email')->ignore($id)],
+            'password' => 'nullable|string|min:6',
             'no_handphone' => 'nullable|string|max:30',
             'nama_bank' => 'nullable|string|max:100',
             'no_rekening' => 'nullable|string|max:50',
             'tanggal_lahir' => 'nullable|date',
             'pendidikan' => 'nullable|string|max:100',
             'kantor_cabang_id' => 'nullable|uuid|exists:kantor_cabang,id',
+            'jabatan_id' => 'nullable|integer|exists:roles,id',
         ]);
 
         if ($validator->fails()) {
@@ -194,21 +258,101 @@ class MitraController extends Controller
             ], 422);
         }
 
+        // Additional business rule: Mitra email must not collide with existing karyawan (users)
+        if ($request->filled('email')) {
+            $email = trim((string) $request->input('email'));
+            if (User::where('email', $email)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['email' => ['Email sudah digunakan oleh karyawan']],
+                ], 422);
+            }
+        }
+
         try {
             $data = $request->only([
                 'nama',
                 'email',
+                'password',
                 'no_handphone',
                 'nama_bank',
                 'no_rekening',
                 'tanggal_lahir',
                 'pendidikan',
                 'kantor_cabang_id',
+                'jabatan_id',
             ]);
 
             $data['updated_by'] = auth()->id();
 
+            // preserve plain password for updating linked user
+            $plainPassword = array_key_exists('password', $data) ? $data['password'] : null;
+
+            if (array_key_exists('password', $data) && ! empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                unset($data['password']);
+            }
+
             $mitra->update($this->sanitizePayload($data));
+
+            // If this mitra has linked user, update its email/password and role if changed
+            if ($mitra->user_id) {
+                $user = User::find($mitra->user_id);
+                if ($user) {
+                    $userUpdated = false;
+                    if (! empty($data['email']) && $data['email'] !== $user->email) {
+                        $user->email = $data['email'];
+                        $userUpdated = true;
+                    }
+                    if (! empty($plainPassword)) {
+                        $user->password = Hash::make($plainPassword);
+                        $userUpdated = true;
+                    }
+                    if ($userUpdated) {
+                        $user->save();
+                    }
+
+                    // update role assignment if jabatan_id provided
+                    if (! empty($data['jabatan_id'])) {
+                        $role = \Spatie\Permission\Models\Role::find($data['jabatan_id']);
+                        if ($role) {
+                            $user->syncRoles([$role->name]);
+                        }
+                    }
+                }
+            } else {
+                // if no linked user but email+plainPassword provided, create one
+                if (! empty($mitra->email) && ! empty($plainPassword)) {
+                    if (! User::where('email', $mitra->email)->exists()) {
+                        $user = User::create([
+                            'name' => $mitra->nama,
+                            'email' => $mitra->email,
+                            'password' => Hash::make($plainPassword),
+                            'tipe_user' => 'mitra',
+                            'is_active' => true,
+                            'created_by' => auth()->id(),
+                        ]);
+
+                        // assign role
+                        $role = null;
+                        if (! empty($data['jabatan_id'])) {
+                            $role = \Spatie\Permission\Models\Role::find($data['jabatan_id']);
+                        }
+                        if (! $role) {
+                            $role = \Spatie\Permission\Models\Role::where('name', 'mitra')->first();
+                        }
+                        if ($role) {
+                            $user->assignRole($role->name);
+                            $mitra->jabatan_id = $role->id;
+                        }
+
+                        $mitra->user_id = $user->id;
+                        $mitra->save();
+                    }
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -276,6 +420,12 @@ class MitraController extends Controller
                 'id' => $mitra->kantorCabang->id,
                 'nama' => $mitra->kantorCabang->nama,
             ] : null,
+            'jabatan_id' => $mitra->jabatan_id,
+            'jabatan' => $mitra->jabatan ? [
+                'id' => $mitra->jabatan->id,
+                'name' => $mitra->jabatan->name,
+            ] : null,
+            'user_id' => $mitra->user_id,
             'created_at' => optional($mitra->created_at)->toIso8601String(),
             'updated_at' => optional($mitra->updated_at)->toIso8601String(),
         ];
@@ -302,6 +452,7 @@ class MitraController extends Controller
         }
 
         $nullableKeys = [
+            'password',
             'email',
             'no_handphone',
             'nama_bank',
@@ -309,6 +460,8 @@ class MitraController extends Controller
             'tanggal_lahir',
             'pendidikan',
             'kantor_cabang_id',
+            'jabatan_id',
+            'user_id',
         ];
 
         foreach ($nullableKeys as $key) {
@@ -335,5 +488,28 @@ class MitraController extends Controller
         }
 
         return $data;
+    }
+
+    /**
+     * Check email uniqueness across users and mitras.
+     */
+    public function checkEmail(Request $request)
+    {
+        $email = $request->query('email');
+        if (! $email) {
+            return response()->json(['success' => false, 'message' => 'Email harus diberikan'], 422);
+        }
+
+        $email = trim((string) $email);
+        $existsInUsers = User::where('email', $email)->exists();
+        $existsInMitras = Mitra::where('email', $email)->exists();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'exists_in_users' => $existsInUsers,
+                'exists_in_mitras' => $existsInMitras,
+            ],
+        ]);
     }
 }

@@ -16,31 +16,13 @@ class Program extends Model
 
     protected $fillable = [
         'nama_program',
-        'persentase_hak_program',
-        'persentase_hak_program_operasional',
-        'persentase_hak_championship',
-        'tipe_pembagian_marketing',
-        'persentase_hak_marketing',
-        'persentase_hak_operasional_1',
-        'persentase_hak_iklan',
-        'persentase_hak_operasional_2',
-        'persentase_hak_operasional_3',
-        'jumlah_persentase',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
     protected $casts = [
-        'persentase_hak_program' => 'decimal:2',
-        'persentase_hak_program_operasional' => 'decimal:2',
-        'persentase_hak_championship' => 'decimal:2',
-        'persentase_hak_marketing' => 'decimal:2',
-        'persentase_hak_operasional_1' => 'decimal:2',
-        'persentase_hak_iklan' => 'decimal:2',
-        'persentase_hak_operasional_2' => 'decimal:2',
-        'persentase_hak_operasional_3' => 'decimal:2',
-        'jumlah_persentase' => 'decimal:2',
+        // dynamic shares stored in `program_shares` relation
     ];
 
     /**
@@ -65,5 +47,10 @@ class Program extends Model
     public function deleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    public function shares(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ProgramShare::class, 'program_id');
     }
 }

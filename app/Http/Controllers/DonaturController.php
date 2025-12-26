@@ -73,13 +73,37 @@ class DonaturController extends Controller
         if (! $isAdmin) {
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
-            // Allow users to see donaturs they created, their subordinates created,
-            // or if they are assigned as PIC for the donatur.
-            $query->where(function ($q) use ($allowed, $user) {
-                // Qualify column to avoid ambiguity
-                $q->whereIn('donaturs.created_by', $allowed)
-                    ->orWhere('pic', $user->id);
-            });
+
+            // Restrict donatur list to kantor cabang assigned to the user (via pivot)
+            try {
+                $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
+            } catch (\Exception $e) {
+                $assignedIds = [];
+            }
+
+            if (! empty($assignedIds)) {
+                $query->where(function ($q) use ($allowed, $user, $assignedIds) {
+                    $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                      ->orWhereIn('donaturs.created_by', $allowed)
+                      ->orWhere('pic', $user->id);
+                });
+            } else {
+                // Fallback: if user has a primary kantor_cabang_id, filter by it; otherwise
+                // keep original visibility (created_by or pic)
+                if ($user->kantor_cabang_id) {
+                    $primary = $user->kantor_cabang_id;
+                    $query->where(function ($q) use ($allowed, $user, $primary) {
+                        $q->where('donaturs.kantor_cabang_id', $primary)
+                          ->orWhereIn('donaturs.created_by', $allowed)
+                          ->orWhere('pic', $user->id);
+                    });
+                } else {
+                    $query->where(function ($q) use ($allowed, $user) {
+                        $q->whereIn('donaturs.created_by', $allowed)
+                          ->orWhere('pic', $user->id);
+                    });
+                }
+            }
         }
 
         // General search (nama, email, kode, no_handphone)

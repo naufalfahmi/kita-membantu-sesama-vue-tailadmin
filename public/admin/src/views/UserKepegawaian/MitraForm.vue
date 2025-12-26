@@ -53,6 +53,19 @@
               placeholder="Email"
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
+            <p v-if="emailError" class="mt-1 text-xs text-red-500">{{ emailError }}</p>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Password
+            </label>
+            <input
+              type="password"
+              v-model="formData.password"
+              placeholder="Password (kosongkan jika tidak ingin mengganti)"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            />
           </div>
 
           <div>
@@ -129,6 +142,19 @@
               :disabled="isFundrising"
             />
           </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Jabatan
+            </label>
+            <SearchableSelect
+              v-model="formData.jabatan_id"
+              :options="jabatanOptions.map((j: any) => ({ value: String(j.id), label: j.name }))"
+              placeholder="Jabatan"
+              :search-input="jabatanSearchInput"
+              @update:search-input="jabatanSearchInput = $event"
+            />
+          </div>
         </div>
 
         <div class="mt-6 flex items-center gap-3 lg:justify-end">
@@ -153,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, ref, onMounted } from 'vue'
+import { reactive, computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import FlatPickr from 'vue-flatpickr-component'
@@ -189,6 +215,8 @@ const flatpickrConfig = {
 const kantorCabangOptions = ref<any[]>([])
 const kantorCabangSearchInput = ref('')
 const isSubmitting = ref(false)
+const jabatanOptions = ref<any[]>([])
+const jabatanSearchInput = ref('')
 
 const kantorCabangSelectOptions = computed(() =>
   kantorCabangOptions.value.map((item: any) => ({
@@ -206,7 +234,38 @@ const formData = reactive({
   tanggal_lahir: '',
   pendidikan: '',
   kantor_cabang_id: '',
+  password: '',
+  jabatan_id: '',
 })
+
+const emailError = ref('')
+const emailChecking = ref(false)
+let emailCheckTimeout: any = null
+
+const checkEmail = async (email: string) => {
+  emailError.value = ''
+  if (!email || String(email).trim() === '') return
+  emailChecking.value = true
+  try {
+    const res = await fetch(`/admin/api/check-email?email=${encodeURIComponent(String(email).trim())}`, { credentials: 'same-origin' })
+    const json = await res.json()
+    if (res.ok && json.success && json.data) {
+      if (json.data.exists_in_users) {
+        emailError.value = 'Email sudah digunakan oleh karyawan'
+      } else if (json.data.exists_in_mitras) {
+        // it's okay if updating the same mitra; backend will validate properly
+        // show a gentle warning when creating
+        if (!isEditMode.value) {
+          emailError.value = 'Email sudah digunakan oleh mitra lain'
+        }
+      }
+    }
+  } catch (e) {
+    // ignore network errors for live check
+  } finally {
+    emailChecking.value = false
+  }
+}
 
 const fetchCurrentUser = async () => {
   try {
@@ -233,6 +292,18 @@ const fetchReferenceData = async () => {
   } catch (error) {
     toast.error('Gagal memuat data kantor cabang')
   }
+  // fetch jabatan (roles)
+  try {
+    const res2 = await fetch('/admin/api/jabatan?per_page=1000', { credentials: 'same-origin' })
+    if (res2.ok) {
+      const jjson = await res2.json()
+      if (jjson.success) {
+        jabatanOptions.value = jjson.data || []
+      }
+    }
+  } catch (e) {
+    // ignore
+  }
 }
 
 const loadData = async (id: string) => {
@@ -251,6 +322,7 @@ const loadData = async (id: string) => {
       formData.tanggal_lahir = data.tanggal_lahir || ''
       formData.pendidikan = data.pendidikan || ''
       formData.kantor_cabang_id = data.kantor_cabang_id ? String(data.kantor_cabang_id) : ''
+      formData.jabatan_id = data.jabatan_id ? String(data.jabatan_id) : (data.jabatan && data.jabatan.id ? String(data.jabatan.id) : '')
     } else {
       toast.error(json.message || 'Mitra tidak ditemukan')
       router.push('/user-kepegawaian/mitra')
@@ -268,6 +340,11 @@ const handleCancel = () => {
 const handleSave = async () => {
   if (!formData.nama.trim()) {
     toast.error('Nama wajib diisi')
+    return
+  }
+
+  if (emailError.value) {
+    toast.error(emailError.value)
     return
   }
 
@@ -296,6 +373,12 @@ const handleSave = async () => {
       tanggal_lahir: formData.tanggal_lahir || null,
       pendidikan: toNullable(formData.pendidikan),
       kantor_cabang_id: toNullable(formData.kantor_cabang_id),
+      jabatan_id: toNullable(formData.jabatan_id),
+    }
+
+    // include password only when non-empty
+    if (formData.password && String(formData.password).trim() !== '') {
+      payload.password = String(formData.password)
     }
 
     let url = '/admin/api/mitra'
@@ -351,6 +434,14 @@ onMounted(async () => {
       formData.kantor_cabang_id = String(currentUser.value.kantor_cabang.id)
     }
   }
+
+  // watch email changes with debounce for uniqueness check
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const stop = watch(() => formData.email, (val) => {
+    clearTimeout(emailCheckTimeout)
+    emailError.value = ''
+    emailCheckTimeout = setTimeout(() => checkEmail(val), 500)
+  })
 })
 </script>
 

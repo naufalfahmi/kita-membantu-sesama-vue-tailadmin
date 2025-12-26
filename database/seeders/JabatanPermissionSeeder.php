@@ -42,6 +42,7 @@ class JabatanPermissionSeeder extends Seeder
             'User & Kepegawaian' => [
                 'Karyawan' => 'karyawan',
                 'Mitra' => 'mitra',
+                'Payroll Mitra' => 'payroll mitra',
                 'Donatur' => 'donatur',
             ],
             'Operasional' => [

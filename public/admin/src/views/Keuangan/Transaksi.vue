@@ -19,6 +19,16 @@
             Export CSV
           </button>
           <button
+            @click="handleExportProgram"
+            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            title="Export Program CSV (detailed program shares)"
+          >
+            <svg class="fill-current" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 4H17V6H3V4ZM3 8H11V10H3V8ZM3 12H11V14H3V12Z" fill="currentColor"/>
+            </svg>
+            Export Program
+          </button>
+          <button
             v-if="canCreate"
             @click="handleAdd"
             class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
@@ -1752,6 +1762,48 @@ const handleExportCsv = async () => {
   } catch (err) {
     console.error('CSV export failed', err)
     toast.error('Gagal mengekspor CSV: ' + ((err as any)?.message || 'lihat console'))
+  }
+}
+
+const handleExportProgram = async () => {
+  try {
+    const params = new URLSearchParams()
+    if (filterSearch.value) params.append('search', filterSearch.value)
+
+    if (Array.isArray(filterTanggal.value) && filterTanggal.value.length === 2) {
+      const [from, to] = filterTanggal.value
+      params.append('tanggal_from', formatYMDLocal(from))
+      params.append('tanggal_to', formatYMDLocal(to))
+    } else if (filterTanggal.value) {
+      params.append('tanggal', formatYMDLocal(filterTanggal.value))
+    }
+
+    if (filterDonatur.value) params.append('donatur_id', filterDonatur.value)
+    if (filterProgram.value) params.append('program_id', filterProgram.value)
+    if (filterMitra.value) params.append('mitra_id', filterMitra.value)
+    if (filterKantorCabang.value) params.append('kantor_cabang_id', filterKantorCabang.value)
+    if (filterFundraiser.value) params.append('fundraiser_id', filterFundraiser.value)
+
+    const url = `/admin/api/transaksi/export-program?${params.toString()}`
+    const res = await fetch(url, { credentials: 'same-origin' })
+    if (!res.ok) throw new Error('Failed to export program CSV')
+
+    const blob = await res.blob()
+    const filename = res.headers.get('Content-Disposition')?.split('filename=')?.pop()?.replace(/\"/g, '') || `transaksi_export_program_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'_')}.csv`
+
+    const a = document.createElement('a')
+    const urlObject = URL.createObjectURL(blob)
+    a.href = urlObject
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(urlObject)
+
+    toast.success('Export Program CSV berhasil')
+  } catch (err) {
+    console.error('Export Program failed', err)
+    toast.error('Gagal mengekspor program: ' + ((err as any)?.message || 'lihat console'))
   }
 }
 

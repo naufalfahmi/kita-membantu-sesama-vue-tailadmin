@@ -239,6 +239,8 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
      Route::apiResource('tipe-donatur', TipeDonaturController::class);
 
     // Transaksi API
+    // Custom export endpoint for program-focused CSV export
+    Route::get('transaksi/export-program', [TransaksiController::class, 'exportProgram']);
     Route::apiResource('transaksi', TransaksiController::class);
 
     // Landing Profile API (single resource endpoints)

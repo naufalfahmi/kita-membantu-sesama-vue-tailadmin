@@ -39,7 +39,7 @@ class TransaksiController extends Controller
         if (! $isAdmin) {
             // Restrict by kantor cabang assignments (pivot `kantor_cabang_user`) when available.
             try {
-                $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+                    $assignedBranchIds = $user->kantorCabangs()->pluck('id')->toArray();
             } catch (\Exception $e) {
                 $assignedBranchIds = [];
             }
@@ -225,6 +225,235 @@ class TransaksiController extends Controller
             ],
             'total_nominal' => $totalNominal,
             'total_nominal_formatted' => $totalNominalFormatted,
+        ]);
+    }
+
+    /**
+     * Export transaksi by current filters as CSV (program-focused export).
+     */
+    public function exportProgram(Request $request)
+    {
+        $query = Transaksi::with([
+            'donatur:id,nama,pic',
+            'donatur.picUser:id,name',
+            'program:id,nama_program',
+            'program.shares.type',
+        ]);
+
+        $user = auth()->user();
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
+        }
+
+        $isAdmin = $this->userIsAdmin($user);
+        if (! $isAdmin) {
+            try {
+                $assignedBranchIds = $user->kantorCabangs()->pluck('id')->toArray();
+            } catch (\Exception $e) {
+                $assignedBranchIds = [];
+            }
+
+            if (! empty($assignedBranchIds)) {
+                $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
+            } elseif ($user->kantor_cabang_id) {
+                $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
+            }
+
+            $subIds = $user->subordinates()->pluck('id')->toArray();
+            $allowed = array_merge([$user->id], $subIds);
+
+            $query->where(function ($q) use ($allowed, $user) {
+                $q->whereIn('transaksis.created_by', $allowed)
+                    ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
+            });
+        }
+
+        // Apply same filters as index
+        if ($request->filled('search')) {
+            $search = trim((string) $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('kode', 'like', "%{$search}%")
+                    ->orWhere('keterangan', 'like', "%{$search}%")
+                    ->orWhereHas('donatur', fn ($q) => $q->where('nama', 'like', "%{$search}%"))
+                    ->orWhereHas('program', fn ($q) => $q->where('nama_program', 'like', "%{$search}%"));
+            });
+        }
+
+        if ($request->filled('donatur_id')) {
+            $query->where('donatur_id', $request->donatur_id);
+        }
+
+        if ($request->filled('program_id')) {
+            $query->where('program_id', $request->program_id);
+        }
+
+        if ($request->filled('mitra_id')) {
+            $query->where('mitra_id', $request->mitra_id);
+        }
+
+        if ($request->filled('tanggal_from') && $request->filled('tanggal_to')) {
+            $from = $request->input('tanggal_from');
+            $to = $request->input('tanggal_to');
+            $query->whereDate('tanggal_transaksi', '>=', $from)
+                ->whereDate('tanggal_transaksi', '<=', $to);
+        } elseif ($request->filled('tanggal')) {
+            $tanggal = trim((string) $request->input('tanggal'));
+            $parts = preg_split('/\s+(?:to|-)\s+/i', $tanggal);
+            if (is_array($parts) && count($parts) === 2) {
+                [$from, $to] = array_map('trim', $parts);
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
+                    $query->whereDate('tanggal_transaksi', '>=', $from)
+                        ->whereDate('tanggal_transaksi', '<=', $to);
+                } else {
+                    $query->whereDate('tanggal_transaksi', $tanggal);
+                }
+            } else {
+                $query->whereDate('tanggal_transaksi', $tanggal);
+            }
+        }
+
+        if ($request->filled('status')) {
+            $status = $request->input('status');
+            if (in_array($status, $this->allowedStatuses, true)) {
+                $query->where('status', $status);
+            }
+        }
+
+        if ($request->filled('kantor_cabang_id')) {
+            $query->where('kantor_cabang_id', $request->kantor_cabang_id);
+        }
+
+        $transaksis = $query->orderByDesc('tanggal_transaksi')->orderByDesc('created_at')->get();
+
+        // Build CSV
+        // We'll pivot program shares to columns: for each unique share type across the result set,
+        // create two columns: "{TypeName} (%)" and "{TypeName} (Rp)" so data goes sideways.
+
+        // First, collect unique share type identifiers and display names in encountered order.
+        $typeOrder = [];
+        $typeMap = []; // key => display name
+        foreach ($transaksis as $t) {
+            if (! ($t->program && $t->program->shares)) continue;
+            foreach ($t->program->shares as $share) {
+                $typeKey = null;
+                // prefer program_share_type_id
+                if (!empty($share->program_share_type_id)) {
+                    $typeKey = (string) $share->program_share_type_id;
+                } elseif (is_string($share->type) && $share->type !== '') {
+                    $typeKey = 'key:' . $share->type;
+                } elseif (is_object($share->type) && isset($share->type->id)) {
+                    $typeKey = (string) $share->type->id;
+                }
+
+                if ($typeKey === null) continue;
+
+                if (! isset($typeMap[$typeKey])) {
+                    // determine display name
+                    $display = null;
+                    if (!empty($share->program_share_type_id)) {
+                        try {
+                            $pst = \App\Models\ProgramShareType::find($share->program_share_type_id);
+                            if ($pst) $display = $pst->name;
+                        } catch (\Throwable $e) {
+                        }
+                    }
+                    if ($display === null) {
+                        if (is_object($share->type) && isset($share->type->name)) {
+                            $display = $share->type->name;
+                        } elseif (is_string($share->type)) {
+                            // try match by key/name
+                            try {
+                                $pst = \App\Models\ProgramShareType::where('key', $share->type)->orWhere('name', $share->type)->first();
+                                if ($pst) $display = $pst->name; else $display = $share->type;
+                            } catch (\Throwable $e) {
+                                $display = $share->type;
+                            }
+                        }
+                    }
+
+                    $typeMap[$typeKey] = $display ?? 'Share';
+                    $typeOrder[] = $typeKey;
+                }
+            }
+        }
+
+        // Build headers: main fields + for each type two columns
+        $headers = ['Donatur', 'Fundraiser', 'Program', 'Nominal', 'Tanggal Transaksi'];
+        foreach ($typeOrder as $tk) {
+            $label = $typeMap[$tk] ?? 'Share';
+            $headers[] = $label . ' (%)';
+            $headers[] = $label . ' (Rp)';
+        }
+
+        $callback = function () use ($transaksis, $headers, $typeOrder, $typeMap) {
+            $out = fopen('php://output', 'w');
+            // Use semicolon delimiter as frontend expects
+            fputs($out, implode(';', $headers) . "\n");
+
+            foreach ($transaksis as $t) {
+                $donatur = $t->donatur ? $t->donatur->nama : '';
+                $fundraiser = null;
+                if ($t->donatur && $t->donatur->picUser) {
+                    $fundraiser = $t->donatur->picUser->name;
+                }
+                $program = $t->program ? $t->program->nama_program : '';
+                $nominal = $t->nominal;
+                $tanggal = $t->tanggal_transaksi ? $t->tanggal_transaksi->toDateString() : '';
+
+                // Build a row aligned with headers: main fields then one (%) and one (Rp) column per typeOrder
+                $row = [$donatur, $fundraiser, $program, $nominal, $tanggal];
+
+                // prepare a quick lookup of this transaction's shares by resolved typeKey
+                $shareLookup = [];
+                if ($t->program && $t->program->shares) {
+                    foreach ($t->program->shares as $share) {
+                        $typeKey = null;
+                        if (!empty($share->program_share_type_id)) {
+                            $typeKey = (string) $share->program_share_type_id;
+                        } elseif (is_string($share->type) && $share->type !== '') {
+                            $typeKey = 'key:' . $share->type;
+                        } elseif (is_object($share->type) && isset($share->type->id)) {
+                            $typeKey = (string) $share->type->id;
+                        }
+                        if ($typeKey === null) continue;
+                        $shareLookup[$typeKey] = $share;
+                    }
+                }
+
+                foreach ($typeOrder as $tk) {
+                    if (isset($shareLookup[$tk])) {
+                        $s = $shareLookup[$tk];
+                        $value = $s->value;
+                        $amount = (int) round(((float) $value / 100.0) * (float) $nominal);
+                        $percentLabel = (floor($value) == $value) ? sprintf('%d%%', $value) : rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.').'%';
+                        $row[] = $percentLabel;
+                        $row[] = (string) $amount;
+                    } else {
+                        $row[] = '';
+                        $row[] = '';
+                    }
+                }
+
+                $escaped = array_map(function ($v) {
+                    $s = is_null($v) ? '' : (string) $v;
+                    $s = str_replace('"', '""', $s);
+                    if (strpos($s, ';') !== false || strpos($s, "\n") !== false || strpos($s, '"') !== false) {
+                        return '"' . $s . '"';
+                    }
+                    return $s;
+                }, $row);
+
+                fputs($out, implode(';', $escaped) . "\n");
+            }
+
+            fclose($out);
+        };
+
+        $filename = 'transaksi_export_program_' . date('Ymd_His') . '.csv';
+
+        return response()->streamDownload($callback, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ]);
     }
 

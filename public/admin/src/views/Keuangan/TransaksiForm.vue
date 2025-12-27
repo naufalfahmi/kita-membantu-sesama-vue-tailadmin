@@ -31,6 +31,8 @@
             />
           </div>
 
+          <!-- branch users removed; fundraiser will be shown when donor selected -->
+
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Nominal <span class="text-red-500">*</span>
@@ -57,6 +59,19 @@
 
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Fundraiser
+            </label>
+            <input
+              type="text"
+              :value="fundraiserDisplay ? fundraiserDisplay.name : 'Tidak ada Fundraiser'"
+              disabled
+              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300"
+            />
+            <input v-if="false" type="hidden" v-model="formData.fundraiserId" />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Program <span class="text-red-500">*</span>
             </label>
             <SearchableSelect
@@ -66,6 +81,30 @@
               :search-input="programSearchInput"
               @update:search-input="programSearchInput = $event"
             />
+          </div>
+
+          <div v-if="programBreakdown.length > 0" class="lg:col-span-2">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rincian Pembagian Program</label>
+            <div class="overflow-x-auto rounded-lg border border-gray-300 bg-white dark:border-gray-700">
+              <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
+                <thead class="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th class="px-4 py-2 font-medium">Nama</th>
+                    <th class="px-4 py-2 font-medium">Nilai</th>
+                    <th class="px-4 py-2 font-medium text-right">Jumlah (Rp)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, idx) in programBreakdown" :key="idx" class="border-t border-gray-100 dark:border-gray-800">
+                    <td class="px-4 py-2 align-top">
+                      <div class="font-medium">{{ item.name }}</div>
+                    </td>
+                    <td class="px-4 py-2 align-top text-gray-500 text-sm">{{ item.displayValue }}</td>
+                    <td class="px-4 py-2 align-top text-right font-medium">Rp {{ item.amount.toLocaleString() }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div>
@@ -166,7 +205,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, ref, onMounted } from 'vue'
+import { reactive, computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import flatPickr from 'vue-flatpickr-component'
@@ -174,7 +213,7 @@ import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
-import AsyncSearchableSelect from '@/components/forms/AsyncSearchableSelect.vue' 
+import AsyncSearchableSelect from '@/components/forms/AsyncSearchableSelect.vue'
 
 interface SelectOption {
   value: string
@@ -211,8 +250,12 @@ const flatpickrDateConfig = {
 
 // Options from API
 const kantorCabangList = ref<SelectOption[]>([])
+const kantorCabangDataMap = ref<Map<string, any>>(new Map())
 const programList = ref<SelectOption[]>([])
 const mitraList = ref<SelectOption[]>([])
+const fundraiserDisplay = ref<any>(null)
+const programDetail = ref<any | null>(null)
+const programBreakdown = ref<Array<{ name: string; type: string; value: number | null; amount: number }>>([])
 
 // Search input refs
 const kantorCabangSearchInput = ref('')
@@ -226,6 +269,7 @@ const formData = reactive({
   donorId: '',
   programId: '',
   mitraId: '',
+  fundraiserId: '',
   transactionDate: '',
   notes: '',
 })
@@ -249,7 +293,7 @@ const fetchCurrentUser = async () => {
 const fetchOptions = async () => {
   try {
     const [kantorRes, programRes] = await Promise.all([
-      fetch('/admin/api/kantor-cabang?per_page=100', { credentials: 'same-origin' }),
+      fetch('/admin/api/kantor-cabang?per_page=1000&only_assigned=1', { credentials: 'same-origin' }),
       fetch('/admin/api/program?per_page=100', { credentials: 'same-origin' }),
     ])
 
@@ -260,6 +304,8 @@ const fetchOptions = async () => {
         value: item.id,
         label: item.nama,
       }))
+      // Store full data for later access
+      kantorCabangDataMap.value = new Map(dataArray.map((item: any) => [item.id, item]))
     }
 
     if (programRes.ok) {
@@ -432,6 +478,89 @@ onMounted(async () => {
       formData.branchId = String(currentUser.value.kantor_cabang.id)
     }
   }
+})
+
+// Watch donor selection and load donor details (to show fundraiser)
+watch(() => formData.donorId, async (newDonorId) => {
+  fundraiserDisplay.value = null
+  formData.fundraiserId = ''
+  if (!newDonorId) return
+  try {
+    const res = await fetch(`/admin/api/donatur/${newDonorId}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success && json.data) {
+      const donor = json.data
+      // donor.pic_user contains PIC info; use as fundraiser if present
+      if (donor.pic_user) {
+        fundraiserDisplay.value = { id: donor.pic_user.id, name: donor.pic_user.nama }
+        formData.fundraiserId = donor.pic_user.id
+      } else if (donor.pic) {
+        fundraiserDisplay.value = { id: donor.pic, name: '' }
+        formData.fundraiserId = donor.pic
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load donor details:', e)
+  }
+})
+
+// Watch program selection and nominal to compute breakdown
+const computeProgramBreakdown = () => {
+  programBreakdown.value = []
+  const nominal = Number(formData.nominal) || 0
+  if (!programDetail.value || !Array.isArray(programDetail.value.shares)) return
+  const humanizeKey = (k: string | null | undefined) => {
+    if (!k) return ''
+    // replace underscores/dashes, remove random suffixes, and title-case
+    const cleaned = String(k).replace(/[-_]+/g, ' ').replace(/\b[a-f0-9]{4,}\b/g, '').trim()
+    return cleaned.split(' ').filter(Boolean).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+  }
+
+  const formatValueNumber = (v: any) => {
+    if (v === null || v === undefined) return null
+    const n = Number(v)
+    if (Number.isNaN(n)) return null
+    return n
+  }
+
+  programBreakdown.value = programDetail.value.shares.map((s: any) => {
+    const isPercentage = (s.type || 'percentage') === 'percentage'
+    const rawValue = formatValueNumber(s.value)
+    const amount = isPercentage && rawValue !== null ? Math.round(Number(nominal * (rawValue / 100))) : (rawValue !== null ? Math.round(rawValue) : 0)
+    const displayName = s.name || (s.program_share_type_key ? humanizeKey(s.program_share_type_key) : '-')
+    let displayValue = '-'
+    if (rawValue !== null) {
+      if (isPercentage) {
+        // show integer without decimals unless there are decimals
+        displayValue = Number.isInteger(rawValue) ? `${rawValue}%` : `${parseFloat(String(rawValue)).toFixed(2).replace(/\.00$/, '')}%`
+      } else {
+        displayValue = Number(rawValue).toLocaleString()
+      }
+    }
+    return { name: displayName, type: s.type || 'percentage', value: rawValue, amount, displayValue }
+  })
+}
+
+watch(() => formData.programId, async (newProgramId) => {
+  programDetail.value = null
+  programBreakdown.value = []
+  if (!newProgramId) return
+  try {
+    const res = await fetch(`/admin/api/program/${newProgramId}`, { credentials: 'same-origin' })
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success && json.data) {
+      programDetail.value = json.data
+      computeProgramBreakdown()
+    }
+  } catch (e) {
+    console.error('Failed to load program details:', e)
+  }
+}, { immediate: false })
+
+watch(() => formData.nominal, () => {
+  computeProgramBreakdown()
 })
 </script>
 

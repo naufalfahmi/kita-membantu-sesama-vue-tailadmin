@@ -50,7 +50,7 @@ class KantorCabangController extends Controller
      */
     public function index(Request $request)
     {
-        $query = KantorCabang::with(['creator', 'updater']);
+        $query = KantorCabang::with(['creator', 'updater', 'users:id,name,email']);
 
         // If caller requests only assigned kantor cabang, restrict to current user's assignments
         if ($request->boolean('only_assigned') && auth()->check()) {

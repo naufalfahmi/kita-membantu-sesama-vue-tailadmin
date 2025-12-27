@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class KantorCabang extends Model
 {
@@ -59,5 +60,13 @@ class KantorCabang extends Model
     public function deleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    /**
+     * Many-to-many users assigned to this kantor cabang.
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'kantor_cabang_user', 'kantor_cabang_id', 'user_id');
     }
 }

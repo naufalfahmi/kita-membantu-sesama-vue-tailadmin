@@ -168,7 +168,16 @@ class ProgramController extends Controller
         $data = $program->toArray();
         // normalize shares to include program_share_type fields at top-level for frontend convenience
         $data['shares'] = collect($program->shares)->map(function ($s) {
-            $pst = $s->type; // relation to ProgramShareType
+            // Avoid conflict between the share's `type` attribute and the relation named `type`.
+            // Try to use the eager-loaded relation first, otherwise fall back to lookup by id.
+            $pst = null;
+            if ($s->relationLoaded('type')) {
+                $pst = $s->getRelationValue('type');
+            }
+            if (! $pst && ! empty($s->program_share_type_id)) {
+                $pst = ProgramShareType::find($s->program_share_type_id);
+            }
+
             return [
                 'id' => $s->id,
                 'program_share_type_id' => $s->program_share_type_id,

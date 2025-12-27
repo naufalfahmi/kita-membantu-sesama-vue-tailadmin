@@ -37,8 +37,26 @@ class TransaksiController extends Controller
 
         $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
+            // Restrict by kantor cabang assignments (pivot `kantor_cabang_user`) when available.
+            try {
+                $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+            } catch (\Exception $e) {
+                $assignedBranchIds = [];
+            }
+
+            if (! empty($assignedBranchIds)) {
+                $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
+            } elseif ($user->kantor_cabang_id) {
+                // Fallback to the user's primary kantor_cabang_id
+                $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
+            } else {
+                // If user has no branch assignment and no primary branch, keep query but
+                // subsequent visibility filter will still apply (created_by / pic).
+            }
+
             $subIds = $user->subordinates()->pluck('id')->toArray();
             $allowed = array_merge([$user->id], $subIds);
+
             // Allow users to see transaksis they created, their subordinates created,
             // or any transaksi where they are the PIC of the related donatur.
             $query->where(function ($q) use ($allowed, $user) {

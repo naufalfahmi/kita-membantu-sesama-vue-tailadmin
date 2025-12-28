@@ -448,6 +448,19 @@ const columnDefs = computed(() => {
   if (isFundrisingRole) {
     return [
       {
+        headerName: 'No',
+        field: '__no',
+        width: 80,
+        sortable: false,
+        valueGetter: (params: any) => {
+          try {
+            return (params.node && typeof params.node.rowIndex === 'number') ? params.node.rowIndex + 1 : '-'
+          } catch (e) {
+            return '-'
+          }
+        },
+      },
+      {
         headerName: 'Donatur',
         field: 'donatur',
         sortable: true,
@@ -488,6 +501,19 @@ const columnDefs = computed(() => {
   }
 
   const cols: any[] = [
+    {
+      headerName: 'No',
+      field: '__no',
+      width: 80,
+      sortable: false,
+      valueGetter: (params: any) => {
+        try {
+          return (params.node && typeof params.node.rowIndex === 'number') ? params.node.rowIndex + 1 : '-'
+        } catch (e) {
+          return '-'
+        }
+      },
+    },
     {
       headerName: 'Donatur',
       field: 'donatur',

@@ -196,6 +196,27 @@ const kantorCabangSelectOptions = computed(() => [
 const columnDefs = computed(() => {
   const cols: any[] = [
     {
+      headerName: 'No',
+      field: '__no',
+      width: 80,
+      sortable: false,
+      valueGetter: (params: any) => {
+        try {
+          const api: any = params.api
+          let page = 0
+          let pageSizeLocal = 0
+          if (api && typeof api.paginationGetCurrentPage === 'function') {
+            page = api.paginationGetCurrentPage() || 0
+            pageSizeLocal = api.paginationGetPageSize ? api.paginationGetPageSize() : 0
+          }
+          const idx = params.node && typeof params.node.rowIndex === 'number' ? params.node.rowIndex : 0
+          return pageSizeLocal ? page * pageSizeLocal + idx + 1 : idx + 1
+        } catch (e) {
+          return (params.node && typeof params.node.rowIndex === 'number') ? params.node.rowIndex + 1 : '-'
+        }
+      },
+    },
+    {
       headerName: 'Kode',
       field: 'kode',
       sortable: true,

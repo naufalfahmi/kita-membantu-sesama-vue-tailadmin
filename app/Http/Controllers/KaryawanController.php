@@ -25,10 +25,11 @@ class KaryawanController extends Controller
             ])
             ->karyawan();
 
-        // If caller is not admin, restrict visible users to the caller's subtree.
+        // If caller requests only_subtree, restrict visible users to the caller's subtree
+        // (applies even for admin callers when requested). Otherwise, keep existing
+        // behavior: non-admins see limited subtree while admins see all.
         $authUser = auth()->user();
-        if ($authUser && ! $this->userIsAdmin($authUser)) {
-            // If user has subordinates, show only descendants excluding self (leaders)
+        if ($request->boolean('only_subtree') && $authUser) {
             if ($authUser->subordinates()->exists()) {
                 $allowed = User::descendantIdsOf($authUser->id);
                 $allowed = array_values(array_diff($allowed, [$authUser->id]));
@@ -38,8 +39,24 @@ class KaryawanController extends Controller
                     $query->whereIn('id', $allowed);
                 }
             } else {
-                // Subordinate users see only themselves
                 $query->where('id', $authUser->id);
+            }
+        } else {
+            // If caller is not admin, restrict visible users to the caller's subtree.
+            if ($authUser && ! $this->userIsAdmin($authUser)) {
+                // If user has subordinates, show only descendants excluding self (leaders)
+                if ($authUser->subordinates()->exists()) {
+                    $allowed = User::descendantIdsOf($authUser->id);
+                    $allowed = array_values(array_diff($allowed, [$authUser->id]));
+                    if (empty($allowed)) {
+                        $query->whereRaw('1 = 0');
+                    } else {
+                        $query->whereIn('id', $allowed);
+                    }
+                } else {
+                    // Subordinate users see only themselves
+                    $query->where('id', $authUser->id);
+                }
             }
         }
 

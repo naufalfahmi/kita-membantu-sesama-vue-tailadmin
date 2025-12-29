@@ -30,17 +30,23 @@ try {
 
 // Build query using current controller logic
 $query = Donatur::query();
-if (! empty($assignedIds)) {
-        $query->where(function ($q) use ($allowed, $user, $assignedIds) {
-                $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
-                    ->orWhereIn('donaturs.created_by', $allowed)
-                    ->orWhereIn('donaturs.pic', $allowed);
-        });
+
+// If user has no subordinates => PIC-only visibility
+if (! $user->subordinates()->exists()) {
+    $query->where('pic', $user->id);
 } else {
-        $query->where(function ($q) use ($allowed, $user) {
-                $q->whereIn('donaturs.created_by', $allowed)
-                    ->orWhereIn('donaturs.pic', $allowed);
+    if (! empty($assignedIds)) {
+        $query->where(function ($q) use ($allowed, $user, $assignedIds) {
+            $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                ->orWhereIn('donaturs.created_by', $allowed)
+                ->orWhereIn('donaturs.pic', $allowed);
         });
+    } else {
+        $query->where(function ($q) use ($allowed, $user) {
+            $q->whereIn('donaturs.created_by', $allowed)
+                ->orWhereIn('donaturs.pic', $allowed);
+        });
+    }
 }
 
 $donaturs = $query->get();

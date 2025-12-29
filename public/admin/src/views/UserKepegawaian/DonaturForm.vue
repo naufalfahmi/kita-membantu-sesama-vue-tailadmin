@@ -317,11 +317,30 @@ const fetchCurrentUser = async () => {
 
 const fetchReferenceData = async () => {
   try {
-    const requests: Promise<Response>[] = [
-      // Request only kantor cabang assigned to current user
-      fetch('/admin/api/kantor-cabang?per_page=1000&only_assigned=1', { credentials: 'same-origin' }),
-      fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
-    ]
+    const requests: Promise<Response>[] = []
+
+    // Request kantor cabang. If user is global admin or has a role named
+    // "Admin Cabang", request the full list; otherwise request only
+    // assigned kantor cabang.
+    const isKantorAdmin = (() => {
+      if (!currentUser.value) return false
+      if (currentUser.value.is_admin) return true
+      const roles = currentUser.value.roles || currentUser.value.role ? (currentUser.value.roles || [currentUser.value.role]) : []
+      return Array.isArray(roles) && roles.some((r: any) => {
+        const name = typeof r === 'string' ? r : r?.name
+        return typeof name === 'string' && name.trim().toLowerCase() === 'admin cabang'
+      })
+    })()
+
+    const kantorUrl = isKantorAdmin ? '/admin/api/kantor-cabang?per_page=1000' : '/admin/api/kantor-cabang?per_page=1000&only_assigned=1'
+    requests.push(fetch(kantorUrl, { credentials: 'same-origin' }))
+
+    // If current user is admin, request full karyawan list so they can
+    // choose any fundraiser. Otherwise request subtree-limited list.
+    const karyawanUrl = (currentUser.value && currentUser.value.is_admin)
+      ? '/admin/api/karyawan?per_page=1000'
+      : '/admin/api/karyawan?per_page=1000&only_subtree=1'
+    requests.push(fetch(karyawanUrl, { credentials: 'same-origin' }))
 
     // Fetch next kode only for new donatur
     if (!isEditMode.value) {
@@ -345,6 +364,12 @@ const fetchReferenceData = async () => {
         const payload = Array.isArray(json.data) ? json.data : json.data?.data
         karyawanOptions.value = Array.isArray(payload) ? payload : []
       }
+    }
+
+    // If backend returned no karyawan (e.g. user has no subordinates), ensure
+    // the current user is available as a PIC option so the select isn't empty.
+    if (Array.isArray(karyawanOptions.value) && karyawanOptions.value.length === 0 && currentUser.value) {
+      karyawanOptions.value = [currentUser.value]
     }
 
     if (nextKodeRes && nextKodeRes.ok) {

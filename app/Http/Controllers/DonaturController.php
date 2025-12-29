@@ -75,10 +75,8 @@ class DonaturController extends Controller
             // If the user has no subordinates, treat them as a subordinate
             // (they should only see donaturs they own or where they are PIC).
             if (! $user->subordinates()->exists()) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('donaturs.created_by', $user->id)
-                      ->orWhere('pic', $user->id);
-                });
+                // No subordinates: restrict to donaturs where caller is PIC only
+                $query->where('pic', $user->id);
             } else {
                 // User is a leader (no leader_id) — keep previous visibility logic
                 $allowed = User::descendantIdsOf($user->id);
@@ -91,20 +89,18 @@ class DonaturController extends Controller
                 }
 
                 if (! empty($assignedIds)) {
-                                        $query->where(function ($q) use ($allowed, $user, $assignedIds) {
-                                                $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
-                                                    ->orWhereIn('donaturs.created_by', $allowed)
-                                                    ->orWhereIn('donaturs.pic', $allowed);
-                                        });
+                            $query->where(function ($q) use ($allowed, $user, $assignedIds) {
+                                $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                                    ->orWhereIn('donaturs.pic', $allowed);
+                            });
                 } else {
                     // Do NOT grant visibility based solely on the user's primary
                     // `kantor_cabang_id`. If there are no explicit pivot
                     // assignments, restrict to created_by (self + subordinates)
                     // or where user is PIC.
-                                        $query->where(function ($q) use ($allowed, $user) {
-                                                $q->whereIn('donaturs.created_by', $allowed)
-                                                    ->orWhereIn('donaturs.pic', $allowed);
-                                        });
+                            $query->where(function ($q) use ($allowed, $user) {
+                                $q->whereIn('donaturs.pic', $allowed);
+                            });
                 }
             }
         }
@@ -214,7 +210,9 @@ class DonaturController extends Controller
             }
             
             $data['status'] = $data['status'] ?? 'aktif';
-            $data['created_by'] = auth()->id();
+            // Set created_by to PIC so ownership is tied to the fundraiser PIC
+            // if PIC is provided; fall back to current user if not.
+            $data['created_by'] = $data['pic'] ?? auth()->id();
 
             $donatur = Donatur::create($data);
 
@@ -248,16 +246,13 @@ class DonaturController extends Controller
         if (! $this->userIsAdmin($user)) {
             // If the user has no subordinates, treat them as a subordinate
             if (! $user->subordinates()->exists()) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('donaturs.created_by', $user->id)
-                        ->orWhere('pic', $user->id);
-                });
+                // No subordinates: allow show only when caller is PIC
+                $query->where('pic', $user->id);
             } else {
                 $allowed = User::descendantIdsOf($user->id);
                 $query->where(function ($q) use ($allowed, $user) {
                     // Qualify column to avoid ambiguity
-                    $q->whereIn('donaturs.created_by', $allowed)
-                        ->orWhereIn('donaturs.pic', $allowed);
+                            $q->whereIn('donaturs.pic', $allowed);
                 });
             }
         }
@@ -291,17 +286,14 @@ class DonaturController extends Controller
         }
 
         if (! $this->userIsAdmin($user)) {
-            if (! empty($user->leader_id)) {
-                $query->where(function ($q) use ($user) {
-                    $q->where('donaturs.created_by', $user->id)
-                        ->orWhere('pic', $user->id);
-                });
+            if (! $user->subordinates()->exists()) {
+                // No subordinates: only allow update when caller is PIC
+                $query->where('pic', $user->id);
             } else {
                 $allowed = User::descendantIdsOf($user->id);
                 $query->where(function ($q) use ($allowed, $user) {
                     // Qualify column to avoid ambiguity
-                    $q->whereIn('donaturs.created_by', $allowed)
-                        ->orWhereIn('donaturs.pic', $allowed);
+                    $q->whereIn('donaturs.pic', $allowed);
                 });
             }
         }
@@ -375,11 +367,12 @@ class DonaturController extends Controller
         }
 
         if (! $this->userIsAdmin($user)) {
-            if (! empty($user->leader_id)) {
-                $query->where('created_by', $user->id);
+            if (! $user->subordinates()->exists()) {
+                // No subordinates: only allow delete when caller is PIC
+                $query->where('pic', $user->id);
             } else {
                 $allowed = User::descendantIdsOf($user->id);
-                $query->whereIn('created_by', $allowed);
+                $query->whereIn('pic', $allowed);
             }
         }
 

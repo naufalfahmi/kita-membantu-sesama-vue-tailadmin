@@ -26,21 +26,10 @@ abstract class Controller extends BaseController
             return true;
         }
 
-        // Treat any role name that contains "admin"/"administrator"/"super" as admin-like
-        foreach ($user->roles as $role) {
-            $name = strtolower((string) $role->name);
-            if (stripos($name, 'admin') !== false || stripos($name, 'administrator') !== false || stripos($name, 'super') !== false) {
-                return true;
-            }
-        }
-
-        // Also allow checking the user's `posisi` (jabatan) field for admin-like titles
-        if (property_exists($user, 'posisi') && is_string($user->posisi)) {
-            $posisi = strtolower($user->posisi);
-            if (stripos($posisi, 'admin') !== false || stripos($posisi, 'administrator') !== false) {
-                return true;
-            }
-        }
+        // Only treat explicit admin roles as admin-like. Avoid matching
+        // generic role/posisi names like "Admin Cabang" which are local
+        // operational roles and should not bypass visibility filters.
+        // Keep the explicit allowed role names for backward compatibility.
 
         return false;
     }

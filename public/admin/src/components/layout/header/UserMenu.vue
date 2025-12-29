@@ -66,6 +66,7 @@ import { ChevronDownIcon, InfoCircleIcon, LogoutIcon, SettingsIcon, UserCircleIc
 import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { resetAuthState } from '@/router'
+import { getCsrfTokenSafe } from '@/utils/getCsrfToken'
 
 const router = useRouter()
 const dropdownOpen = ref(false)
@@ -129,13 +130,8 @@ const signOut = async (e: Event) => {
   e.stopPropagation()
   
   try {
-    // Get CSRF token
-    const csrfResponse = await fetch('/admin/api/csrf-token', {
-      method: 'GET',
-      credentials: 'same-origin',
-    })
-    const csrfData = await csrfResponse.json()
-    const csrfToken = csrfData.csrf_token
+    // Get CSRF token (safe)
+    const csrfToken = await getCsrfTokenSafe()
 
     // Call logout API
     const response = await fetch('/admin/api/logout', {

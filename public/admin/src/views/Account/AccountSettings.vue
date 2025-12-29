@@ -74,9 +74,10 @@ const errors = ref<any>({})
 const successMessage = ref('')
 const errorMessage = ref('')
 
+import { getCsrfTokenSafe } from '@/utils/getCsrfToken'
+
 const getCsrf = async () => {
-  const r = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
-  return (await r.json()).csrf_token
+  return await getCsrfTokenSafe()
 }
 
 const submit = async () => {

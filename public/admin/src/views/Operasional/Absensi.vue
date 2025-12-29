@@ -302,7 +302,7 @@ const createDataSource = () => {
             lastTotal = typeof json.total === 'number' ? json.total : (json.data ? json.data.length : null)
             // reflect total to reactive outside var so template can show placeholder
             totalAbsensi.value = lastTotal ?? null
-            const data = json.data || []
+            const data = JSON.parse(JSON.stringify(json.data || []))
             // cache by start index
             blockCache.set(blockKey, data)
             params.successCallback(data, lastTotal ?? null)
@@ -582,7 +582,7 @@ const fetchData = async () => {
 
     const result = await response.json()
     if (result.success) {
-      rowData.value = result.data || []
+      rowData.value = JSON.parse(JSON.stringify(result.data || []))
     } else {
       console.error('Failed to fetch data:', result.message)
       rowData.value = []
@@ -634,7 +634,7 @@ const handleExportExcel = async () => {
     const res = await fetch(url, { method: 'GET', credentials: 'same-origin' })
     if (!res.ok) throw new Error('Failed to fetch export data')
     const json = await res.json()
-    const data = json.success ? (json.data || []) : rowData.value
+    const data = json.success ? JSON.parse(JSON.stringify(json.data || [])) : JSON.parse(JSON.stringify(rowData.value || []))
 
     const dataToExport = data.map((item: any) => {
       return {

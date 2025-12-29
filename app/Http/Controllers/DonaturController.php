@@ -91,20 +91,20 @@ class DonaturController extends Controller
                 }
 
                 if (! empty($assignedIds)) {
-                    $query->where(function ($q) use ($allowed, $user, $assignedIds) {
-                        $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
-                          ->orWhereIn('donaturs.created_by', $allowed)
-                          ->orWhere('pic', $user->id);
-                    });
+                                        $query->where(function ($q) use ($allowed, $user, $assignedIds) {
+                                                $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                                                    ->orWhereIn('donaturs.created_by', $allowed)
+                                                    ->orWhereIn('donaturs.pic', $allowed);
+                                        });
                 } else {
                     // Do NOT grant visibility based solely on the user's primary
                     // `kantor_cabang_id`. If there are no explicit pivot
                     // assignments, restrict to created_by (self + subordinates)
                     // or where user is PIC.
-                    $query->where(function ($q) use ($allowed, $user) {
-                        $q->whereIn('donaturs.created_by', $allowed)
-                          ->orWhere('pic', $user->id);
-                    });
+                                        $query->where(function ($q) use ($allowed, $user) {
+                                                $q->whereIn('donaturs.created_by', $allowed)
+                                                    ->orWhereIn('donaturs.pic', $allowed);
+                                        });
                 }
             }
         }
@@ -258,7 +258,7 @@ class DonaturController extends Controller
                 $query->where(function ($q) use ($allowed, $user) {
                     // Qualify column to avoid ambiguity
                     $q->whereIn('donaturs.created_by', $allowed)
-                        ->orWhere('pic', $user->id);
+                        ->orWhereIn('donaturs.pic', $allowed);
                 });
             }
         }
@@ -303,7 +303,7 @@ class DonaturController extends Controller
                 $query->where(function ($q) use ($allowed, $user) {
                     // Qualify column to avoid ambiguity
                     $q->whereIn('donaturs.created_by', $allowed)
-                        ->orWhere('pic', $user->id);
+                        ->orWhereIn('donaturs.pic', $allowed);
                 });
             }
         }

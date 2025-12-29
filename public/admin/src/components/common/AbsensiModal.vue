@@ -394,6 +394,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { getCsrfTokenSafe } from '@/utils/getCsrfToken'
 
 const emit = defineEmits(['close'])
 
@@ -654,9 +655,8 @@ const submitAttendance = async () => {
   error.value = null
 
   try {
-    // Get CSRF token first
-    const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
-    const tokenJson = await tokenRes.json()
+    // Get CSRF token (safe helper)
+    const csrfToken = await getCsrfTokenSafe()
 
     const endpoint = attendanceType.value === 'masuk' 
       ? '/admin/api/absensi/clock-in' 
@@ -665,7 +665,7 @@ const submitAttendance = async () => {
     const payload: any = {
       latitude: userLocation.value.latitude,
       longitude: userLocation.value.longitude,
-        kantor_cabang_id: selectedKantorId,
+      kantor_cabang_id: selectedKantorId.value || null,
     }
 
     if (catatan.value) {
@@ -680,7 +680,7 @@ const submitAttendance = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': tokenJson.csrf_token,
+        'X-CSRF-TOKEN': csrfToken,
       },
       credentials: 'same-origin',
       body: JSON.stringify(payload),

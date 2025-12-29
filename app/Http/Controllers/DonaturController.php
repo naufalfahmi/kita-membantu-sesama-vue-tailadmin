@@ -97,21 +97,14 @@ class DonaturController extends Controller
                           ->orWhere('pic', $user->id);
                     });
                 } else {
-                    // Fallback: if user has a primary kantor_cabang_id, filter by it; otherwise
-                    // keep original visibility (created_by or pic)
-                    if ($user->kantor_cabang_id) {
-                        $primary = $user->kantor_cabang_id;
-                        $query->where(function ($q) use ($allowed, $user, $primary) {
-                            $q->where('donaturs.kantor_cabang_id', $primary)
-                              ->orWhereIn('donaturs.created_by', $allowed)
-                              ->orWhere('pic', $user->id);
-                        });
-                    } else {
-                        $query->where(function ($q) use ($allowed, $user) {
-                            $q->whereIn('donaturs.created_by', $allowed)
-                              ->orWhere('pic', $user->id);
-                        });
-                    }
+                    // Do NOT grant visibility based solely on the user's primary
+                    // `kantor_cabang_id`. If there are no explicit pivot
+                    // assignments, restrict to created_by (self + subordinates)
+                    // or where user is PIC.
+                    $query->where(function ($q) use ($allowed, $user) {
+                        $q->whereIn('donaturs.created_by', $allowed)
+                          ->orWhere('pic', $user->id);
+                    });
                 }
             }
         }

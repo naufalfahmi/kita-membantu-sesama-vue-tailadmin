@@ -208,11 +208,27 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Leader
             </label>
-            <SearchableSelect
-              v-model="formData.leader_id"
-              :options="leaderSelectOptions"
-              placeholder="Pilih Leader"
-            />
+            <div class="flex items-center gap-2">
+              <div class="flex-1">
+                <SearchableSelect
+                  v-model="formData.leader_id"
+                  :options="leaderSelectOptions"
+                  placeholder="Pilih Leader"
+                />
+              </div>
+              <button
+                v-if="formData.leader_id"
+                type="button"
+                @click="clearLeader"
+                title="Hapus Leader"
+                class="h-10 w-10 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div>
@@ -464,6 +480,10 @@ const loadData = async (id: string) => {
 
 const handleCancel = () => {
   router.push('/user-kepegawaian/karyawan')
+}
+
+const clearLeader = () => {
+  formData.leader_id = ''
 }
 
 const handleSave = async () => {

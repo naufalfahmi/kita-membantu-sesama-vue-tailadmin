@@ -8,14 +8,18 @@
       <div v-if="!user" class="text-sm text-gray-500">Data user tidak tersedia</div>
 
       <div v-else class="space-y-4">
-        <div v-if="leader" class="flex items-center gap-3">
-          <div class="w-3/4">
-            <p class="text-xs text-gray-400">Atasan</p>
-            <div class="mt-1 flex items-center gap-3">
-              <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-sm text-gray-700">{{ leaderInitial }}</div>
-              <div>
-                <div class="text-sm font-medium text-gray-800">{{ leader.name }}</div>
-                <div class="text-xs text-gray-500">{{ leader.posisi || leader.role?.name || '-' }}</div>
+        <div v-if="ancestors && ancestors.length" class="space-y-3">
+          <p class="text-xs text-gray-400">Atasan</p>
+          <div class="space-y-2">
+            <div v-for="(a, idx) in ancestors" :key="a.id" class="flex items-center gap-3">
+              <div class="w-3/4">
+                <div class="mt-1 flex items-center gap-3">
+                  <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-sm text-gray-700">{{ getInitial(a.name) }}</div>
+                  <div>
+                    <div class="text-sm font-medium text-gray-800">{{ a.name }}</div>
+                    <div class="text-xs text-gray-500">{{ a.posisi || a.role?.name || '-' }}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -59,7 +63,7 @@
 import { ref, onMounted, computed } from 'vue'
 
 const user = ref<any>(null)
-const leader = ref<any | null>(null)
+const ancestors = ref<any[]>([])
 const subordinates = ref<any[]>([])
 const loading = ref(true)
 
@@ -118,13 +122,22 @@ onMounted(async () => {
   user.value = await fetchUser()
   if (user.value) {
     // fetch leader if exists
-    if (user.value.leader_id) {
-      leader.value = await fetchKaryawanById(String(user.value.leader_id))
-    }
+      // fetch ancestor chain (top-most -> immediate leader)
+      const anc: any[] = []
+      let currentLeaderId = user.value.leader_id
+      let safety = 0
+      while (currentLeaderId && safety < 10) {
+        const l = await fetchKaryawanById(String(currentLeaderId))
+        if (!l) break
+        anc.unshift(l) // build from top-most to immediate
+        currentLeaderId = l.leader_id
+        safety++
+      }
+      ancestors.value = anc
 
-    // fetch direct subordinates
-    const subs = await fetchSubordinates(String(user.value.id))
-    subordinates.value = Array.isArray(subs) ? subs : []
+      // fetch direct subordinates
+      const subs = await fetchSubordinates(String(user.value.id))
+      subordinates.value = Array.isArray(subs) ? subs : []
   }
   loading.value = false
 })

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Donatur;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -71,17 +72,16 @@ class DonaturController extends Controller
 
         $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
-            // If the user is a subordinate (has a leader), they should only see
-            // donaturs that they directly own (created_by) or where they are PIC.
-            if (! empty($user->leader_id)) {
+            // If the user has no subordinates, treat them as a subordinate
+            // (they should only see donaturs they own or where they are PIC).
+            if (! $user->subordinates()->exists()) {
                 $query->where(function ($q) use ($user) {
                     $q->where('donaturs.created_by', $user->id)
                       ->orWhere('pic', $user->id);
                 });
             } else {
                 // User is a leader (no leader_id) — keep previous visibility logic
-                $subIds = $user->subordinates()->pluck('id')->toArray();
-                $allowed = array_merge([$user->id], $subIds);
+                $allowed = User::descendantIdsOf($user->id);
 
                 // Restrict donatur list to kantor cabang assigned to the user (via pivot)
                 try {
@@ -246,15 +246,14 @@ class DonaturController extends Controller
         }
 
         if (! $this->userIsAdmin($user)) {
-            // If subordinate, only allow own donors (created_by) or where they're PIC
-            if (! empty($user->leader_id)) {
+            // If the user has no subordinates, treat them as a subordinate
+            if (! $user->subordinates()->exists()) {
                 $query->where(function ($q) use ($user) {
                     $q->where('donaturs.created_by', $user->id)
                         ->orWhere('pic', $user->id);
                 });
             } else {
-                $subIds = $user->subordinates()->pluck('id')->toArray();
-                $allowed = array_merge([$user->id], $subIds);
+                $allowed = User::descendantIdsOf($user->id);
                 $query->where(function ($q) use ($allowed, $user) {
                     // Qualify column to avoid ambiguity
                     $q->whereIn('donaturs.created_by', $allowed)
@@ -298,8 +297,7 @@ class DonaturController extends Controller
                         ->orWhere('pic', $user->id);
                 });
             } else {
-                $subIds = $user->subordinates()->pluck('id')->toArray();
-                $allowed = array_merge([$user->id], $subIds);
+                $allowed = User::descendantIdsOf($user->id);
                 $query->where(function ($q) use ($allowed, $user) {
                     // Qualify column to avoid ambiguity
                     $q->whereIn('donaturs.created_by', $allowed)
@@ -380,8 +378,7 @@ class DonaturController extends Controller
             if (! empty($user->leader_id)) {
                 $query->where('created_by', $user->id);
             } else {
-                $subIds = $user->subordinates()->pluck('id')->toArray();
-                $allowed = array_merge([$user->id], $subIds);
+                $allowed = User::descendantIdsOf($user->id);
                 $query->whereIn('created_by', $allowed);
             }
         }

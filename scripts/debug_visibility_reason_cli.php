@@ -20,8 +20,8 @@ if (! $user) {
     exit(0);
 }
 
-$subIds = $user->subordinates()->pluck('id')->toArray();
-$allowed = array_merge([$user->id], $subIds);
+// Use descendantIdsOf to mirror controller logic (multi-level subtree)
+$allowed = \App\Models\User::descendantIdsOf($user->id);
 try {
     $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
 } catch (Exception $e) {

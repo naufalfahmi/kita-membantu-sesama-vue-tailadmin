@@ -380,33 +380,119 @@ const mitraOptions = computed(() => [
 ])
 
 const fundraiserOptions = computed(() => {
-  const map = new Map()
-  // Placeholder
-  map.set('', 'Semua Fundraiser')
+  const roleName = String(user?.value?.role?.name || '').toLowerCase()
+  const isLeader = roleName.includes('leader') || roleName.includes('lead')
+  const isAtasan = roleName.includes('atasan') || roleName.includes('supervisor') || roleName.includes('manager')
 
-  // Add fundraisers (karyawan) first
-  for (const item of fundraiserList.value) {
-    if (item?.id) {
-      map.set(String(item.id), item.name || item.nama || '-')
+  const map = new Map<string, string>()
+
+  const userIdStr = user?.value?.id ? String(user.value.id) : null
+  const userEmail = user?.value?.email ? String(user.value.email).toLowerCase() : null
+
+  const isManagedByUser = (entity: any) => {
+    if (!entity) return false
+    const checkIds = [
+      'atasan_id',
+      'leader_id',
+      'parent_id',
+      'supervisor_id',
+      'manager_id',
+      'manager_id',
+    ]
+    for (const k of checkIds) {
+      if (entity[k] && userIdStr && String(entity[k]) === userIdStr) return true
     }
-  }
-
-  // Add unique PIC users from donatur list
-  for (const donor of donaturList.value) {
-    const pic = donor?.pic_user || (donor?.pic ? { id: donor.pic, nama: donor.pic_nama || donor.pic_name || '' } : null)
-    if (pic && pic.id) {
-      const key = String(pic.id)
-      if (!map.has(key)) {
-        map.set(key, pic.nama || pic.name || '-')
+    // nested objects
+    const nestedKeys = ['atasan', 'leader', 'parent', 'supervisor', 'manager']
+    for (const nk of nestedKeys) {
+      const obj = entity[nk]
+      if (obj) {
+        if (obj.id && userIdStr && String(obj.id) === userIdStr) return true
+        if (obj.email && userEmail && String(obj.email).toLowerCase() === userEmail) return true
       }
     }
+    // emails on root
+    const emailKeys = ['atasan_email', 'leader_email', 'parent_email', 'supervisor_email', 'manager_email', 'email']
+    for (const ek of emailKeys) {
+      if (entity[ek] && userEmail && String(entity[ek]).toLowerCase() === userEmail) return true
+    }
+    return false
   }
 
-  const options: any[] = []
-  for (const [value, label] of map.entries()) {
-    options.push({ value, label })
+  // Helper to add an entry
+  const addEntry = (id: any, label: any) => {
+    if (!id) return
+    const key = String(id)
+    if (!map.has(key)) map.set(key, String(label || '-'))
   }
-  return options
+
+  // If user is 'atasan' show only themselves
+  if (isAtasan && user?.value?.id) {
+    addEntry(user.value.id, user.value.name || user.value.nama || user.value.email || 'Saya')
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }))
+  }
+
+  // For leaders, include only subordinates + themselves
+  if (isLeader && user?.value?.id) {
+    // add karyawan entries that look like subordinates (try common keys)
+    for (const item of fundraiserList.value) {
+      if (!item || !item.id) continue
+      if (isManagedByUser(item) || (userIdStr && String(item.id) === userIdStr)) {
+        addEntry(item.id, item.name || item.nama || item.label || item.email || item.username)
+      }
+    }
+
+    // include PICs from donatur that belong to subordinates
+    for (const donor of donaturList.value) {
+      const pic = donor?.pic_user || (donor?.pic ? { id: donor.pic, nama: donor.pic_nama || donor.pic_name || '' } : null)
+      if (!pic || !pic.id) continue
+      // check pic object for manager/leader relation or id/email match
+      if (isManagedByUser(pic) || (userIdStr && String(pic.id) === userIdStr)) {
+        addEntry(pic.id, pic.nama || pic.name || pic.label || '-')
+      }
+    }
+
+    // Ensure current user is present
+    addEntry(user.value.id, user.value.name || user.value.nama || user.value.email || 'Saya')
+
+    return Array.from(map.entries()).map(([value, label]) => ({ value, label }))
+  }
+
+  // Default behavior: include all fundraisers + unique PICs
+  // include the global "Semua Fundraiser" option in default case
+  map.set('', 'Semua Fundraiser')
+  for (const item of fundraiserList.value) {
+    if (item?.id) addEntry(item.id, item.name || item.nama || '-')
+  }
+  for (const donor of donaturList.value) {
+    const pic = donor?.pic_user || (donor?.pic ? { id: donor.pic, nama: donor.pic_nama || donor.pic_name || '' } : null)
+    if (pic && pic.id) addEntry(pic.id, pic.nama || pic.name || '-')
+  }
+
+  return Array.from(map.entries()).map(([value, label]) => ({ value, label }))
+})
+
+// Compute subordinate IDs for leader users (used to filter datasource client-side)
+const subordinateFundraiserIds = computed(() => {
+  const roleName = String(user?.value?.role?.name || '').toLowerCase()
+  const isLeader = roleName.includes('leader') || roleName.includes('lead')
+  const set = new Set<string>()
+  if (!isLeader || !user?.value?.id) return set
+
+  for (const item of fundraiserList.value) {
+    if (!item || !item.id) continue
+    if (isManagedByUser(item) || (userIdStr && String(item.id) === userIdStr)) set.add(String(item.id))
+  }
+
+  for (const donor of donaturList.value) {
+    const pic = donor?.pic_user || (donor?.pic ? { id: donor.pic } : null)
+    if (!pic || !pic.id) continue
+    if (isManagedByUser(pic) || (userIdStr && String(pic.id) === userIdStr)) set.add(String(pic.id))
+  }
+
+  // Always include current user id
+  set.add(String(user.value.id))
+  return set
 })
 
 const kantorCabangOptions = computed(() => [
@@ -467,6 +553,13 @@ const columnDefs = computed(() => {
         flex: 1,
         valueFormatter: (params: any) => params.value || '-',
       },
+          {
+            headerName: 'Fundrising',
+            field: 'fundraiser',
+            sortable: true,
+            flex: 1,
+            valueFormatter: (params: any) => params.value || '-',
+          },
       {
         headerName: 'Program',
         field: 'program',
@@ -765,8 +858,23 @@ const createDatasource = () => {
           donatur: item.donatur?.nama || null,
           mitra: item.mitra?.nama || null,
           kantor_cabang: item.kantor_cabang?.nama || null,
-          fundraiser: item.fundraiser?.nama || null,
-          fundraiser_pic: item.donatur_pic?.nama || item.donatur?.pic_user?.nama || item.donatur?.pic_user?.name || null,
+          // Prefer donatur PIC as fundraiser (donatur.pic / donatur_pic / donatur.pic_user), fallback to item.fundraiser
+          fundraiser:
+            item.donatur_pic?.nama ||
+            item.donatur?.pic_user?.nama ||
+            item.donatur?.pic_nama ||
+            item.donatur?.pic_name ||
+            (item.fundraiser?.nama ?? null),
+          // include IDs to allow client-side filtering for leader role
+          fundraiser_id: item.donatur_pic?.id || item.donatur?.pic_user?.id || item.donatur?.pic || item.fundraiser?.id || null,
+          fundraiser_pic:
+            item.donatur_pic?.nama ||
+            item.donatur?.pic_user?.nama ||
+            item.donatur?.pic_user?.name ||
+            item.donatur?.pic_nama ||
+            item.donatur?.pic_name ||
+            null,
+          fundraiser_pic_id: item.donatur_pic?.id || item.donatur?.pic_user?.id || (item.donatur?.pic ? item.donatur.pic : null) || null,
           program: item.program?.nama || null,
           nominal: item.nominal,
           nominal_formatted: item.nominal_formatted,
@@ -795,8 +903,27 @@ const createDatasource = () => {
         entry.pages.set(pageNum, rowsThisPage)
         evictOldestCacheEntry()
 
-        const lastRow = total >= 0 ? total : undefined
-        params.successCallback(rowsThisPage, lastRow)
+        // If current user is a leader, filter rows client-side to only show subordinates
+        try {
+          const roleName = String(user?.value?.role?.name || '').toLowerCase()
+          const isLeader = roleName.includes('leader') || roleName.includes('lead')
+          if (isLeader) {
+            const subSet = subordinateFundraiserIds.value
+            const filtered = rowsThisPage.filter((r: any) => {
+              const fId = r.fundraiser_id != null ? String(r.fundraiser_id) : null
+              const fpId = r.fundraiser_pic_id != null ? String(r.fundraiser_pic_id) : null
+              return (fId && subSet.has(fId)) || (fpId && subSet.has(fpId))
+            })
+            const lastRow = filtered.length >= 0 ? filtered.length : undefined
+            params.successCallback(filtered, lastRow)
+          } else {
+            const lastRow = total >= 0 ? total : undefined
+            params.successCallback(rowsThisPage, lastRow)
+          }
+        } catch (e) {
+          const lastRow = total >= 0 ? total : undefined
+          params.successCallback(rowsThisPage, lastRow)
+        }
 
         // set pinned bottom row to show total nominal (server-provided or formatted)
         try {
@@ -944,9 +1071,21 @@ const fetchData = async () => {
         mitra: item.mitra?.nama || null,
         kantor_cabang: item.kantor_cabang?.nama || null,
         // 'Dibuat oleh' (creator)
-        fundraiser: item.fundraiser?.nama || null,
-        // new column: donatur PIC
-        fundraiser_pic: item.donatur_pic?.nama || item.donatur?.pic_user?.nama || item.donatur?.pic_user?.name || null,
+        // Use donatur PIC for fundraiser display when available
+        fundraiser:
+          item.donatur_pic?.nama ||
+          item.donatur?.pic_user?.nama ||
+          item.donatur?.pic_nama ||
+          item.donatur?.pic_name ||
+          (item.fundraiser?.nama ?? null),
+        // donatur PIC detailed field
+        fundraiser_pic:
+          item.donatur_pic?.nama ||
+          item.donatur?.pic_user?.nama ||
+          item.donatur?.pic_user?.name ||
+          item.donatur?.pic_nama ||
+          item.donatur?.pic_name ||
+          null,
         program: item.program?.nama || null,
         nominal: item.nominal,
         nominal_formatted: item.nominal_formatted,
@@ -1837,6 +1976,18 @@ onMounted(async () => {
   // Ensure user permissions are loaded before fetching data so cellRenderers can rely on them
   await fetchUser()
   await fetchFilterOptions()
+  // If the user is an 'atasan', default the fundraiser filter to themselves
+  try {
+    const roleNameInit = String(user?.value?.role?.name || '').toLowerCase()
+    const isAtasanInit = roleNameInit.includes('atasan') || roleNameInit.includes('supervisor') || roleNameInit.includes('manager')
+    if (isAtasanInit && user?.value?.id) {
+      filterFundraiser.value = String(user.value.id)
+      // refresh datasource to apply the filter
+      refreshGrid()
+    }
+  } catch (e) {
+    // ignore
+  }
   await fetchData()
 
   // Refresh AG Grid to re-run cell renderers with correct permission flags

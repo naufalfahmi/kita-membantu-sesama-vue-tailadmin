@@ -140,6 +140,39 @@ class User extends Authenticatable
     }
 
     /**
+     * Return an array of user ids consisting of the given user's id
+     * plus all descendant subordinate ids (recursive, multi-level).
+     * Suitable for small-to-medium org trees.
+     *
+     * Usage: $allowed = User::descendantIdsOf($user->id);
+     *
+     * @param  int|string  $userId
+     * @return array<int>
+     */
+    public static function descendantIdsOf($userId): array
+    {
+        $collected = [];
+        $queue = [$userId];
+
+        while (! empty($queue)) {
+            $level = User::whereIn('leader_id', $queue)->pluck('id')->toArray();
+            // remove any ids we've already collected
+            $level = array_values(array_diff($level, $collected));
+            if (empty($level)) {
+                break;
+            }
+            $collected = array_merge($collected, $level);
+            $queue = $level;
+        }
+
+        // ensure caller is included first
+        array_unshift($collected, $userId);
+        // unique and integer cast
+        $collected = array_values(array_unique($collected));
+        return array_map('intval', $collected);
+    }
+
+    /**
      * Get the user who created this record.
      */
     public function creator()

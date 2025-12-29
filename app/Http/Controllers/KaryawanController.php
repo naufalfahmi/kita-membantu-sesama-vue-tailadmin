@@ -25,6 +25,24 @@ class KaryawanController extends Controller
             ])
             ->karyawan();
 
+        // If caller is not admin, restrict visible users to the caller's subtree.
+        $authUser = auth()->user();
+        if ($authUser && ! $this->userIsAdmin($authUser)) {
+            // If user has subordinates, show only descendants excluding self (leaders)
+            if ($authUser->subordinates()->exists()) {
+                $allowed = User::descendantIdsOf($authUser->id);
+                $allowed = array_values(array_diff($allowed, [$authUser->id]));
+                if (empty($allowed)) {
+                    $query->whereRaw('1 = 0');
+                } else {
+                    $query->whereIn('id', $allowed);
+                }
+            } else {
+                // Subordinate users see only themselves
+                $query->where('id', $authUser->id);
+            }
+        }
+
         // If caller requests only assigned karyawan, restrict to users assigned to
         // the current user's kantor cabang assignments (via pivot) or primary kantor_cabang_id.
         if ($request->boolean('only_assigned') && auth()->check()) {

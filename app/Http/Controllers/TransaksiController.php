@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaksi;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -36,6 +37,7 @@ class TransaksiController extends Controller
         }
 
         $isAdmin = $this->userIsAdmin($user);
+        $allowed = null;
         if (! $isAdmin) {
             // Restrict by kantor cabang assignments (pivot `kantor_cabang_user`) when available.
             try {
@@ -54,15 +56,14 @@ class TransaksiController extends Controller
                 // subsequent visibility filter will still apply (created_by / pic).
             }
 
-            $subIds = $user->subordinates()->pluck('id')->toArray();
-            $allowed = array_merge([$user->id], $subIds);
+            $allowed = User::descendantIdsOf($user->id);
 
             // Allow users to see transaksis they created, their subordinates created,
-            // or any transaksi where they are the PIC of the related donatur.
+            // or any transaksi where the related donatur's PIC is the user or a subordinate.
             $query->where(function ($q) use ($allowed, $user) {
                 // Qualify column to avoid ambiguity when query uses joins
                 $q->whereIn('transaksis.created_by', $allowed)
-                    ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
+                    ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
             });
         }
 
@@ -86,18 +87,29 @@ class TransaksiController extends Controller
         }
 
         if ($request->filled('fundraiser')) {
-            $query->whereHas('fundraiser', fn ($q) => $q->where('name', 'like', "%{$request->fundraiser}%"));
+            $searchName = trim((string) $request->fundraiser);
+            if (! $isAdmin && is_array($allowed)) {
+                $query->whereHas('fundraiser', function ($q) use ($searchName, $allowed) {
+                    $q->where('name', 'like', "%{$searchName}%")->whereIn('id', $allowed);
+                });
+            } else {
+                $query->whereHas('fundraiser', fn ($q) => $q->where('name', 'like', "%{$searchName}%"));
+            }
         }
 
         if ($request->filled('fundraiser_id')) {
             $fid = $request->fundraiser_id;
-            // Allow filtering by the transaction's fundraiser (creator) OR by the donatur's PIC
-            // so selecting a fundraiser will return transaksis where that user is either the
-            // assigned fundraiser or the PIC of the related donatur.
-            $query->where(function ($q) use ($fid) {
-                $q->where('fundraiser_id', $fid)
-                    ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $fid));
-            });
+            // If non-admin restrict the selected fundraiser to user's subtree
+            if (! $isAdmin && is_array($allowed) && ! in_array((string) $fid, array_map('strval', $allowed), true)) {
+                // Force empty result set
+                $query->whereRaw('0 = 1');
+            } else {
+                // Allow filtering by the transaction's fundraiser (creator) OR by the donatur's PIC
+                $query->where(function ($q) use ($fid) {
+                    $q->where('fundraiser_id', $fid)
+                        ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $fid));
+                });
+            }
         }
 
         if ($request->filled('program')) {
@@ -259,12 +271,11 @@ class TransaksiController extends Controller
                 $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
             }
 
-            $subIds = $user->subordinates()->pluck('id')->toArray();
-            $allowed = array_merge([$user->id], $subIds);
+            $allowed = User::descendantIdsOf($user->id);
 
             $query->where(function ($q) use ($allowed, $user) {
                 $q->whereIn('transaksis.created_by', $allowed)
-                    ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
+                    ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
             });
         }
 
@@ -536,12 +547,11 @@ class TransaksiController extends Controller
 
         $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
-            $subIds = $user->subordinates()->pluck('id')->toArray();
-            $allowed = array_merge([$user->id], $subIds);
+            $allowed = User::descendantIdsOf($user->id);
             $query->where(function ($q) use ($allowed, $user) {
                 // Qualify column to avoid ambiguity when query uses joins
                 $q->whereIn('transaksis.created_by', $allowed)
-                    ->orWhereHas('donatur', fn ($q2) => $q2->where('pic', $user->id));
+                    ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
             });
         }
 

@@ -3,6 +3,7 @@
     <h3 class="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">Profile</h3>
     <div class="">
       <ProfileCard />
+      <HierarchyCard />
       <PersonalInfoCard />
     </div>
   </div>
@@ -12,4 +13,5 @@
 import ProfileCard from '@/components/profile/ProfileCard.vue'
 import PersonalInfoCard from '@/components/profile/PersonalInfoCard.vue'
 import AddressCard from '@/components/profile/AddressCard.vue'
+import HierarchyCard from '@/components/profile/HierarchyCard.vue'
 </script>

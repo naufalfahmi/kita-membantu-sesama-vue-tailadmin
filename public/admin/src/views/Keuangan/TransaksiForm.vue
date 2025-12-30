@@ -292,8 +292,23 @@ const fetchCurrentUser = async () => {
 // Fetch dropdown options from APIs
 const fetchOptions = async () => {
   try {
+    // Decide kantor-cabang URL: show all branches only to global admins
+    const isRoleAdminCabang = (() => {
+      if (!currentUser.value) return false
+      const roles = currentUser.value.roles || (currentUser.value.role ? [currentUser.value.role] : [])
+      return Array.isArray(roles) && roles.some((r: any) => {
+        const name = typeof r === 'string' ? r : r?.name
+        return typeof name === 'string' && name.trim().toLowerCase() === 'admin cabang'
+      })
+    })()
+
+    const isGlobalAdmin = Boolean(currentUser.value && currentUser.value.is_admin)
+    const kantorUrl = (isGlobalAdmin && !isRoleAdminCabang)
+      ? '/admin/api/kantor-cabang?per_page=1000'
+      : '/admin/api/kantor-cabang?per_page=1000&only_assigned=1'
+
     const [kantorRes, programRes] = await Promise.all([
-      fetch('/admin/api/kantor-cabang?per_page=1000&only_assigned=1', { credentials: 'same-origin' }),
+      fetch(kantorUrl, { credentials: 'same-origin' }),
       fetch('/admin/api/program?per_page=100', { credentials: 'same-origin' }),
     ])
 

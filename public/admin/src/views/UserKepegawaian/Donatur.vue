@@ -508,10 +508,10 @@ const fetchReferenceData = async () => {
   }
 }
 
-onMounted(() => {
-  fetchUser()
-  fetchReferenceData()
-  fetchData()
+onMounted(async () => {
+  await fetchUser()
+  await fetchReferenceData()
+  await fetchData()
 })
 </script>
 

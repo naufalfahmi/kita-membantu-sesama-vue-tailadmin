@@ -262,14 +262,30 @@ class ProgramController extends Controller
                 }
             }
 
+            // determine per-transaksi allocation based on program share (key = 'program')
+            $shareType = $allocation ?? null;
+
             // enrich transaksis with used/available
-            $transaksisOut = $transaksis->map(function ($t) use ($usedMap) {
+            $transaksisOut = $transaksis->map(function ($t) use ($usedMap, $shareType) {
                 $used = isset($usedMap[$t->id]) ? (int)$usedMap[$t->id] : 0;
-                $available = max(0, (int)$t->nominal - $used);
+                $nominal = (int)$t->nominal;
+
+                // compute allocated amount for this transaksi based on shareType
+                $allocatedForTransaksi = $nominal;
+                if ($shareType) {
+                    if ($shareType->type === 'percentage' && $shareType->value !== null) {
+                        $allocatedForTransaksi = (int) floor($nominal * (float)$shareType->value / 100);
+                    } elseif ($shareType->type === 'nominal' && $shareType->value !== null) {
+                        $allocatedForTransaksi = min($nominal, (int)$shareType->value);
+                    }
+                }
+
+                $available = max(0, $allocatedForTransaksi - $used);
                 return [
                     'id' => $t->id,
                     'kode' => $t->kode ?? null,
-                    'nominal' => (int)$t->nominal,
+                    'nominal' => $nominal,
+                    'allocated' => $allocatedForTransaksi,
                     'tanggal_transaksi' => $t->tanggal_transaksi,
                     'used' => $used,
                     'available' => $available,

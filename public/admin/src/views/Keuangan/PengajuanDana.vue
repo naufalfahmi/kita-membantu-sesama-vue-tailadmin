@@ -212,11 +212,11 @@ import { getCsrfTokenSafe } from '@/utils/getCsrfToken'
 
 // Options for Status filter (value = DB value)
 const statusFilterOptions = [
-  { value: '', label: 'Semua Status' },
-  { value: 'approved', label: 'Disetujui' },
-  { value: 'rejected', label: 'Ditolak' },
-  { value: 'pending', label: 'Diajukan' },
-  { value: 'Draft', label: 'Draft' },
+   { value: '', label: 'Semua' },
+   { value: 'Approved', label: 'Disetujui' },
+   { value: 'Rejected', label: 'Ditolak' },
+   { value: 'Pending', label: 'Diajukan' },
+   { value: 'Draft', label: 'Draft' },
 ]
 const statusFilterSearchInput = ref('')
 

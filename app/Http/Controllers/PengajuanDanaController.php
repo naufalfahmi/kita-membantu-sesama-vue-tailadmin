@@ -133,7 +133,19 @@ class PengajuanDanaController extends Controller
 
             // compute already used from this transaksi
             $used = PengajuanDanaDisbursement::where('transaksi_id', $t->id)->sum('amount');
-            $available = max(0, (int)$t->nominal - (int)$used);
+
+            // compute allocated amount for this transaksi based on program share
+            $nominal = (int)$t->nominal;
+            $allocatedForTransaksi = $nominal;
+            if ($allocation) {
+                if ($allocation->type === 'percentage' && $allocation->value !== null) {
+                    $allocatedForTransaksi = (int) floor($nominal * (float)$allocation->value / 100);
+                } elseif ($allocation->type === 'nominal' && $allocation->value !== null) {
+                    $allocatedForTransaksi = min($nominal, (int)$allocation->value);
+                }
+            }
+
+            $available = max(0, $allocatedForTransaksi - (int)$used);
             if ($available <= 0) continue;
 
             $take = min($available, $need);
@@ -237,9 +249,12 @@ class PengajuanDanaController extends Controller
 
                 $p = PengajuanDana::create($data);
 
-                // If program submission, allocate disbursements from transaksi in the used_at month
+                // If program submission and already approved, allocate disbursements from transaksi in the used_at month
+                // Do NOT allocate for drafts/pending states — allocations should only be created when pengajuan is approved
                 if ($p->submission_type === 'program' && $p->program_id && $p->used_at) {
-                    $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id());
+                    if (is_string($p->status) && strtolower(trim($p->status)) === 'approved') {
+                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id());
+                    }
                 }
 
                 return response()->json([
@@ -323,11 +338,14 @@ class PengajuanDanaController extends Controller
             return DB::transaction(function () use ($request, $p) {
                 $p->update(array_merge($request->only(['fundraiser_id','submission_type','program_id','amount','used_at','purpose','kantor_cabang_id','status']), ['updated_by' => auth()->id()]));
 
-                // Re-allocate disbursements when program/used_at/amount changed
+                // Re-allocate disbursements when program/used_at/amount changed.
+                // Remove previous disbursements first. Only create new disbursements when the pengajuan is approved.
                 if ($p->submission_type === 'program' && $p->program_id && $p->used_at) {
                     // remove previous disbursements for this pengajuan
                     PengajuanDanaDisbursement::where('pengajuan_dana_id', $p->id)->delete();
-                    $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id());
+                    if (is_string($p->status) && strtolower(trim($p->status)) === 'approved') {
+                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id());
+                    }
                 } else {
                     // if not program anymore, remove any previous disbursements
                     PengajuanDanaDisbursement::where('pengajuan_dana_id', $p->id)->delete();

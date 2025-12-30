@@ -213,6 +213,7 @@ import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import AsyncSearchableSelect from '@/components/forms/AsyncSearchableSelect.vue'
+import { useAuth } from '@/composables/useAuth'
 
 interface SelectOption {
   value: string
@@ -274,6 +275,8 @@ const formData = reactive({
 })
 
 // Fetch current user data
+const { fetchUser } = useAuth()
+
 const fetchCurrentUser = async () => {
   try {
     const res = await fetch('/admin/api/user', { credentials: 'same-origin' })
@@ -482,6 +485,8 @@ const handleSave = async () => {
 }
 
 onMounted(async () => {
+  // ensure global auth state is populated for components that rely on it
+  await fetchUser()
   await fetchCurrentUser()
   await fetchOptions()
   await loadData()

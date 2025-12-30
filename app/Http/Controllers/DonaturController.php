@@ -71,36 +71,116 @@ class DonaturController extends Controller
         }
 
         $isAdmin = $this->userIsAdmin($user);
-        if (! $isAdmin) {
-            // If the user has no subordinates, treat them as a subordinate
-            // (they should only see donaturs they own or where they are PIC).
-            if (! $user->subordinates()->exists()) {
-                // No subordinates: restrict to donaturs where caller is PIC only
-                $query->where('pic', $user->id);
-            } else {
-                // User is a leader (no leader_id) — keep previous visibility logic
-                $allowed = User::descendantIdsOf($user->id);
 
-                // Restrict donatur list to kantor cabang assigned to the user (via pivot)
+            // Track whether we've applied an explicit visibility filter
+            $skipVisibility = false;
+
+            // Debug logging to help trace visibility/filtering issues
+            if ($request->boolean('only_assigned') || $request->filled('kantor_cabang_id')) {
                 try {
-                    $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
+                    \Log::debug('DonaturController@index called', [
+                        'user_id' => $user->id ?? null,
+                        'is_admin' => $isAdmin,
+                        'only_assigned' => $request->boolean('only_assigned'),
+                        'requested_kantor_cabang_id' => $request->input('kantor_cabang_id'),
+                    ]);
+                } catch (\Throwable $e) {
+                    // ignore logging errors
+                }
+            }
+
+        // If caller requested only assigned kantor cabang, restrict to user's
+        // assigned branches (via pivot) or their primary kantor_cabang_id.
+        if ($request->boolean('only_assigned') && auth()->check()) {
+            try {
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+            } catch (\Exception $e) {
+                $assignedIds = [];
+            }
+
+            if (! empty($assignedIds)) {
+                $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
+                $skipVisibility = true;
+            } elseif ($user->kantor_cabang_id) {
+                $query->where('donaturs.kantor_cabang_id', $user->kantor_cabang_id);
+                $skipVisibility = true;
+            } else {
+                // No assigned branches and no primary branch -> return empty
+                $query->whereRaw('1 = 0');
+                $skipVisibility = true;
+            }
+        }
+
+        // If caller requested explicit kantor_cabang_id, allow filtering by that
+        // branch only when caller is admin or assigned to that branch (or
+        // when their primary kantor_cabang_id matches). When this param is
+        // present and allowed, skip the usual per-user visibility widening
+        // logic to avoid contradictory filters.
+        if ($request->filled('kantor_cabang_id')) {
+            $requestedBranch = $request->input('kantor_cabang_id');
+            if ($isAdmin) {
+                $query->where('kantor_cabang_id', $requestedBranch);
+                $skipVisibility = true;
+            } else {
+                try {
+                    $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
                 } catch (\Exception $e) {
                     $assignedIds = [];
                 }
 
-                if (! empty($assignedIds)) {
-                            $query->where(function ($q) use ($allowed, $user, $assignedIds) {
-                                $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
-                                    ->orWhereIn('donaturs.pic', $allowed);
-                            });
+                // Allow if user is assigned to the branch or their primary matches
+                if (in_array($requestedBranch, $assignedIds) || ($user->kantor_cabang_id && $user->kantor_cabang_id == $requestedBranch)) {
+                    $query->where('kantor_cabang_id', $requestedBranch);
+                    $skipVisibility = true;
                 } else {
-                    // Do NOT grant visibility based solely on the user's primary
-                    // `kantor_cabang_id`. If there are no explicit pivot
-                    // assignments, restrict to created_by (self + subordinates)
-                    // or where user is PIC.
-                            $query->where(function ($q) use ($allowed, $user) {
-                                $q->whereIn('donaturs.pic', $allowed);
-                            });
+                    // Not allowed to view this branch -> return empty
+                    $query->whereRaw('1 = 0');
+                    $skipVisibility = true;
+                }
+            }
+        }
+
+        if (! $isAdmin && ! ($skipVisibility)) {
+            // Always consider explicit kantor cabang assignments (pivot).
+            // Users who are assigned to branches should see donaturs in
+            // those branches regardless of leader/subordinate status.
+            try {
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+            } catch (\Exception $e) {
+                $assignedIds = [];
+            }
+
+            $hasSubordinates = $user->subordinates()->exists();
+
+            if (! empty($assignedIds)) {
+                if ($hasSubordinates) {
+                    // Leaders with branch assignments: show donaturs in assigned
+                    // branches OR donaturs where PIC is within user's descendants.
+                    $allowed = User::descendantIdsOf($user->id);
+                    $query->where(function ($q) use ($assignedIds, $allowed) {
+                        $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                          ->orWhereIn('donaturs.pic', $allowed);
+                    });
+                } else {
+                    // Non-leaders with branch assignments: show donaturs in
+                    // assigned branches OR donaturs where caller is PIC.
+                    $query->where(function ($q) use ($assignedIds, $user) {
+                        $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                          ->orWhere('donaturs.pic', $user->id);
+                    });
+                }
+            } else {
+                // No explicit branch assignments: fall back to previous rules
+                if (! $hasSubordinates) {
+                    // No subordinates: restrict to donaturs where caller is PIC only
+                    $query->where('pic', $user->id);
+                } else {
+                    // Leaders without pivot assignments: allow visibility for
+                    // descendants' PIC values.
+                    $allowed = User::descendantIdsOf($user->id);
+                    $query->where(function ($q) use ($allowed) {
+                        $q->whereIn('donaturs.pic', $allowed);
+                    });
                 }
             }
         }
@@ -150,6 +230,15 @@ class DonaturController extends Controller
             }
         }
 
+        try {
+            \Log::debug('DonaturController@index sql', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+            ]);
+        } catch (\Throwable $_) {
+            // ignore
+        }
+
         $donaturs = $query
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 20));
@@ -157,6 +246,26 @@ class DonaturController extends Controller
         $donaturs->getCollection()->transform(function (Donatur $donatur) {
             return $this->transformDonatur($donatur);
         });
+
+        try {
+            // Helpful debug information for visibility issues in frontend
+            $assignedIdsForLog = [];
+            try {
+                $assignedIdsForLog = auth()->user() ? auth()->user()->kantorCabangs()->pluck('kantor_cabang.id')->toArray() : [];
+            } catch (\Throwable $_) {
+                $assignedIdsForLog = [];
+            }
+            \Log::debug('DonaturController@index response', [
+                'user_id' => $user->id ?? null,
+                'is_admin' => $isAdmin,
+                'assigned_ids' => $assignedIdsForLog,
+                'skip_visibility' => $skipVisibility,
+                'result_count' => $donaturs->total(),
+                'requested_params' => $request->all(),
+            ]);
+        } catch (\Throwable $_) {
+            // ignore logging errors
+        }
 
         return response()->json([
             'success' => true,
@@ -244,16 +353,40 @@ class DonaturController extends Controller
         }
 
         if (! $this->userIsAdmin($user)) {
-            // If the user has no subordinates, treat them as a subordinate
-            if (! $user->subordinates()->exists()) {
-                // No subordinates: allow show only when caller is PIC
-                $query->where('pic', $user->id);
+            // Allow visibility when user is assigned to the donor's kantor cabang
+            try {
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+            } catch (\Exception $e) {
+                $assignedIds = [];
+            }
+
+            $hasSubordinates = $user->subordinates()->exists();
+
+            if (! empty($assignedIds)) {
+                if (! $hasSubordinates) {
+                    // Non-leaders with branch assignments: allow if donor is in assigned branch or caller is PIC
+                    $query->where(function ($q) use ($assignedIds, $user) {
+                        $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                          ->orWhere('donaturs.pic', $user->id);
+                    });
+                } else {
+                    // Leaders with branch assignments: allow if donor is in assigned branch or PIC is descendant
+                    $allowed = User::descendantIdsOf($user->id);
+                    $query->where(function ($q) use ($assignedIds, $allowed) {
+                        $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                          ->orWhereIn('donaturs.pic', $allowed);
+                    });
+                }
             } else {
-                $allowed = User::descendantIdsOf($user->id);
-                $query->where(function ($q) use ($allowed, $user) {
-                    // Qualify column to avoid ambiguity
-                            $q->whereIn('donaturs.pic', $allowed);
-                });
+                // No assigned branches: fall back to previous PIC/descendant rules
+                if (! $hasSubordinates) {
+                    $query->where('pic', $user->id);
+                } else {
+                    $allowed = User::descendantIdsOf($user->id);
+                    $query->where(function ($q) use ($allowed, $user) {
+                        $q->whereIn('donaturs.pic', $allowed);
+                    });
+                }
             }
         }
 

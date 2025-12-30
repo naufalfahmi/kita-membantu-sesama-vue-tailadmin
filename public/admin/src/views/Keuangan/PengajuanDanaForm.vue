@@ -43,21 +43,6 @@
                 </div>
               </div>
 
-              <div class="mt-3">
-                <div class="mb-2 text-sm font-medium">Daftar Transaksi (bulan)</div>
-                <div class="space-y-2 max-h-48 overflow-auto">
-                  <div v-for="t in transaksiList" :key="t.id" class="flex items-center justify-between rounded-md border border-gray-200 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800">
-                    <div>
-                      <div class="font-medium">{{ t.kode || t.id }}</div>
-                      <div class="text-xs text-gray-500">{{ t.tanggal_transaksi }}</div>
-                    </div>
-                    <div class="text-right">
-                      <div class="text-sm">Nominal: {{ formatCurrency(t.nominal) }}</div>
-                      <div class="text-xs text-gray-500">Terpakai: {{ formatCurrency(t.used) }} — Tersedia: {{ formatCurrency(t.available) }}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <div class="mt-3 text-sm text-gray-700">
                 <div>Estimasi sisa setelah pengajuan: <span class="font-medium">{{ formatCurrency((programBalance.remaining || 0) - (formData.amount || 0)) }}</span></div>
                 <div v-if="(formData.amount || 0) > (programBalance.remaining || 0)" class="mt-1 text-xs text-red-500">Kekurangan: {{ formatCurrency((formData.amount || 0) - (programBalance.remaining || 0)) }}</div>
@@ -67,7 +52,23 @@
 
           <div class="lg:col-span-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Status <span class="text-red-500">*</span></label>
-            <SearchableSelect v-model="formData.status" :options="statusOptionsFiltered" placeholder="Pilih status" />
+            <div v-if="formData.status === 'Approved'" class="h-11 flex items-center rounded-lg border border-gray-300 bg-transparent px-4 text-sm text-gray-700 dark:border-gray-700 dark:text-gray-400">
+              <span class="flex-1">Disetujui</span>
+              <input type="hidden" v-model="formData.status" />
+            </div>
+            <div v-else-if="formData.status === 'Rejected'" class="space-y-2">
+              <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/10 dark:text-red-300">
+                <div class="font-medium">Pengajuan ditolak</div>
+                <div class="text-xs">Anda dapat mengajukan ulang jika diperlukan.</div>
+              </div>
+              <div class="flex items-center gap-3">
+                <button type="button" @click="() => { formData.status = 'Pending' }" class="rounded bg-brand-500 px-3 py-1 text-sm text-white">Ajukan lagi</button>
+                <button type="button" @click="() => { formData.status = 'Draft' }" class="rounded bg-gray-100 px-3 py-1 text-sm">Simpan sebagai Draft</button>
+              </div>
+            </div>
+            <div v-else>
+              <SearchableSelect v-model="formData.status" :options="statusOptionsFiltered" placeholder="Pilih status" />
+            </div>
           </div>
 
           <div class="lg:col-span-1">
@@ -172,8 +173,7 @@ const formattedAmount = computed(() => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(formData.amount)
 })
 
-const programBalance: Ref<any> = ref(null)
-const transaksiList: Ref<Array<any>> = ref([])
+  const programBalance: Ref<any> = ref(null)
 const loadingBalance = ref(false)
 let balanceTimer: number | null = null
 
@@ -200,7 +200,6 @@ const formatMonthYear = (ym: string | null) => {
 const loadProgramBalance = async () => {
   if (!formData.programId || !formData.usedAt) {
     programBalance.value = null
-    transaksiList.value = []
     return
   }
   loadingBalance.value = true
@@ -218,7 +217,6 @@ const loadProgramBalance = async () => {
     const json = await res.json()
     if (!json.success) throw new Error(json.message || 'Failed to load balance')
     programBalance.value = json.data
-    transaksiList.value = json.data.transaksis || []
     // if creating new and amount not set, default to full remaining allocation
     if (!isEditMode.value) {
       const rem = Number(json.data.remaining || 0)
@@ -230,7 +228,6 @@ const loadProgramBalance = async () => {
     console.error('Error loading program balance', err)
     toast.error('Gagal memuat saldo program')
     programBalance.value = null
-    transaksiList.value = []
   } finally {
     loadingBalance.value = false
   }
@@ -323,19 +320,17 @@ const loadOptions = async () => {
   }
 }
 
-// Status options: when applicant is the current user limit to Draft or Diajukan (DB value 'pending')
+// Status options allowed in this form (approval statuses handled elsewhere)
 const statusOptions = [
   { value: 'Draft', label: 'Draft' },
-  { value: 'pending', label: 'Diajukan' },
+  { value: 'Pending', label: 'Diajukan' },
 ]
 
-const isApplicantSelf = computed(() => {
-  return String(formData.applicant) === String(currentUserId.value)
-})
+const isApplicantSelf = computed(() => String(formData.applicant) === String(currentUserId.value))
 
 const statusOptionsFiltered = computed(() => {
-  // currently restricted set for self; admins/editors could be expanded later
-  if (isApplicantSelf.value) return statusOptions
+  // This form never exposes 'Approved' or 'Rejected' options; approvals are handled
+  // in the approval UI. Always show only Draft/Pending here.
   return statusOptions
 })
 

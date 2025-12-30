@@ -211,7 +211,6 @@ import { useToast } from 'vue-toastification'
 import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import AsyncSearchableSelect from '@/components/forms/AsyncSearchableSelect.vue'
 

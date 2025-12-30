@@ -161,6 +161,7 @@
             style="width: 100%; height: 100%;"
             :columnDefs="columnDefs"
             :defaultColDef="defaultColDef"
+            :overlayNoRowsTemplate="overlayNoRowsTemplate"
             :rowModelType="'infinite'"
             :datasource="dataSource"
             :rowBuffer="10"
@@ -176,35 +177,6 @@
           />
         </div>
         
-        <!-- Custom empty state overlay -->
-        <div
-          v-if="showEmptyState"
-          class="absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 rounded-lg z-50 pointer-events-none"
-          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"
-        >
-          <svg class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              v-if="filterNamaPengaju || filterStatus || filterTanggal || filterJumlahMin || filterJumlahMax"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            ></path>
-            <path
-              v-else
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            ></path>
-          </svg>
-          <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
-            {{ filterNamaPengaju || filterStatus || filterTanggal || filterJumlahMin || filterJumlahMax ? 'Tidak ada data ditemukan' : 'Tidak ada data' }}
-          </p>
-          <p class="text-gray-500 dark:text-gray-500 text-sm">
-            {{ filterNamaPengaju || filterStatus || filterTanggal || filterJumlahMin || filterJumlahMax ? 'Coba ubah filter pencarian Anda' : 'Belum ada data yang tersedia' }}
-          </p>
-        </div>
       </div>
     </div>
 
@@ -236,13 +208,14 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/composables/useAuth'
+import { getCsrfTokenSafe } from '@/utils/getCsrfToken'
 
-// Options for Status filter
+// Options for Status filter (value = DB value)
 const statusFilterOptions = [
   { value: '', label: 'Semua Status' },
-  { value: 'Disetujui', label: 'Disetujui' },
-  { value: 'Ditolak', label: 'Ditolak' },
-  { value: 'Pending', label: 'Pending' },
+  { value: 'approved', label: 'Disetujui' },
+  { value: 'rejected', label: 'Ditolak' },
+  { value: 'pending', label: 'Diajukan' },
   { value: 'Draft', label: 'Draft' },
 ]
 const statusFilterSearchInput = ref('')
@@ -327,20 +300,23 @@ const columnDefs = [
     field: 'status',
     sortable: true,
     filter: false,
-    width: 120,
+    width: 140,
     cellRenderer: (params: any) => {
-      const status = params.value
-      const statusColors: Record<string, string> = {
-        'Disetujui': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-        'Ditolak': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-        'Pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-        'Draft': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+      const raw = params.value || ''
+      const key = String(raw).toLowerCase()
+
+      const map: Record<string, { label: string; classes: string }> = {
+        'approved': { label: 'Disetujui', classes: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+        'rejected': { label: 'Ditolak', classes: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400' },
+        'pending': { label: 'Diajukan', classes: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
+        'draft': { label: 'Draft', classes: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' },
       }
-      const colorClass = statusColors[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-      
+
+      const info = map[key] || (raw ? { label: String(raw), classes: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400' } : { label: '', classes: '' })
+
       const span = document.createElement('span')
-      span.className = `px-2 py-1 rounded-full text-xs font-medium ${colorClass}`
-      span.textContent = status
+      span.className = `px-2 py-1 rounded-full text-xs font-medium ${info.classes}`
+      span.textContent = info.label
       return span
     },
   },
@@ -419,48 +395,8 @@ const defaultColDef = {
   filter: false,
 }
 
-// Sample data - generate 200 items for infinite scroll testing
-const generateRowData = (): PengajuanDanaRow[] => {
-  const namaPengaju = [
-    'Ahmad Hidayat', 'Siti Nurhaliza', 'Budi Santoso', 'Dewi Lestari', 'Eko Prasetyo',
-    'Fitri Handayani', 'Guntur Wibowo', 'Hesti Rahayu', 'Indra Wijaya', 'Joko Susilo',
-    'Kartika Putri', 'Lukman Hakim', 'Maya Sari', 'Nanda Pratama', 'Olivia Wijaya',
-  ]
-  
-  const statuses = ['Disetujui', 'Ditolak', 'Pending', 'Draft']
-  const persetujuans = ['Direktur', 'Wakil Direktur', 'Manager', '-']
-  
-  const rowData: PengajuanDanaRow[] = []
-  const startDate = new Date('2024-01-01')
-  
-  for (let i = 1; i <= 200; i++) {
-    const pengajuIndex = (i - 1) % namaPengaju.length
-    const statusIndex = (i - 1) % statuses.length
-    const persetujuanIndex = (i - 1) % persetujuans.length
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + (i - 1) * 2) // Increment by 2 days for each entry
-    
-    const tanggalPemakaian = new Date(startDate)
-    tanggalPemakaian.setDate(tanggalPemakaian.getDate() + (i - 1) * 2 + 30) // 30 days after tanggal
-    
-    // Random amount between 2M and 10M
-    const jumlahDana = Math.floor(Math.random() * 8000000) + 2000000
-    
-    rowData.push({
-      id: i.toString(),
-      namaPengaju: namaPengaju[pengajuIndex],
-      tanggalPemakaian: tanggalPemakaian.toISOString().split('T')[0],
-      jumlahDana: jumlahDana,
-      status: statuses[statusIndex],
-      tanggal: date.toISOString().split('T')[0],
-      persetujuan: statuses[statusIndex] === 'Disetujui' ? persetujuans[persetujuanIndex] : '-',
-    })
-  }
-  
-  return rowData
-}
-
-const rowDataArray = ref<PengajuanDanaRow[]>(generateRowData())
+// Data will be loaded from API via datasource
+const rowDataArray = ref<PengajuanDanaRow[]>([])
 
 // Filter state
 const filterNamaPengaju = ref('')
@@ -519,8 +455,8 @@ const filteredData = computed(() => {
   return filtered
 })
 
-// Show empty state when filtered data is empty
-const showEmptyState = computed(() => filteredData.value.length === 0)
+// Show empty state flag (not used - AG Grid overlay will be used)
+const showEmptyState = computed(() => false)
 
 // Handle add button
 const handleAdd = () => {
@@ -539,15 +475,28 @@ const handleDelete = (id: string) => {
 }
 
 const confirmDelete = () => {
-  if (!deleteId.value) {
-    return
-  }
+  if (!deleteId.value) return
 
-  rowDataArray.value = rowDataArray.value.filter((item) => item.id !== deleteId.value)
-  toast.success('Pengajuan dana berhasil dihapus')
-  showDeleteModal.value = false
-  deleteId.value = null
-  refreshGrid()
+  ;(async () => {
+    try {
+      const csrf = await getCsrfTokenSafe()
+      const res = await fetch(`/admin/api/pengajuan-dana/${deleteId.value}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+      })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.message || 'Delete failed')
+
+      toast.success('Pengajuan dana berhasil dihapus')
+      showDeleteModal.value = false
+      deleteId.value = null
+      refreshGrid()
+    } catch (err) {
+      console.error('Delete error', err)
+      toast.error('Gagal menghapus pengajuan dana')
+    }
+  })()
 }
 
 const cancelDelete = () => {
@@ -557,40 +506,44 @@ const cancelDelete = () => {
 
 // Handle export to Excel
 const handleExportExcel = () => {
-  const dataToExport = filteredData.value.map((item) => {
-    const tanggal = new Date(item.tanggal)
-    const tanggalPemakaian = new Date(item.tanggalPemakaian)
-    
-    return {
-      'Nama Pengaju': item.namaPengaju,
-      'Tanggal Pemakaian': tanggalPemakaian.toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-      'Jumlah Dana': new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-      }).format(item.jumlahDana),
-      'Status': item.status,
-      'Tanggal': tanggal.toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
-      'Persetujuan': item.persetujuan,
-    }
-  })
-  
-  const worksheet = XLSX.utils.json_to_sheet(dataToExport)
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Pengajuan Dana')
-  
-  const now = new Date()
-  const filename = `Pengajuan_Dana_${now.toISOString().split('T')[0]}.xlsx`
-  
-  XLSX.writeFile(workbook, filename)
+  // Build query like datasource but request many rows for export
+  const qp: Record<string, any> = { per_page: 10000, page: 1 }
+  if (filterNamaPengaju.value) qp.search = filterNamaPengaju.value
+  if (filterStatus.value) qp.status = filterStatus.value
+  if (filterTanggal.value) qp.tanggal = filterTanggal.value
+  if (filterJumlahMin.value) qp.amount_min = filterJumlahMin.value
+  if (filterJumlahMax.value) qp.amount_max = filterJumlahMax.value
+
+  const queryString = Object.keys(qp).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(qp[k])).join('&')
+
+  fetch(`/admin/api/pengajuan-dana?${queryString}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(res => res.json())
+    .then((json) => {
+      if (!json.success) {
+        toast.error('Gagal mengambil data untuk export')
+        return
+      }
+
+      const dataToExport = (json.data || []).map((item: any) => ({
+        'Nama Pengaju': item.fundraiser ? item.fundraiser.name : '-',
+        'Tanggal Pemakaian': item.used_at ? new Date(item.used_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
+        'Jumlah Dana': item.amount ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.amount) : '',
+        'Status': item.status || '',
+        'Tanggal': item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
+        'Persetujuan': item.status === 'Disetujui' ? '-' : '-',
+      }))
+
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Pengajuan Dana')
+      const now = new Date()
+      const filename = `Pengajuan_Dana_${now.toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(workbook, filename)
+    })
+    .catch((err) => {
+      console.error('Export error', err)
+      toast.error('Gagal mengekspor data')
+    })
 }
 
 // Helper function to sort data
@@ -635,40 +588,97 @@ const sortData = (data: Array<any>, sortModel: any[]) => {
 const createDataSource = (): IDatasource => {
   return {
     getRows: (params: IGetRowsParams) => {
-      setTimeout(() => {
-        const start = params.startRow || 0
-        const end = params.endRow || 0
-        
-        // Get filtered data
-        let allData = filteredData.value
-        
-        // Apply sorting if sortModel is provided
-        if (params.sortModel && params.sortModel.length > 0) {
-          allData = sortData(allData, params.sortModel)
+      // Map AG Grid request to API pagination
+      const start = params.startRow || 0
+      const end = params.endRow || 0
+      const pageSize = Math.max(10, (end - start))
+      const page = Math.floor(start / pageSize) + 1
+
+      // Build query params from filters
+      const qp: Record<string, any> = {
+        per_page: pageSize,
+        page,
+      }
+
+      if (filterNamaPengaju.value) qp.search = filterNamaPengaju.value
+      if (filterStatus.value) qp.status = filterStatus.value
+      if (filterTanggal.value) qp.tanggal = filterTanggal.value
+      if (filterJumlahMin.value) qp.amount_min = filterJumlahMin.value
+      if (filterJumlahMax.value) qp.amount_max = filterJumlahMax.value
+
+      // Sorting: map first sortModel entry
+      if (params.sortModel && params.sortModel.length > 0) {
+        const s = params.sortModel[0]
+        const colMap: Record<string, string> = {
+          namaPengaju: 'fundraiser',
+          tanggalPemakaian: 'used_at',
+          jumlahDana: 'amount',
+          tanggal: 'created_at',
         }
-        
-        // Get the chunk of data for this page
-        const rowsThisPage = allData.slice(start, end)
-        
-        // Check if there's more data
-        let lastRow: number | undefined
-        if (allData.length === 0) {
-          lastRow = 0
-        } else if (allData.length <= end) {
-          lastRow = allData.length
-        } else {
-          lastRow = undefined
+        if (colMap[s.colId]) {
+          qp.sort_by = colMap[s.colId]
+          qp.sort_dir = s.sort === 'asc' ? 'asc' : 'desc'
         }
-        
-        // Provide data to AG Grid
-        params.successCallback(rowsThisPage, lastRow)
-      }, 50)
+      }
+
+      const queryString = Object.keys(qp).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(qp[k])).join('&')
+
+      fetch(`/admin/api/pengajuan-dana?${queryString}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(res => res.json())
+        .then((json) => {
+          if (!json.success) {
+            params.failCallback()
+            return
+          }
+
+          const rows = (json.data || []).map((r: any) => ({
+            id: r.id,
+            namaPengaju: r.fundraiser ? r.fundraiser.name : '-',
+            tanggalPemakaian: r.used_at || '',
+            jumlahDana: r.amount || 0,
+            status: r.status || 'Draft',
+            tanggal: r.created_at ? r.created_at.split(' ')[0] : '',
+            persetujuan: r.status === 'Disetujui' ? '-' : '-',
+          }))
+
+          let lastRow: number | undefined = undefined
+          if (typeof json.pagination?.total === 'number') {
+            lastRow = json.pagination.total
+          }
+
+          params.successCallback(rows, lastRow)
+          // Show AG Grid built-in no-rows overlay when there are no rows
+          const gridApi = (agGridRef.value as any)?.api
+          try {
+            if (gridApi) {
+              if (!rows || rows.length === 0) gridApi.showNoRowsOverlay()
+              else gridApi.hideOverlay()
+            }
+          } catch (e) {
+            // ignore overlay errors
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching pengajuan-dana:', err)
+          params.failCallback()
+        })
     },
   }
 }
 
 // Infinite scroll datasource - create as ref for reactivity
 const dataSource = ref<IDatasource>(createDataSource())
+
+// AG Grid overlay template when no rows
+const overlayNoRowsTemplate = `
+  <div class="p-6 text-center text-gray-600 dark:text-gray-400">
+    <svg class="mx-auto mb-3 w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    </svg>
+    <div class="text-lg font-medium">Tidak ada data</div>
+    <div class="text-sm mt-1">Belum ada data yang tersedia</div>
+  </div>
+`
 
 const refreshGrid = (scrollToTop = false) => {
   const newDataSource = createDataSource()

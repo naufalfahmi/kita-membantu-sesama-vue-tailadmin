@@ -20,6 +20,7 @@ use App\Http\Controllers\TipeAbsensiController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\TipeDonaturController;
 use App\Http\Controllers\TransaksiController;
+use App\Http\Controllers\PengajuanDanaController;
 use App\Services\MenuService;
 
 // Serve SVG favicon at /favicon.ico for browsers requesting that path and force revalidation
@@ -183,6 +184,8 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::get('tipe-absensi-next-kode', [TipeAbsensiController::class, 'getNextKode'])->name('admin.api.tipe-absensi.next-kode');
     
     // Program API
+    // Program balance endpoint (per-month allocation/balance)
+    Route::get('program/{id}/balance', [ProgramController::class, 'balance']);
     Route::apiResource('program', ProgramController::class);
     // Program share types (for frontend dynamic shares)
     Route::get('program-share-types', [\App\Http\Controllers\ProgramShareTypeController::class, 'index']);
@@ -242,6 +245,10 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Custom export endpoint for program-focused CSV export
     Route::get('transaksi/export-program', [TransaksiController::class, 'exportProgram']);
     Route::apiResource('transaksi', TransaksiController::class);
+    
+    // Pengajuan Dana API
+    Route::get('pengajuan-dana/options', [PengajuanDanaController::class, 'options']);
+    Route::apiResource('pengajuan-dana', PengajuanDanaController::class);
 
     // Landing Profile API (single resource endpoints)
     Route::get('company/landing-profile', [\App\Http\Controllers\LandingProfileController::class, 'index']);

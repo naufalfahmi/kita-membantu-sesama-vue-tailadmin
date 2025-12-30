@@ -195,6 +195,116 @@ class ProgramController extends Controller
     }
 
     /**
+     * Return balance details for a program and month.
+     * Query params: month=YYYY-MM (optional, defaults to month of today)
+     */
+    public function balance(Request $request, string $id)
+    {
+        $program = Program::with(['shares.type'])->find($id);
+        if (! $program) {
+            return response()->json(['success' => false, 'message' => 'Program tidak ditemukan'], 404);
+        }
+
+        $month = $request->get('month');
+        try {
+            $start = \Carbon\Carbon::parse(($month ? $month . '-01' : now()->format('Y-m-01')))->startOfMonth();
+            $end = (clone $start)->endOfMonth();
+
+            // inflow: sum of transaksi.nominal for program in month
+            $inflow = \App\Models\Transaksi::where('program_id', $program->id)
+                ->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()])
+                ->sum('nominal');
+
+            // find share applicable to program pool - prefer program_share_type key 'program' if exists
+            $allocation = null;
+            foreach ($program->shares as $s) {
+                $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                if ($pst && ($pst->key ?? null) === 'program') {
+                    $allocation = $s;
+                    break;
+                }
+            }
+            // fallback to first share
+            if (! $allocation && count($program->shares) > 0) $allocation = $program->shares[0];
+
+            $allocated = $inflow;
+            if ($allocation) {
+                if ($allocation->type === 'percentage' && $allocation->value !== null) {
+                    $allocated = (int) floor($inflow * (float)$allocation->value / 100);
+                } elseif ($allocation->type === 'nominal' && $allocation->value !== null) {
+                    $allocated = (int) $allocation->value;
+                }
+            }
+
+            // outflow: sum of disbursements for program in month
+            $outflow = \App\Models\PengajuanDanaDisbursement::where('program_id', $program->id)
+                ->whereBetween('tanggal_disburse', [$start->toDateString(), $end->toDateString()])
+                ->sum('amount');
+
+            $remaining = max(0, $allocated - $outflow);
+
+            // provide breakdown of transaksi for the month
+            $transaksis = \App\Models\Transaksi::where('program_id', $program->id)
+                ->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()])
+                ->orderBy('tanggal_transaksi')
+                ->get(['id','kode','nominal','tanggal_transaksi']);
+
+            // compute used per transaksi from disbursements
+            $transaksiIds = $transaksis->pluck('id')->filter()->all();
+            $usedMap = [];
+            if (! empty($transaksiIds)) {
+                $usedRows = \App\Models\PengajuanDanaDisbursement::whereIn('transaksi_id', $transaksiIds)
+                    ->selectRaw('transaksi_id, SUM(amount) as used')
+                    ->groupBy('transaksi_id')
+                    ->get();
+                foreach ($usedRows as $ur) {
+                    $usedMap[$ur->transaksi_id] = (int) $ur->used;
+                }
+            }
+
+            // enrich transaksis with used/available
+            $transaksisOut = $transaksis->map(function ($t) use ($usedMap) {
+                $used = isset($usedMap[$t->id]) ? (int)$usedMap[$t->id] : 0;
+                $available = max(0, (int)$t->nominal - $used);
+                return [
+                    'id' => $t->id,
+                    'kode' => $t->kode ?? null,
+                    'nominal' => (int)$t->nominal,
+                    'tanggal_transaksi' => $t->tanggal_transaksi,
+                    'used' => $used,
+                    'available' => $available,
+                ];
+            })->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'program_id' => $program->id,
+                    'month' => $start->format('Y-m'),
+                    'inflow' => (int) $inflow,
+                    'allocated' => (int) $allocated,
+                    'outflow' => (int) $outflow,
+                    'remaining' => (int) $remaining,
+                    'transaksis' => $transaksisOut,
+                    'shares' => $program->shares->map(function ($s) {
+                        $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                        return [
+                            'id' => $s->id,
+                            'program_share_type_id' => $s->program_share_type_id,
+                            'program_share_type_key' => $pst->key ?? null,
+                            'name' => $pst->name ?? null,
+                            'type' => $s->type,
+                            'value' => $s->value,
+                        ];
+                    })->values(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menghitung saldo', 'error' => config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan'], 500);
+        }
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)

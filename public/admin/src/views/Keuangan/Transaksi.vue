@@ -10,7 +10,7 @@
         <div class="flex items-center gap-3">
           <button
             @click="handleExportCsv"
-            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            class="flex items-center gap-1 sm:gap-2 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs sm:px-3 sm:py-2.5 sm:text-sm font-medium text-gray-700 hover:bg-gray-50"
             title="Export CSV (delimiter: ;)"
           >
             <svg class="fill-current" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -20,7 +20,7 @@
           </button>
           <button
             @click="handleExportProgram"
-            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            class="flex items-center gap-1 sm:gap-2 rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs sm:px-3 sm:py-2.5 sm:text-sm font-medium text-gray-700 hover:bg-gray-50"
             title="Export Program CSV (detailed program shares)"
           >
             <svg class="fill-current" width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -31,7 +31,7 @@
           <button
             v-if="canCreate"
             @click="handleAdd"
-            class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
+            class="flex items-center gap-1 sm:gap-2 rounded-lg bg-brand-500 px-3 py-1.5 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-medium text-white hover:bg-brand-600"
           >
             <svg
               class="fill-current"
@@ -597,7 +597,7 @@ const columnDefs = computed(() => {
     {
       headerName: 'No',
       field: '__no',
-      width: 80,
+      width: 60,
       sortable: false,
       valueGetter: (params: any) => {
         try {
@@ -611,42 +611,42 @@ const columnDefs = computed(() => {
       headerName: 'Donatur',
       field: 'donatur',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => params.value || '-',
     },
     {
       headerName: 'Kantor Cabang',
       field: 'kantor_cabang',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => params.value || '-',
     },
     {
       headerName: 'Dibuat oleh',
       field: 'fundraiser',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => params.value || '-',
     },
     {
       headerName: 'Fundraiser',
       field: 'fundraiser_pic',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => (params.data?.fundraiser_pic?.nama || params.data?.fundraiser_pic?.name) || params.value || '-',
     },
     {
       headerName: 'Program',
       field: 'program',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => params.value || '-',
     },
     {
       headerName: 'Nominal',
       field: 'nominal',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => params.data?.nominal_formatted || params.value || '-',
     },
     {
@@ -691,7 +691,8 @@ const columnDefs = computed(() => {
       field: 'actions',
       sortable: false,
       filter: false,
-      width: 120,
+      width: 100,
+      pinned: 'right',
       cellRenderer: (params: any) => {
         // If this is a pinned row (bottom), show a simple '-' instead of action icons
         try {

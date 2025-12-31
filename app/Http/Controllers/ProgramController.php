@@ -204,8 +204,9 @@ class ProgramController extends Controller
         if (! $program) {
             return response()->json(['success' => false, 'message' => 'Program tidak ditemukan'], 404);
         }
-
         $month = $request->get('month');
+        // allow caller to request a specific share key (e.g. 'ops_1','ops_2','program')
+        $shareKey = $request->get('share_key', 'program');
         try {
             $start = \Carbon\Carbon::parse(($month ? $month . '-01' : now()->format('Y-m-01')))->startOfMonth();
             $end = (clone $start)->endOfMonth();
@@ -215,11 +216,11 @@ class ProgramController extends Controller
                 ->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()])
                 ->sum('nominal');
 
-            // find share applicable to program pool - prefer program_share_type key 'program' if exists
+            // find share applicable to program pool - prefer program_share_type key matching $shareKey if exists
             $allocation = null;
             foreach ($program->shares as $s) {
                 $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
-                if ($pst && ($pst->key ?? null) === 'program') {
+                if ($pst && ($pst->key ?? null) === $shareKey) {
                     $allocation = $s;
                     break;
                 }
@@ -262,7 +263,7 @@ class ProgramController extends Controller
                 }
             }
 
-            // determine per-transaksi allocation based on program share (key = 'program')
+            // determine per-transaksi allocation based on selected share type (key = $shareKey)
             $shareType = $allocation ?? null;
 
             // enrich transaksis with used/available

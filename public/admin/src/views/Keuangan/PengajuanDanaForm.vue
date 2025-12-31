@@ -19,10 +19,10 @@
             <SearchableSelect v-model="formData.submissionType" :options="submissionTypeList" placeholder="Pilih tipe pengajuan" :search-input="submissionTypeSearchInput" @update:search-input="submissionTypeSearchInput = $event" />
           </div>
 
-          <div v-if="formData.submissionType === 'program'" class="lg:col-span-1">
+          <div v-if="formData.submissionType === 'program' || formData.submissionType === 'operasional' || formData.submissionType === 'gaji karyawan'" class="lg:col-span-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
             <SearchableSelect v-model="formData.programId" :options="programList" placeholder="Pilih program" />
-            <div v-if="loadingBalance" class="mt-2 text-sm text-gray-500">Memuat saldo...</div>
+            <!-- <div v-if="loadingBalance" class="mt-2 text-sm text-gray-500">Memuat saldo...</div> -->
           </div>
 
           <div class="lg:col-span-1">
@@ -173,12 +173,9 @@ const flatpickrConfig = {
 
 const applicantList: Ref<Array<{ value: string; label: string }>> = ref([])
 const submissionTypeList = [
-  { value: 'operasional', label: 'Operasional' },
   { value: 'program', label: 'Program' },
-  { value: 'kegiatan', label: 'Kegiatan' },
-  { value: 'pengembangan', label: 'Pengembangan' },
-  { value: 'darurat', label: 'Darurat' },
-  { value: 'lainnya', label: 'Lainnya' },
+  { value: 'operasional', label: 'Operasional' },
+  { value: 'gaji karyawan', label: 'Gaji Karyawan' },
 ]
 const kantorCabangList: Ref<Array<{ value: string; label: string }>> = ref([])
 const programList: Ref<Array<{ value: string; label: string }>> = ref([])
@@ -207,7 +204,7 @@ const formErrors = reactive({
 const isSubmitting = ref(false)
 
 const isAmountExceeding = computed(() => {
-  if (formData.submissionType !== 'program') return false
+  if (!(formData.submissionType === 'program' || formData.submissionType === 'operasional')) return false
   if (!programBalance || !programBalance.value) return false
   const rem = Number(programBalance.value.remaining || 0)
   const amt = Number(formData.amount || 0)
@@ -246,11 +243,25 @@ const formatMonthYear = (ym: string | null) => {
 
 const programShares = computed(() => {
   if (!programDetail.value || !Array.isArray(programDetail.value.shares)) return []
-  return programDetail.value.shares.filter((s: any) => {
-    // backend normalizes share objects to include `program_share_type_key`
-    const key = s.program_share_type_key ?? s.type_key ?? (s.type?.key ?? null)
-    return String(key) === 'program'
-  })
+  // choose share key based on submission type
+  const st = String(formData.submissionType || '')
+  let wanted = 'program'
+  if (st === 'operasional') wanted = 'ops_2'
+  else if (st === 'gaji karyawan') wanted = 'ops_1'
+
+  // prefer the wanted key, fallback to 'program', else return first matching
+  const shares = programDetail.value.shares.map((s: any) => ({
+    ...s,
+    program_share_type_key: s.program_share_type_key ?? s.type_key ?? (s.type?.key ?? null),
+  }))
+
+  const matched = shares.filter((s: any) => String(s.program_share_type_key) === wanted)
+  if (matched.length > 0) return matched
+
+  const fallback = shares.filter((s: any) => String(s.program_share_type_key) === 'program')
+  if (fallback.length > 0) return fallback
+
+  return shares
 })
 
 const loadProgramBalance = async () => {
@@ -269,17 +280,15 @@ const loadProgramBalance = async () => {
       return
     }
     const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    const res = await fetch(`/admin/api/program/${formData.programId}/balance?month=${month}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    // choose share_key based on submission type
+    let shareKey = 'program'
+    if (String(formData.submissionType) === 'operasional') shareKey = 'ops_2'
+    if (String(formData.submissionType) === 'gaji karyawan') shareKey = 'ops_1'
+    const res = await fetch(`/admin/api/program/${formData.programId}/balance?month=${month}&share_key=${encodeURIComponent(shareKey)}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     const json = await res.json()
     if (!json.success) throw new Error(json.message || 'Failed to load balance')
     programBalance.value = json.data
-    // if creating new and amount not set, default to full remaining allocation
-    if (!isEditMode.value) {
-      const rem = Number(json.data.remaining || 0)
-      if (rem > 0 && (!formData.amount || formData.amount <= 0)) {
-        formData.amount = rem
-      }
-    }
+    // Do NOT auto-fill `amount` for any submission type; user must enter nominal manually
   } catch (err) {
     console.error('Error loading program balance', err)
     toast.error('Gagal memuat saldo program')
@@ -316,6 +325,28 @@ watch([
     loadProgramDetail()
     loadProgramBalance()
   }, 300)
+})
+
+// When user selects 'program' as submission type, clear nominal so they enter it manually
+watch(() => formData.submissionType, (val) => {
+  const v = String(val)
+  if (v === 'program' && !isEditMode.value) {
+    formData.amount = null
+  }
+  // when submission type changes to one that displays program, refresh program details/balance
+  if (['program','operasional','gaji karyawan'].includes(v)) {
+    // if programId exists, reload detail/balance; otherwise clear programDetail
+    if (formData.programId) {
+      loadProgramDetail()
+      loadProgramBalance()
+    } else {
+      programDetail.value = null
+      programBalance.value = null
+    }
+  } else {
+    programDetail.value = null
+    programBalance.value = null
+  }
 })
 
 const formatAmountInput = (event: Event) => {
@@ -423,7 +454,7 @@ const handleSave = async () => {
   try {
     // Client-side validation: if program-type, ensure amount not exceed remaining
     if (isAmountExceeding.value) {
-      const rem = formatCurrency(programBalance?.remaining || 0)
+      const rem = formatCurrency(Number(programBalance.value?.remaining || 0))
       toast.error(`nominal melebihi batas tidak dapat menyimpan — sisa alokasi: ${rem}`)
       isSubmitting.value = false
       return

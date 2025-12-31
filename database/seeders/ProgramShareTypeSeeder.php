@@ -13,7 +13,7 @@ class ProgramShareTypeSeeder extends Seeder
         $now = now();
         $types = [
             ['name' => 'DP', 'key' => 'dp', 'orders' => 1],
-            ['name' => 'OPS 1', 'key' => 'ops_1', 'orders' => 2],
+            ['name' => 'OPS 2', 'key' => 'ops_2', 'orders' => 2],
             ['name' => 'OPS 2', 'key' => 'ops_2', 'orders' => 3],
             ['name' => 'Program', 'key' => 'program', 'orders' => 4],
             ['name' => 'Fee Mitra', 'key' => 'fee_mitra', 'orders' => 5],

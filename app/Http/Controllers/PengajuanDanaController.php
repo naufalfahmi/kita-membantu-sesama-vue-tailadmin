@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\PengajuanDanaDisbursement;
 use App\Models\PengajuanDanaApproval;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class PengajuanDanaController extends Controller
 {
@@ -82,7 +83,7 @@ class PengajuanDanaController extends Controller
      * This will create PengajuanDanaDisbursement rows consuming transaksi nominal FIFO.
      * Throws exception if insufficient funds.
      */
-    private function allocateDisbursements(string $pengajuanId, string $programId, $usedAt, int $amount, ?int $createdBy = null): void
+    private function allocateDisbursements(string $pengajuanId, string $programId, $usedAt, int $amount, ?int $createdBy = null, string $shareKey = 'program'): void
     {
         $start = \Carbon\Carbon::parse($usedAt)->startOfMonth()->toDateString();
         $end = \Carbon\Carbon::parse($usedAt)->endOfMonth()->toDateString();
@@ -98,7 +99,7 @@ class PengajuanDanaController extends Controller
         if ($program) {
             foreach ($program->shares as $s) {
                 $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
-                if ($pst && ($pst->key ?? null) === 'program') { $allocation = $s; break; }
+                if ($pst && ($pst->key ?? null) === $shareKey) { $allocation = $s; break; }
             }
             if (! $allocation && count($program->shares) > 0) $allocation = $program->shares[0];
         }
@@ -174,7 +175,7 @@ class PengajuanDanaController extends Controller
      * Compute remaining allocation for a program in usedAt month.
      * Returns integer remaining amount (>=0).
      */
-    private function computeProgramRemaining(string $programId, $usedAt, ?string $excludePengajuanId = null): int
+    private function computeProgramRemaining(string $programId, $usedAt, ?string $excludePengajuanId = null, string $shareKey = 'program'): int
     {
         $start = \Carbon\Carbon::parse($usedAt)->startOfMonth()->toDateString();
         $end = \Carbon\Carbon::parse($usedAt)->endOfMonth()->toDateString();
@@ -188,7 +189,7 @@ class PengajuanDanaController extends Controller
         if ($program) {
             foreach ($program->shares as $s) {
                 $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
-                if ($pst && ($pst->key ?? null) === 'program') { $allocation = $s; break; }
+                if ($pst && ($pst->key ?? null) === $shareKey) { $allocation = $s; break; }
             }
             if (! $allocation && count($program->shares) > 0) $allocation = $program->shares[0];
         }
@@ -260,7 +261,7 @@ class PengajuanDanaController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'fundraiser_id' => 'nullable|exists:users,id',
-            'submission_type' => 'required|string|max:100',
+            'submission_type' => ['required', 'string', Rule::in(['program','operasional','gaji karyawan'])],
             'program_id' => 'nullable|uuid|exists:program,id',
             'amount' => 'required|integer|min:1',
             'used_at' => 'nullable|date',
@@ -278,10 +279,14 @@ class PengajuanDanaController extends Controller
         }
 
         try {
-            // Pre-save validation: if program submission, ensure amount <= remaining
-            if ($request->input('submission_type') === 'program' && $request->filled('program_id') && $request->filled('used_at')) {
+            // Pre-save validation: if program, operasional, or gaji karyawan submission, ensure amount <= remaining
+            if (in_array($request->input('submission_type'), ['program','operasional','gaji karyawan']) && $request->filled('program_id') && $request->filled('used_at')) {
                 try {
-                    $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'));
+                    $stype = $request->input('submission_type');
+                    if ($stype === 'operasional') $shareKey = 'ops_2';
+                    elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
+                    else $shareKey = 'program';
+                    $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), null, $shareKey);
                     if ((int)$request->input('amount') > $remaining) {
                         return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan', 'remaining' => $remaining], 422);
                     }
@@ -305,11 +310,15 @@ class PengajuanDanaController extends Controller
 
                 $p = PengajuanDana::create($data);
 
-                // If program submission and already approved, allocate disbursements from transaksi in the used_at month
+                // If program/operasional/gaji_karyawan submission and already approved, allocate disbursements
                 // Do NOT allocate for drafts/pending states — allocations should only be created when pengajuan is approved
-                if ($p->submission_type === 'program' && $p->program_id && $p->used_at) {
+                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->program_id && $p->used_at) {
                     if (is_string($p->status) && strtolower(trim($p->status)) === 'approved') {
-                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id());
+                        $stype = $p->submission_type;
+                        if ($stype === 'operasional') $shareKey = 'ops_2';
+                        elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
+                        else $shareKey = 'program';
+                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey);
                     }
                 }
 
@@ -373,7 +382,7 @@ class PengajuanDanaController extends Controller
 
         $validator = Validator::make($request->all(), [
             'fundraiser_id' => 'nullable|exists:users,id',
-            'submission_type' => 'required|string|max:100',
+            'submission_type' => ['required', 'string', Rule::in(['program','operasional','gaji karyawan'])],
             'program_id' => 'nullable|uuid|exists:program,id',
             'amount' => 'required|integer|min:1',
             'used_at' => 'nullable|date',
@@ -391,10 +400,14 @@ class PengajuanDanaController extends Controller
         }
 
         try {
-            // Pre-update validation: if program submission, ensure amount <= remaining
-            if ($request->input('submission_type') === 'program' && $request->filled('program_id') && $request->filled('used_at')) {
+            // Pre-update validation: if program, operasional or gaji_karyawan submission, ensure amount <= remaining
+            if (in_array($request->input('submission_type'), ['program','operasional','gaji karyawan']) && $request->filled('program_id') && $request->filled('used_at')) {
                 try {
-                        $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), $p->id);
+                    $stype = $request->input('submission_type');
+                    if ($stype === 'operasional') $shareKey = 'ops_2';
+                    elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
+                    else $shareKey = 'program';
+                        $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), $p->id, $shareKey);
                     if ((int)$request->input('amount') > $remaining) {
                         return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan', 'remaining' => $remaining], 422);
                     }
@@ -408,14 +421,18 @@ class PengajuanDanaController extends Controller
 
                 // Re-allocate disbursements when program/used_at/amount changed.
                 // Remove previous disbursements first. Only create new disbursements when the pengajuan is approved.
-                if ($p->submission_type === 'program' && $p->program_id && $p->used_at) {
+                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->program_id && $p->used_at) {
                     // remove previous disbursements for this pengajuan
                     PengajuanDanaDisbursement::where('pengajuan_dana_id', $p->id)->delete();
                     if (is_string($p->status) && strtolower(trim($p->status)) === 'approved') {
-                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id());
+                        $stype = $p->submission_type;
+                        if ($stype === 'operasional') $shareKey = 'ops_2';
+                        elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
+                        else $shareKey = 'program';
+                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey);
                     }
                 } else {
-                    // if not program anymore, remove any previous disbursements
+                    // if not program/operasional anymore, remove any previous disbursements
                     PengajuanDanaDisbursement::where('pengajuan_dana_id', $p->id)->delete();
                 }
 
@@ -496,10 +513,14 @@ class PengajuanDanaController extends Controller
             $p->updated_by = $user->id;
             $p->save();
 
-            // if approved and program submission, create disbursements
+            // if approved and program/operasional/gaji_karyawan submission, create disbursements
             if (is_string($decision) && strtolower($decision) === 'approved') {
-                if ($p->submission_type === 'program' && $p->program_id && $p->used_at) {
-                    $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, $user->id);
+                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->program_id && $p->used_at) {
+                    $stype = $p->submission_type;
+                    if ($stype === 'operasional') $shareKey = 'ops_2';
+                    elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
+                    else $shareKey = 'program';
+                    $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, $user->id, $shareKey);
                 }
             } else {
                 // if rejected, ensure there are no disbursements

@@ -46,6 +46,7 @@ class PenyaluranController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'pengajuan_dana_id' => 'nullable|uuid|exists:pengajuan_danas,id',
+            'submission_type' => 'nullable|string',
             'program_name' => 'nullable|string|max:255',
             'pic' => 'nullable|string|max:255',
             'village' => 'nullable|string|max:255',
@@ -95,10 +96,14 @@ class PenyaluranController extends Controller
             // No pengajuan specified: find one approved pengajuan of the user with enough remaining amount
             $userId = auth()->id();
             $found = null;
-            $pengajuans = PengajuanDana::where('fundraiser_id', $userId)
+            $pengajuanQuery = PengajuanDana::where('fundraiser_id', $userId)
                 ->whereRaw("LOWER(status) IN ('approved','disetujui')")
-                ->orderBy('created_at')
-                ->get();
+                ->orderBy('created_at');
+            if ($request->filled('submission_type')) {
+                $submissionType = (string) $request->input('submission_type');
+                $pengajuanQuery->where('submission_type', $submissionType);
+            }
+            $pengajuans = $pengajuanQuery->get();
 
             foreach ($pengajuans as $pengajuan) {
                 $used = Penyaluran::whereHas('pengajuan', function ($q) use ($pengajuan) {
@@ -200,6 +205,12 @@ class PenyaluranController extends Controller
         // accept common variants of approved status (case-insensitive)
         $pengajuanQuery = PengajuanDana::where('fundraiser_id', $user->id)
             ->whereRaw("LOWER(status) IN ('approved','disetujui')");
+
+        // If frontend requests a specific submission type, only count that type
+        if ($request->filled('type')) {
+            $t = (string) $request->input('type');
+            $pengajuanQuery->where('submission_type', $t);
+        }
 
         $pengajuanIds = $pengajuanQuery->pluck('id');
 

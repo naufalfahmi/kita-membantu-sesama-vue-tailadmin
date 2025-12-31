@@ -46,7 +46,7 @@
             <label
               class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
             >
-              Program <span class="text-red-500">*</span>
+              Nama Penyaluran <span class="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -55,6 +55,17 @@
               required
               class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
+          </div>
+
+          <!-- Tipe Kredit -->
+          <div class="lg:col-span-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe Penyaluran <span class="text-red-500">*</span></label>
+            <select v-model="formData.submissionType" class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800">
+              <option value="program">Program</option>
+              <option value="operasional">Operasional</option>
+              <option value="gaji karyawan">Gaji Karyawan</option>
+            </select>
+            <p class="mt-2 text-sm text-gray-600">Sisa kredit untuk <span class="font-medium">{{ formData.submissionType }}</span>: <span class="font-medium">{{ formattedCreditTotal }}</span></p>
           </div>
 
           <!-- PIC -->
@@ -332,7 +343,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, ref, onMounted } from 'vue'
+import { reactive, computed, ref, onMounted, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
@@ -410,6 +421,7 @@ const selectedFiles = ref<File[]>([])
 const formData = reactive({
   amount: '',
   program: '',
+  submissionType: 'program',
   pic: '',
   village: '',
   district: '',
@@ -421,6 +433,28 @@ const formData = reactive({
   branchId: '',
   pengajuanId: '',
 })
+
+const creditTotal = ref<number>(0)
+const formattedCreditTotal = computed(() => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(creditTotal.value || 0))
+
+const loadCreditForType = async (type: string) => {
+  try {
+    if (!type) {
+      creditTotal.value = 0
+      return
+    }
+    const res = await fetch(`/admin/api/penyaluran/my-credit?type=${encodeURIComponent(type)}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    const json = await res.json()
+    if (json && json.success && json.data && typeof json.data.remaining !== 'undefined') {
+      creditTotal.value = Number(json.data.remaining) || 0
+    } else {
+      creditTotal.value = 0
+    }
+  } catch (e) {
+    console.error('Failed to load credit total for type', type, e)
+    creditTotal.value = 0
+  }
+}
 
 // Format amount input (remove non-numeric characters except dots and commas)
 const formatAmount = (event: Event) => {
@@ -559,6 +593,9 @@ const handleSave = async () => {
     if (formData.pengajuanId) {
       formDataToSend.append('pengajuan_dana_id', String(formData.pengajuanId))
     }
+    if (formData.submissionType) {
+      formDataToSend.append('submission_type', String(formData.submissionType))
+    }
     formDataToSend.append('program_name', formData.program || '')
     formDataToSend.append('pic', formData.pic || '')
     formDataToSend.append('village', formData.village || '')
@@ -617,6 +654,7 @@ onMounted(async () => {
         const d = json.data
         // remember pengajuan id so we send it when saving
         formData.pengajuanId = String(pengajuanId)
+        formData.submissionType = d.submission_type || formData.submissionType
         formData.program = (d.program && (d.program.nama || d.program.nama_program)) || formData.program
         formData.pic = d.fundraiser ? d.fundraiser.name : formData.pic
         formData.amount = d.amount || formData.amount
@@ -627,6 +665,13 @@ onMounted(async () => {
     }
   }
   loadData()
+    // load credit for the selected submission type (prefill may set it)
+    loadCreditForType(formData.submissionType)
+})
+
+// reload credit when user changes the submission type in the form
+watch(() => formData.submissionType, (val) => {
+  loadCreditForType(String(val || ''))
 })
 </script>
 

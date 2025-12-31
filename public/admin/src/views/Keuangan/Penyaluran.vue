@@ -3,18 +3,33 @@
     <div
       class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
     >
+      <!-- Top credit boxes (responsive) -->
+      <div class="mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="rounded-lg border border-gray-200 bg-white p-4 flex flex-col sm:items-center">
+            <div class="text-xs text-gray-500">Program</div>
+            <div class="text-lg font-medium text-gray-800 dark:text-white/90 mt-1">{{ formattedCreditProgram }}</div>
+          </div>
+          <div class="rounded-lg border border-gray-200 bg-white p-4 flex flex-col sm:items-center">
+            <div class="text-xs text-gray-500">Operasional</div>
+            <div class="text-lg font-medium text-gray-800 dark:text-white/90 mt-1">{{ formattedCreditOperasional }}</div>
+          </div>
+          <div class="rounded-lg border border-gray-200 bg-white p-4 flex flex-col sm:items-center">
+            <div class="text-xs text-gray-500">Gaji Karyawan</div>
+            <div class="text-lg font-medium text-gray-800 dark:text-white/90 mt-1">{{ formattedCreditGaji }}</div>
+          </div>
+        </div>
+      </div>
+
       <div class="mb-6 flex items-center justify-between">
         <h3 class="font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">
           {{ currentPageTitle }}
         </h3>
-        <div class="ml-4 text-right">
-          <p class="text-sm text-gray-500">Sisa kredit Anda untuk penyaluran:</p>
-          <p class="text-lg font-medium text-gray-800 dark:text-white/90">{{ formattedMyCredit }}</p>
-        </div>
-        <div class="flex items-center gap-3">
+        <!-- credit boxes moved to top for responsiveness -->
+        <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           <button
             @click="handleExportExcel"
-            class="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600"
+            class="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600"
           >
             <svg
               class="fill-current"
@@ -34,7 +49,7 @@
           <button
             v-if="canCreate"
             @click="handleAdd"
-            class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
+            class="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
           >
             <svg
               class="fill-current"
@@ -244,11 +259,18 @@ const flatpickrDateConfig = {
 // Column definitions
 const columnDefs = [
   {
-    headerName: 'Nama Program',
-    field: 'namaProgram',
+    headerName: 'Nama Penyaluran',
+    field: 'namaPenyaluran',
     sortable: true,
     filter: false,
     flex: 1,
+  },
+  {
+    headerName: 'Tipe Penyaluran',
+    field: 'tipe',
+    sortable: true,
+    filter: false,
+    width: 180,
   },
   {
     headerName: 'Jumlah Dana',
@@ -324,10 +346,16 @@ const defaultColDef = {
 // Row data will come from `penyalurans` table via API
 const rowDataArray = ref<PenyaluranRow[]>([])
 const myCredit = ref<number>(0)
+const creditProgram = ref<number>(0)
+const creditOperasional = ref<number>(0)
+const creditGaji = ref<number>(0)
 
 const formattedMyCredit = computed(() => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(myCredit.value)
 })
+const formattedCreditProgram = computed(() => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(creditProgram.value || 0))
+const formattedCreditOperasional = computed(() => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(creditOperasional.value || 0))
+const formattedCreditGaji = computed(() => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(creditGaji.value || 0))
 
 const loadPenyalurans = async () => {
   try {
@@ -341,7 +369,8 @@ const loadPenyalurans = async () => {
     // Map penyaluran items into PenyaluranRow shape
     const items = (json.data || []).map((p: any) => ({
       id: p.id,
-      namaProgram: p.program_name || (p.pengajuan && (p.pengajuan.program?.nama_program || p.pengajuan.program?.nama)) || '',
+      namaPenyaluran: p.program_name || (p.pengajuan && (p.pengajuan.program?.nama_program || p.pengajuan.program?.nama)) || '',
+      tipe: p.submission_type || (p.pengajuan && p.pengajuan.submission_type) || '',
       jumlahDana: p.amount || 0,
       pic: p.pic || (p.pengajuan && p.pengajuan.fundraiser ? p.pengajuan.fundraiser.name : ''),
       tanggal: p.created_at || p.tanggal || null,
@@ -642,51 +671,22 @@ onMounted(() => {
 
 const loadMyCredit = async () => {
   try {
-    // fetch current user
-    const userRes = await fetch('/admin/api/user', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-    const userJson = await userRes.json()
-    const user = userJson.success ? userJson.user : null
+    // fetch three types in parallel
+    const types = ['program', 'operasional', 'gaji karyawan']
+    const promises = types.map((t) => fetch(`/admin/api/penyaluran/my-credit?type=${encodeURIComponent(t)}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => null))
+    const results = await Promise.all(promises)
+    // program
+    const p = results[0]
+    creditProgram.value = (p && p.success && p.data && typeof p.data.remaining !== 'undefined') ? Number(p.data.remaining) || 0 : 0
+    // operasional
+    const o = results[1]
+    creditOperasional.value = (o && o.success && o.data && typeof o.data.remaining !== 'undefined') ? Number(o.data.remaining) || 0 : 0
+    // gaji karyawan
+    const g = results[2]
+    creditGaji.value = (g && g.success && g.data && typeof g.data.remaining !== 'undefined') ? Number(g.data.remaining) || 0 : 0
 
-    // fetch approved pengajuans (server may return all approved; filter by current user)
-    const pengajuanRes = await fetch('/admin/api/pengajuan-dana?per_page=1000&status=Approved', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-    const pengajuanJson = await pengajuanRes.json()
-    const pengajuans = pengajuanJson.success && Array.isArray(pengajuanJson.data) ? pengajuanJson.data : []
-
-    // filter pengajuans for this fundraiser (current user)
-    const myPengajuans = user ? pengajuans.filter((p: any) => p.fundraiser && String(p.fundraiser.id) === String(user.id)) : []
-    const pengajuanIds = myPengajuans.map((p: any) => p.id)
-    const approvedTotal = myPengajuans.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0)
-
-    // fetch penyalurans and sum amounts linked to those pengajuans
-    const penyaluranRes = await fetch('/admin/api/penyaluran?per_page=1000', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-    const penyaluranJson = await penyaluranRes.json()
-    const penyalurans = penyaluranJson.success && Array.isArray(penyaluranJson.data) ? penyaluranJson.data : []
-
-    let usedTotal = penyalurans.reduce((sum: number, p: any) => {
-      const pid = p.pengajuan_dana_id || (p.pengajuan && p.pengajuan.id) || null
-      if (pid && pengajuanIds.includes(pid)) {
-        return sum + (Number(p.amount) || 0)
-      }
-      return sum
-    }, 0)
-
-    // Fallback: if no usedTotal found by pengajuan_id, try matching via p.pengajuan.fundraiser.id
-    if (usedTotal === 0 && user) {
-      const fallback = penyalurans.reduce((sum: number, p: any) => {
-        try {
-          const fundId = p.pengajuan && p.pengajuan.fundraiser && p.pengajuan.fundraiser.id
-          if (fundId && String(fundId) === String(user.id)) {
-            return sum + (Number(p.amount) || 0)
-          }
-        } catch (e) {
-          // ignore
-        }
-        return sum
-      }, 0)
-      if (fallback > 0) usedTotal = fallback
-    }
-
-    myCredit.value = Math.max(0, approvedTotal - usedTotal)
+    // set combined myCredit as sum of all (for backward compatibility where needed)
+    myCredit.value = Math.max(0, creditProgram.value + creditOperasional.value + creditGaji.value)
   } catch (err) {
     console.error('Error loading my credit', err)
   }
@@ -724,6 +724,8 @@ watch([filterNamaProgram, filterPIC, filterTanggal, filterJumlahMin, filterJumla
     refreshGrid(true)
   }, 300) // 300ms debounce delay to prevent flickering
 })
+
+// No-op: credits updated via event or onMounted; keep function available to refresh UI
 
 // Reset filter
 const resetFilter = () => {

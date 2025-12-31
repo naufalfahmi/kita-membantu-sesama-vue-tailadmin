@@ -7,12 +7,27 @@ use App\Models\PenyaluranImage;
 use App\Models\PengajuanDana;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class PenyaluranController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Penyaluran::with(['pengajuan', 'images', 'kantorCabang']);
+        // Eager-load pengajuan relations (program, fundraiser) so frontend can read nested program data
+        $query = Penyaluran::with(['pengajuan.program', 'pengajuan.fundraiser', 'images', 'kantorCabang']);
+
+        // Date range filter: optional start_date and end_date (YYYY-MM-DD)
+        if ($request->filled('start_date') || $request->filled('end_date')) {
+            $start = $request->filled('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : null;
+            $end = $request->filled('end_date') ? Carbon::parse($request->input('end_date'))->endOfDay() : null;
+            if ($start && $end) {
+                $query->whereBetween('created_at', [$start, $end]);
+            } elseif ($start) {
+                $query->where('created_at', '>=', $start);
+            } elseif ($end) {
+                $query->where('created_at', '<=', $end);
+            }
+        }
 
         if ($request->filled('search')) {
             $s = trim((string)$request->input('search'));

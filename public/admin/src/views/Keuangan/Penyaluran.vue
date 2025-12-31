@@ -78,11 +78,10 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Nama Program
             </label>
-            <input
-              type="text"
-              v-model="filterNamaProgram"
-              placeholder="Cari nama program..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            <SearchableSelect
+              v-model="filterProgramId"
+              :options="programOptions"
+              placeholder="Cari program..."
             />
           </div>
           <div class="flex-1">
@@ -96,71 +95,24 @@
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Tanggal
-            </label>
-            <div class="relative">
-              <flat-pickr
-                v-model="filterTanggal"
-                :config="flatpickrDateConfig"
-                class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                placeholder="Pilih tanggal"
-              />
-              <span
-                class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400"
-              >
-                <svg
-                  class="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 9.99999C18.3333 5.39762 14.6024 1.66666 10 1.66666C5.39763 1.66666 1.66667 5.39762 1.66667 9.99999C1.66667 14.6024 5.39763 18.3333 10 18.3333Z"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M10 5V10L13.3333 11.6667"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-            </div>
-          </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Jumlah Dana Min
-            </label>
-            <input
-              type="number"
-              v-model="filterJumlahMin"
-              placeholder="Jumlah minimum..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
+                <div class="flex-1">
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tanggal</label>
+                  <div class="relative">
+                    <flat-pickr
+                      v-model="filterTanggalRange"
+                      :config="flatpickrRangeConfig"
+                      class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                      placeholder="Pilih rentang tanggal"
+                    />
+                  </div>
+                </div>
+                <div class="flex-1">
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe Penyaluran</label>
+                  <SearchableSelect v-model="filterType" :options="typeOptions" placeholder="Cari tipe..." />
+                </div>
         </div>
         <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Jumlah Dana Max
-            </label>
-            <input
-              type="number"
-              v-model="filterJumlahMax"
-              placeholder="Jumlah maksimum..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-          <div class="flex items-end">
+          <div class="flex items-end col-span-1 md:col-span-2 lg:col-span-1">
             <button
               @click="resetFilter"
               class="h-11 w-full rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
@@ -222,6 +174,7 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/composables/useAuth'
@@ -248,7 +201,7 @@ const canView = computed(() => isAdmin() || hasPermission('view penyaluran'))
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
 
-// Flatpickr configuration for date
+// Flatpickr configuration for single date
 const flatpickrDateConfig = {
   dateFormat: 'Y-m-d',
   altInput: true,
@@ -256,11 +209,24 @@ const flatpickrDateConfig = {
   wrap: false,
 }
 
+// Flatpickr configuration for range picker
+const flatpickrRangeConfig = {
+  ...flatpickrDateConfig,
+  mode: 'range',
+}
+
 // Column definitions
 const columnDefs = [
   {
     headerName: 'Nama Penyaluran',
     field: 'namaPenyaluran',
+    sortable: true,
+    filter: false,
+    flex: 1,
+  },
+  {
+    headerName: 'Nama Program',
+    field: 'namaProgram',
     sortable: true,
     filter: false,
     flex: 1,
@@ -295,6 +261,20 @@ const columnDefs = [
     sortable: true,
     filter: false,
     flex: 1,
+  },
+  {
+    headerName: 'Tanggal',
+    field: 'tanggal',
+    sortable: true,
+    filter: false,
+    width: 160,
+    valueFormatter: (params: any) => {
+      if (!params.value) return ''
+      try {
+        const d = new Date(params.value)
+        return d.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
+      } catch (e) { return String(params.value) }
+    },
   },
   {
     headerName: 'Actions',
@@ -349,6 +329,14 @@ const myCredit = ref<number>(0)
 const creditProgram = ref<number>(0)
 const creditOperasional = ref<number>(0)
 const creditGaji = ref<number>(0)
+// program select options for filter
+const programOptions = ref<Array<{value:string,label:string}>>([])
+// tipe options for searchable select
+const typeOptions = ref<Array<{value:string,label:string}>>([
+  { value: 'program', label: 'Program' },
+  { value: 'operasional', label: 'Operasional' },
+  { value: 'gaji karyawan', label: 'Gaji Karyawan' },
+])
 
 const formattedMyCredit = computed(() => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(myCredit.value)
@@ -370,6 +358,8 @@ const loadPenyalurans = async () => {
     const items = (json.data || []).map((p: any) => ({
       id: p.id,
       namaPenyaluran: p.program_name || (p.pengajuan && (p.pengajuan.program?.nama_program || p.pengajuan.program?.nama)) || '',
+      namaProgram: (p.pengajuan && (p.pengajuan.program?.nama_program || p.pengajuan.program?.nama)) || '',
+      programId: p.pengajuan && p.pengajuan.program ? (p.pengajuan.program.id || null) : (p.program_id || null),
       tipe: p.submission_type || (p.pengajuan && p.pengajuan.submission_type) || '',
       jumlahDana: p.amount || 0,
       pic: p.pic || (p.pengajuan && p.pengajuan.fundraiser ? p.pengajuan.fundraiser.name : ''),
@@ -386,22 +376,19 @@ const loadPenyalurans = async () => {
 }
 
 // Filter state
-const filterNamaProgram = ref('')
 const filterPIC = ref('')
-const filterTanggal = ref('')
-const filterJumlahMin = ref('')
-const filterJumlahMax = ref('')
+// single range picker value (flatpickr returns array of Date objects)
+const filterTanggalRange = ref<any>('')
+const filterType = ref('')
+const filterProgramId = ref('')
 
 // Filtered data based on filter
 const filteredData = computed(() => {
   let filtered = [...rowDataArray.value]
   
-  // Filter by Nama Program
-  if (filterNamaProgram.value) {
-    const searchTerm = filterNamaProgram.value.toLowerCase()
-    filtered = filtered.filter((item) =>
-      item.namaProgram.toLowerCase().includes(searchTerm)
-    )
+  // Filter by selected Program
+  if (filterProgramId.value) {
+    filtered = filtered.filter((item) => String(item.programId || '') === String(filterProgramId.value))
   }
   
   // Filter by PIC
@@ -412,35 +399,48 @@ const filteredData = computed(() => {
     )
   }
   
-  // Filter by Tanggal
-  if (filterTanggal.value) {
+  // Filter by Tanggal (single range picker)
+  if (filterTanggalRange.value) {
+    let from: Date | null = null
+    let to: Date | null = null
+    const v = filterTanggalRange.value
+    // flatpickr range commonly returns an array of Date objects
+    if (Array.isArray(v)) {
+      from = v[0] ? new Date(v[0]) : null
+      to = v[1] ? new Date(v[1]) : from
+    } else if (v && typeof v === 'string') {
+      // fallback: try to parse comma or " to " separated strings
+      const parts = v.split(/\s+to\s+|,| - /)
+      if (parts.length >= 1) {
+        from = parts[0] ? new Date(parts[0]) : null
+        to = parts[1] ? new Date(parts[1]) : from
+      }
+    }
+
+    if (from || to) {
+      filtered = filtered.filter((item) => {
+        if (!item.tanggal) return false
+        const itemDate = new Date(item.tanggal)
+        if (from && to) {
+          return itemDate >= new Date(from.getFullYear(), from.getMonth(), from.getDate()) && itemDate <= new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59)
+        }
+        if (from) return itemDate >= new Date(from.getFullYear(), from.getMonth(), from.getDate())
+        if (to) return itemDate <= new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23, 59, 59)
+        return true
+      })
+    }
+  }
+
+  // Filter by tipe penyaluran
+  if (filterType.value) {
     filtered = filtered.filter((item) => {
-      const itemDate = new Date(item.tanggal)
-      const filterDate = new Date(filterTanggal.value)
-      
-      return (
-        itemDate.getFullYear() === filterDate.getFullYear() &&
-        itemDate.getMonth() === filterDate.getMonth() &&
-        itemDate.getDate() === filterDate.getDate()
-      )
+      try {
+        return String(item.tipe || '').toLowerCase() === String(filterType.value).toLowerCase()
+      } catch (e) { return false }
     })
   }
   
-  // Filter by Jumlah Dana Min
-  if (filterJumlahMin.value) {
-    const minAmount = parseFloat(filterJumlahMin.value)
-    if (!isNaN(minAmount)) {
-      filtered = filtered.filter((item) => item.jumlahDana >= minAmount)
-    }
-  }
-  
-  // Filter by Jumlah Dana Max
-  if (filterJumlahMax.value) {
-    const maxAmount = parseFloat(filterJumlahMax.value)
-    if (!isNaN(maxAmount)) {
-      filtered = filtered.filter((item) => item.jumlahDana <= maxAmount)
-    }
-  }
+  // (Jumlah Dana min/max filters removed)
   
   return filtered
 })
@@ -653,6 +653,7 @@ const refreshGrid = (scrollToTop = false) => {
 onMounted(() => {
   fetchUser()
   loadPenyalurans()
+  loadProgramOptions()
   loadMyCredit()
   // listen for global changes when penyaluran is created/updated/deleted
   window.addEventListener('penyaluran:changed', () => {
@@ -692,6 +693,19 @@ const loadMyCredit = async () => {
   }
 }
 
+const loadProgramOptions = async () => {
+  try {
+    const res = await fetch('/admin/api/program?per_page=100', { credentials: 'same-origin' })
+    const json = await res.json()
+    if (!json.success) return
+    const list = Array.isArray(json.data) ? json.data : (json.data && json.data.data) || []
+    // include an 'All' option labeled 'Semua' at the top
+    programOptions.value = [{ value: '', label: 'Semua' }, ...list.map((p: any) => ({ value: p.id, label: p.nama_program || p.nama || p.title || '' }))]
+  } catch (err) {
+    console.error('Failed to load program options', err)
+  }
+}
+
 // Clear debounce timer on component unmount
 onUnmounted(() => {
   if (filterDebounceTimer) {
@@ -713,7 +727,7 @@ const onSortChanged = () => {
 let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Watch for filter changes and refresh grid with debounce
-watch([filterNamaProgram, filterPIC, filterTanggal, filterJumlahMin, filterJumlahMax], () => {
+watch([filterProgramId, filterPIC, filterTanggalRange, filterType], () => {
   // Clear existing timer
   if (filterDebounceTimer) {
     clearTimeout(filterDebounceTimer)
@@ -729,11 +743,10 @@ watch([filterNamaProgram, filterPIC, filterTanggal, filterJumlahMin, filterJumla
 
 // Reset filter
 const resetFilter = () => {
-  filterNamaProgram.value = ''
+  filterProgramId.value = ''
   filterPIC.value = ''
-  filterTanggal.value = ''
-  filterJumlahMin.value = ''
-  filterJumlahMax.value = ''
+  filterTanggalRange.value = ''
+  filterType.value = ''
 }
 </script>
 

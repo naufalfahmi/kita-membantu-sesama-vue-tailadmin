@@ -163,6 +163,21 @@
                           </button>
                         </div>
                       </th>
+                      <th
+                        v-if="mainMenu.name === 'Keuangan'"
+                        class="border-r border-gray-200 px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-300"
+                      >
+                        <div class="flex flex-col items-center gap-1">
+                          <span>Approval</span>
+                          <button
+                            @click.prevent="toggleSubMenuAction(mainMenu.name, 'approval')"
+                            type="button"
+                            class="text-xs text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                          >
+                            Toggle
+                          </button>
+                        </div>
+                      </th>
                       <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-300">
                         <div class="flex flex-col items-center gap-1">
                           <span>Hapus</span>
@@ -218,6 +233,17 @@
                           class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-600 dark:bg-gray-800"
                         />
                       </td>
+                      <template v-if="mainMenu.name === 'Keuangan'">
+                        <td class="border-r border-gray-200 px-4 py-3 text-center dark:border-gray-700">
+                          <input
+                            type="checkbox"
+                            :checked="isPermissionSelected(`approval ${subMenu.permission}`)"
+                            @change="togglePermission(`approval ${subMenu.permission}`)"
+                            class="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-gray-600 dark:bg-gray-800"
+                          />
+                        </td>
+                      </template>
+
                       <td class="px-4 py-3 text-center">
                         <input
                           type="checkbox"
@@ -344,6 +370,7 @@ const menuStructure = [
 
 // Permission actions
 const actions = ['view', 'create', 'update', 'show', 'delete']
+const approvalAction = 'approval'
 
 // State
 const isEditMode = computed(() => route.params.id !== undefined && route.params.id !== 'new')
@@ -383,10 +410,12 @@ const filteredMenuStructure = computed(() => {
     .filter((menu) => menu !== null) as typeof menuStructure
 })
 
-// Calculate total permissions count
+// Calculate total permissions count (include approval only for Keuangan menu)
 const totalPermissionsCount = computed(() => {
   return menuStructure.reduce((total, mainMenu) => {
-    return total + mainMenu.subItems.length * actions.length
+    let count = mainMenu.subItems.length * actions.length
+    if (mainMenu.name === 'Keuangan') count += mainMenu.subItems.length // approval per subitem
+    return total + count
   }, 0)
 })
 
@@ -412,6 +441,10 @@ const selectAllPermissions = () => {
       actions.forEach((action) => {
         selectedPermissions.value.add(`${action} ${subMenu.permission}`)
       })
+      // add approval permission only for Keuangan menu
+      if (mainMenu.name === 'Keuangan') {
+        selectedPermissions.value.add(`${approvalAction} ${subMenu.permission}`)
+      }
     })
   })
 }
@@ -425,7 +458,8 @@ const toggleMainMenu = (mainMenuName: string) => {
   if (!mainMenu) return
 
   const allSelected = mainMenu.subItems.every((subMenu) =>
-    actions.every((action) => isPermissionSelected(`${action} ${subMenu.permission}`))
+    (actions.every((action) => isPermissionSelected(`${action} ${subMenu.permission}`)) &&
+      (mainMenu.name === 'Keuangan' ? isPermissionSelected(`${approvalAction} ${subMenu.permission}`) : true))
   )
 
   mainMenu.subItems.forEach((subMenu) => {
@@ -437,6 +471,15 @@ const toggleMainMenu = (mainMenuName: string) => {
         selectedPermissions.value.add(permission)
       }
     })
+    // toggle approval when main menu is Keuangan
+    if (mainMenu.name === 'Keuangan') {
+      const ap = `${approvalAction} ${subMenu.permission}`
+      if (allSelected) {
+        selectedPermissions.value.delete(ap)
+      } else {
+        selectedPermissions.value.add(ap)
+      }
+    }
   })
 }
 
@@ -445,7 +488,8 @@ const isMainMenuAllSelected = (mainMenuName: string) => {
   if (!mainMenu) return false
 
   return mainMenu.subItems.every((subMenu) =>
-    actions.every((action) => isPermissionSelected(`${action} ${subMenu.permission}`))
+    (actions.every((action) => isPermissionSelected(`${action} ${subMenu.permission}`)) &&
+      (mainMenu.name === 'Keuangan' ? isPermissionSelected(`${approvalAction} ${subMenu.permission}`) : true))
   )
 }
 
@@ -465,6 +509,18 @@ const toggleSubMenuAction = (mainMenuName: string, action: string) => {
       selectedPermissions.value.add(permission)
     }
   })
+
+  // if action is approval and main menu is Keuangan, ensure it's handled
+  if (action === approvalAction && mainMenu.name === 'Keuangan') {
+    const allApSelected = mainMenu.subItems.every((subMenu) =>
+      isPermissionSelected(`${approvalAction} ${subMenu.permission}`)
+    )
+    mainMenu.subItems.forEach((subMenu) => {
+      const p = `${approvalAction} ${subMenu.permission}`
+      if (allApSelected) selectedPermissions.value.delete(p)
+      else selectedPermissions.value.add(p)
+    })
+  }
 }
 
 // API functions

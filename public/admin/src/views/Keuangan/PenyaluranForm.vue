@@ -48,12 +48,12 @@
             >
               Program <span class="text-red-500">*</span>
             </label>
-            <SearchableSelect
+            <input
+              type="text"
               v-model="formData.program"
-              :options="programList"
-              placeholder="Pilih atau cari program"
-              :search-input="programSearchInput"
-              @update:search-input="programSearchInput = $event"
+              placeholder="Masukkan nama program atau tahapannya"
+              required
+              class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
 
@@ -178,20 +178,33 @@
             ></textarea>
           </div>
 
-          <!-- Kantor Cabang -->
+          <!-- Kantor Cabang (auto from logged-in user) -->
           <div class="lg:col-span-1">
             <label
               class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
             >
               Kantor Cabang <span class="text-red-500">*</span>
             </label>
-            <SearchableSelect
-              v-model="formData.branchId"
-              :options="kantorCabangList"
-              placeholder="Pilih atau cari kantor cabang"
-              :search-input="kantorCabangSearchInput"
-              @update:search-input="kantorCabangSearchInput = $event"
-            />
+            <template v-if="currentUser?.is_admin">
+              <SearchableSelect
+                v-model="formData.branchId"
+                :options="kantorCabangList"
+                placeholder="Pilih atau cari kantor cabang"
+                :search-input="kantorCabangSearchInput"
+                @update:search-input="kantorCabangSearchInput = $event"
+              />
+            </template>
+            <template v-else>
+              <input
+                type="text"
+                :value="currentUser?.kantor_cabang?.nama || ''"
+                placeholder="Kantor cabang Anda"
+                readonly
+                class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:outline-none dark:border-gray-700 dark:bg-gray-900/50 dark:text-white/90"
+              />
+              <!-- hidden input to send id -->
+              <input type="hidden" v-model="formData.branchId" />
+            </template>
           </div>
 
           <!-- Gambar Dokumentasi -->
@@ -320,6 +333,7 @@
 
 <script setup lang="ts">
 import { reactive, computed, ref, onMounted } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
@@ -345,22 +359,48 @@ const programList = [
   { value: 'program-infrastruktur', label: 'Program Infrastruktur' },
 ]
 
-const kantorCabangList = [
-  { value: 'jakarta', label: 'Jakarta' },
-  { value: 'bandung', label: 'Bandung' },
-  { value: 'surabaya', label: 'Surabaya' },
-  { value: 'yogyakarta', label: 'Yogyakarta' },
-  { value: 'medan', label: 'Medan' },
-  { value: 'makassar', label: 'Makassar' },
-  { value: 'semarang', label: 'Semarang' },
-  { value: 'palembang', label: 'Palembang' },
-  { value: 'denpasar', label: 'Denpasar' },
-  { value: 'batam', label: 'Batam' },
-]
+import { ref as vueRef } from 'vue'
+const kantorCabangList = vueRef<Array<{ value: string; label: string }>>([])
+
+const fetchKantorCabangOptions = async () => {
+  try {
+    const res = await fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' })
+    if (!res.ok) return
+    const json = await res.json()
+    const dataArray = json.success && json.data ? (Array.isArray(json.data) ? json.data : json.data.data || []) : []
+    kantorCabangList.value = dataArray.map((item: any) => ({ value: item.id, label: item.nama }))
+  } catch (e) {
+    console.error('Failed to fetch kantor cabang options', e)
+  }
+}
 
 // Search input refs
 const programSearchInput = ref('')
 const kantorCabangSearchInput = ref('')
+
+// Current user
+const currentUser = ref<any>(null)
+
+const fetchCurrentUser = async () => {
+  try {
+    const res = await fetch('/admin/api/user', { credentials: 'same-origin' })
+    if (res.ok) {
+      const json = await res.json()
+      if (json.success && json.user) {
+        currentUser.value = json.user
+        if (currentUser.value?.kantor_cabang?.id) {
+          formData.branchId = String(currentUser.value.kantor_cabang.id)
+        }
+        // if admin, fetch full kantor cabang options
+        if (currentUser.value?.is_admin) {
+          await fetchKantorCabangOptions()
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to fetch current user', e)
+  }
+}
 
 // File upload
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -379,6 +419,7 @@ const formData = reactive({
   address: '',
   report: '',
   branchId: '',
+  pengajuanId: '',
 })
 
 // Format amount input (remove non-numeric characters except dots and commas)
@@ -449,7 +490,34 @@ const formatFileSize = (bytes: number): string => {
 const loadData = async () => {
   if (isEditMode.value && route.params.id) {
     const id = route.params.id as string
-    // TODO: Load data from API
+    try {
+      const res = await fetch(`/admin/api/penyaluran/${id}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      if (!res.ok) throw new Error('Failed to fetch penyaluran')
+      const json = await res.json()
+      if (!json.success || !json.data) {
+        console.error('Penyaluran tidak ditemukan')
+        return
+      }
+
+      const p = json.data
+      // Map fields into formData
+      formData.amount = p.amount != null ? String(p.amount) : formData.amount
+      formData.program = p.program_name || (p.pengajuan && (p.pengajuan.program?.nama_program || p.pengajuan.program?.nama)) || formData.program
+      formData.pic = p.pic || (p.pengajuan && p.pengajuan.fundraiser ? p.pengajuan.fundraiser.name : formData.pic)
+      formData.village = p.village || p.kelurahan || formData.village
+      formData.district = p.district || p.kecamatan || formData.district
+      formData.city = p.city || p.kota || formData.city
+      formData.province = p.province || formData.province
+      formData.postalCode = p.postal_code || formData.postalCode
+      formData.address = p.address || formData.address
+      formData.report = p.report || formData.report
+      formData.branchId = p.kantor_cabang_id || (p.kantor_cabang && p.kantor_cabang.id) || formData.branchId
+      formData.pengajuanId = p.pengajuan_dana_id || formData.pengajuanId
+
+      // Note: existing images are not converted into File objects. Keep selectedFiles empty for uploads; images are available on server via p.images
+    } catch (err) {
+      console.error('Error loading penyaluran', err)
+    }
   }
 }
 
@@ -458,25 +526,27 @@ const handleCancel = () => {
   router.push('/keuangan/penyaluran')
 }
 
+const toast = useToast()
+
 // Handle save
 const handleSave = async () => {
   if (!formData.amount) {
-    alert('Nominal wajib diisi')
+    toast.error('Nominal wajib diisi')
     return
   }
 
   if (!formData.program) {
-    alert('Program wajib diisi')
+    toast.error('Program wajib diisi')
     return
   }
 
   if (!formData.pic) {
-    alert('PIC wajib diisi')
+    toast.error('PIC wajib diisi')
     return
   }
 
   if (!formData.branchId) {
-    alert('Kantor Cabang wajib diisi')
+    toast.error('Kantor Cabang wajib diisi')
     return
   }
 
@@ -485,41 +555,77 @@ const handleSave = async () => {
     const formDataToSend = new FormData()
     
     // Add form fields
-    formDataToSend.append('amount', formData.amount)
-    formDataToSend.append('program', formData.program)
-    formDataToSend.append('pic', formData.pic)
-    formDataToSend.append('village', formData.village)
-    formDataToSend.append('district', formData.district)
-    formDataToSend.append('city', formData.city)
-    formDataToSend.append('province', formData.province)
-    formDataToSend.append('postalCode', formData.postalCode)
-    formDataToSend.append('address', formData.address)
-    formDataToSend.append('report', formData.report)
-    formDataToSend.append('branchId', formData.branchId)
+    formDataToSend.append('amount', String(formData.amount || '0'))
+    if (formData.pengajuanId) {
+      formDataToSend.append('pengajuan_dana_id', String(formData.pengajuanId))
+    }
+    formDataToSend.append('program_name', formData.program || '')
+    formDataToSend.append('pic', formData.pic || '')
+    formDataToSend.append('village', formData.village || '')
+    formDataToSend.append('district', formData.district || '')
+    formDataToSend.append('city', formData.city || '')
+    formDataToSend.append('province', formData.province || '')
+    formDataToSend.append('postal_code', formData.postalCode || '')
+    formDataToSend.append('address', formData.address || '')
+    formDataToSend.append('report', formData.report || '')
+    formDataToSend.append('kantor_cabang_id', formData.branchId || '')
     
     // Add files
-    selectedFiles.value.forEach((file, index) => {
-      formDataToSend.append(`images[${index}]`, file)
+    selectedFiles.value.forEach((file) => {
+      formDataToSend.append('images[]', file)
     })
 
     // TODO: Save to API
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    const url = isEditMode.value ? `/admin/api/penyaluran/${route.params.id}` : '/admin/api/penyaluran'
+    // When updating via FormData, use POST + _method=PUT so Laravel route matches
     if (isEditMode.value) {
-      // await updatePenyaluran(route.params.id, formDataToSend)
-      alert('Penyaluran berhasil diupdate')
-    } else {
-      // await createPenyaluran(formDataToSend)
-      alert('Penyaluran berhasil dibuat')
+      formDataToSend.append('_method', 'PUT')
     }
-    
-    // Redirect to list
-    router.push('/keuangan/penyaluran')
+    const res = await fetch(url, { method: 'POST', body: formDataToSend, credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': csrf } })
+    const json = await res.json()
+    if (!json.success) {
+      toast.error(json.message || 'Gagal menyimpan penyaluran')
+    } else {
+      toast.success(isEditMode.value ? 'Penyaluran berhasil diupdate' : 'Penyaluran berhasil dibuat')
+      // Redirect to list first so the list page mounts and registers its listeners,
+      // then dispatch an event to tell it to refresh credit/list.
+      try {
+        await router.push('/keuangan/penyaluran')
+        window.dispatchEvent(new CustomEvent('penyaluran:changed'))
+        return
+      } catch (e) {
+        // fallback: navigate without awaiting then dispatch
+        router.push('/keuangan/penyaluran')
+        try { window.dispatchEvent(new CustomEvent('penyaluran:changed')) } catch (err) {}
+      }
+    }
   } catch (error) {
     console.error('Error saving:', error)
-    alert('Terjadi kesalahan saat menyimpan data')
+    toast.error('Terjadi kesalahan saat menyimpan data')
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await fetchCurrentUser()
+  const pengajuanId = route.query.pengajuan_id
+  if (pengajuanId) {
+    try {
+      const res = await fetch(`/admin/api/pengajuan-dana/${pengajuanId}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      const json = await res.json()
+      if (json.success && json.data) {
+        const d = json.data
+        // remember pengajuan id so we send it when saving
+        formData.pengajuanId = String(pengajuanId)
+        formData.program = (d.program && (d.program.nama || d.program.nama_program)) || formData.program
+        formData.pic = d.fundraiser ? d.fundraiser.name : formData.pic
+        formData.amount = d.amount || formData.amount
+        formData.report = d.purpose || formData.report
+      }
+    } catch (e) {
+      console.error('Failed to load pengajuan', e)
+    }
+  }
   loadData()
 })
 </script>

@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
     {
         // Run menu permissions seeder first
         $this->call(MenuPermissionSeeder::class);
+        // Run approval permission seeder for Keuangan
+        $this->call(ApprovalPermissionSeeder::class);
         
         // Run roles/jabatan seeder
         $this->call(JabatanSeeder::class);

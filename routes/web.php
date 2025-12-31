@@ -248,7 +248,13 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     
     // Pengajuan Dana API
     Route::get('pengajuan-dana/options', [PengajuanDanaController::class, 'options']);
+    Route::post('pengajuan-dana/{id}/approve', [PengajuanDanaController::class, 'approve']);
     Route::apiResource('pengajuan-dana', PengajuanDanaController::class);
+
+    // Penyaluran API
+    Route::get('penyaluran/approved-pengajuans', [\App\Http\Controllers\PenyaluranController::class, 'approvedPengajuans']);
+    Route::get('penyaluran/my-credit', [\App\Http\Controllers\PenyaluranController::class, 'myCredit']);
+    Route::apiResource('penyaluran', \App\Http\Controllers\PenyaluranController::class);
 
     // Landing Profile API (single resource endpoints)
     Route::get('company/landing-profile', [\App\Http\Controllers\LandingProfileController::class, 'index']);

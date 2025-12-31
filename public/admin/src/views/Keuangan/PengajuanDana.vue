@@ -189,6 +189,15 @@
       @confirm="confirmDelete"
       @cancel="cancelDelete"
     />
+    <ApprovalModal
+      :isOpen="showApprovalModal"
+      title="Justifikasi Persetujuan"
+      message="Masukkan alasan atau catatan sebelum menyetujui/menolak pengajuan ini."
+      confirmText="Kirim"
+      confirmButtonClass="bg-brand-500 hover:bg-brand-600"
+      @confirm="handleApprovalConfirm"
+      @cancel="() => { showApprovalModal = false; approvalTargetId = null; approvalDecision = null }"
+    />
   </AdminLayout>
 </template>
 
@@ -203,8 +212,8 @@ import 'flatpickr/dist/flatpickr.css'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import ApprovalModal from '@/components/common/ApprovalModal.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/composables/useAuth'
@@ -241,6 +250,8 @@ const canCreate = computed(() => isAdmin() || hasPermission('create pengajuan da
 const canUpdate = computed(() => isAdmin() || hasPermission('update pengajuan dana'))
 const canDelete = computed(() => isAdmin() || hasPermission('delete pengajuan dana'))
 const canView = computed(() => isAdmin() || hasPermission('view pengajuan dana'))
+// allow either permission key (legacy 'approve pengajuan dana' or seeded 'approval pengajuan dana')
+const canApprove = computed(() => isAdmin() || hasPermission('approve pengajuan dana') || hasPermission('approval pengajuan dana'))
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
 
@@ -349,7 +360,7 @@ const columnDefs = [
     field: 'actions',
     sortable: false,
     filter: false,
-    width: 120,
+    width: 160,
     cellRenderer: (params: any) => {
       const div = document.createElement('div')
       div.className = 'flex items-center gap-3'
@@ -381,6 +392,35 @@ const columnDefs = [
       }
       if (canDelete.value) {
         div.appendChild(deleteBtn)
+      }
+      // Approve / Reject buttons for approvers
+      if (canApprove.value) {
+        const approveBtn = document.createElement('button')
+        approveBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-green-600 hover:bg-green-50 dark:hover:bg-green-600/10 transition-colors'
+        approveBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 6L9 17l-5-5"></path>
+          </svg>
+        `
+        approveBtn.title = 'Approve'
+        approveBtn.onclick = () => openApprovalModal(params.data.id, 'Approved')
+
+        const rejectBtn = document.createElement('button')
+        rejectBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-600/10 transition-colors'
+        rejectBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6L6 18M6 6l12 12"></path>
+          </svg>
+        `
+        rejectBtn.title = 'Reject'
+        rejectBtn.onclick = () => openApprovalModal(params.data.id, 'Rejected')
+
+        // Only show approve/reject when current status is Pending or Draft (or not already final)
+        const st = (params.data && params.data.status) ? String(params.data.status).toLowerCase() : ''
+        if (!['approved', 'rejected'].includes(st)) {
+          div.appendChild(approveBtn)
+          div.appendChild(rejectBtn)
+        }
       }
       
       return div
@@ -709,6 +749,41 @@ onMounted(() => {
   fetchUser()
   refreshGrid()
 })
+
+// Approval modal state
+const showApprovalModal = ref(false)
+const approvalTargetId = ref<string | null>(null)
+const approvalDecision = ref<'Approved'|'Rejected'|'Pending'|null>(null)
+
+const openApprovalModal = (id: string, decision: 'Approved'|'Rejected') => {
+  approvalTargetId.value = id
+  approvalDecision.value = decision
+  showApprovalModal.value = true
+}
+
+const handleApprovalConfirm = async (comment: string) => {
+  if (!approvalTargetId.value || !approvalDecision.value) return
+  try {
+    const csrf = await getCsrfTokenSafe()
+    const res = await fetch(`/admin/api/pengajuan-dana/${approvalTargetId.value}/approve`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ decision: approvalDecision.value, comment }),
+    })
+    const json = await res.json()
+    if (!json.success) throw new Error(json.message || 'Approval failed')
+
+    toast.success('Tindakan persetujuan berhasil')
+    showApprovalModal.value = false
+    approvalTargetId.value = null
+    approvalDecision.value = null
+    refreshGrid(true)
+  } catch (err) {
+    console.error('Approval error', err)
+    toast.error('Gagal melakukan persetujuan')
+  }
+}
 
 // Clear debounce timer on component unmount
 onUnmounted(() => {

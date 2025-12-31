@@ -7,6 +7,10 @@
         <h3 class="font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">
           {{ currentPageTitle }}
         </h3>
+        <div class="ml-4 text-right">
+          <p class="text-sm text-gray-500">Sisa kredit Anda untuk penyaluran:</p>
+          <p class="text-lg font-medium text-gray-800 dark:text-white/90">{{ formattedMyCredit }}</p>
+        </div>
         <div class="flex items-center gap-3">
           <button
             @click="handleExportExcel"
@@ -175,35 +179,7 @@
           />
         </div>
         
-        <!-- Custom empty state overlay -->
-        <div
-          v-if="showEmptyState"
-          class="absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 rounded-lg z-50 pointer-events-none"
-          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"
-        >
-          <svg class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              v-if="filterNamaProgram || filterPIC || filterTanggal || filterJumlahMin || filterJumlahMax"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            ></path>
-            <path
-              v-else
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            ></path>
-          </svg>
-          <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
-            {{ filterNamaProgram || filterPIC || filterTanggal || filterJumlahMin || filterJumlahMax ? 'Tidak ada data ditemukan' : 'Tidak ada data' }}
-          </p>
-          <p class="text-gray-500 dark:text-gray-500 text-sm">
-            {{ filterNamaProgram || filterPIC || filterTanggal || filterJumlahMin || filterJumlahMax ? 'Coba ubah filter pencarian Anda' : 'Belum ada data yang tersedia' }}
-          </p>
-        </div>
+        <!-- AG Grid built-in no-rows overlay will be shown when there is no data -->
       </div>
     </div>
 
@@ -299,23 +275,6 @@ const columnDefs = [
     flex: 1,
   },
   {
-    headerName: 'Tanggal',
-    field: 'tanggal',
-    sortable: true,
-    filter: false,
-    flex: 1,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Date(params.value).toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-      }
-      return ''
-    },
-  },
-  {
     headerName: 'Actions',
     field: 'actions',
     sortable: false,
@@ -323,8 +282,8 @@ const columnDefs = [
     width: 120,
     cellRenderer: (params: any) => {
       const div = document.createElement('div')
-      div.className = 'flex items-center gap-3'
-      
+      div.className = 'flex items-center gap-2'
+
       const editBtn = document.createElement('button')
       editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
       editBtn.innerHTML = `
@@ -333,7 +292,7 @@ const columnDefs = [
         </svg>
       `
       editBtn.onclick = () => handleEdit(params.data.id)
-      
+
       const deleteBtn = document.createElement('button')
       deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
       deleteBtn.innerHTML = `
@@ -346,14 +305,10 @@ const columnDefs = [
         </svg>
       `
       deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      if (canUpdate.value) {
-        div.appendChild(editBtn)
-      }
-      if (canDelete.value) {
-        div.appendChild(deleteBtn)
-      }
-      
+
+      if (canUpdate.value) div.appendChild(editBtn)
+      if (canDelete.value) div.appendChild(deleteBtn)
+
       return div
     },
   },
@@ -366,46 +321,40 @@ const defaultColDef = {
   filter: false,
 }
 
-// Sample data - generate 200 items for infinite scroll testing
-const generateRowData = (): PenyaluranRow[] => {
-  const programs = [
-    'Program Beasiswa Pendidikan', 'Program Kesehatan Masyarakat', 'Program Pemberdayaan Ekonomi',
-    'Program Bantuan Pangan', 'Program Pengembangan SDM', 'Program Lingkungan Hidup',
-    'Program Sosial Budaya', 'Program Infrastruktur', 'Program Teknologi Informasi',
-    'Program Pertanian Berkelanjutan', 'Program Perumahan Rakyat', 'Program Air Bersih',
-  ]
-  
-  const pics = [
-    'Ahmad Hidayat', 'Siti Nurhaliza', 'Budi Santoso', 'Dewi Lestari', 'Eko Prasetyo',
-    'Fitri Handayani', 'Guntur Wibowo', 'Hesti Rahayu', 'Indra Wijaya', 'Joko Susilo',
-    'Kartika Putri', 'Lukman Hakim', 'Maya Sari', 'Nanda Pratama', 'Olivia Wijaya',
-  ]
-  
-  const rowData: PenyaluranRow[] = []
-  const startDate = new Date('2024-01-01')
-  
-  for (let i = 1; i <= 200; i++) {
-    const programIndex = (i - 1) % programs.length
-    const picIndex = (i - 1) % pics.length
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + (i - 1) * 2) // Increment by 2 days for each entry
-    
-    // Random amount between 5M and 20M
-    const jumlahDana = Math.floor(Math.random() * 15000000) + 5000000
-    
-    rowData.push({
-      id: i.toString(),
-      namaProgram: programs[programIndex],
-      jumlahDana: jumlahDana,
-      pic: pics[picIndex],
-      tanggal: date.toISOString().split('T')[0],
-    })
-  }
-  
-  return rowData
-}
+// Row data will come from `penyalurans` table via API
+const rowDataArray = ref<PenyaluranRow[]>([])
+const myCredit = ref<number>(0)
 
-const rowDataArray = ref<PenyaluranRow[]>(generateRowData())
+const formattedMyCredit = computed(() => {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(myCredit.value)
+})
+
+const loadPenyalurans = async () => {
+  try {
+    const res = await fetch('/admin/api/penyaluran?per_page=1000', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    const json = await res.json()
+    if (!json.success) {
+      toast.error('Gagal memuat data penyaluran')
+      return
+    }
+
+    // Map penyaluran items into PenyaluranRow shape
+    const items = (json.data || []).map((p: any) => ({
+      id: p.id,
+      namaProgram: p.program_name || (p.pengajuan && (p.pengajuan.program?.nama_program || p.pengajuan.program?.nama)) || '',
+      jumlahDana: p.amount || 0,
+      pic: p.pic || (p.pengajuan && p.pengajuan.fundraiser ? p.pengajuan.fundraiser.name : ''),
+      tanggal: p.created_at || p.tanggal || null,
+      raw: p,
+    }))
+
+    rowDataArray.value = items
+    refreshGrid(true)
+  } catch (err) {
+    console.error('Error loading penyaluran', err)
+    toast.error('Gagal memuat data')
+  }
+}
 
 // Filter state
 const filterNamaProgram = ref('')
@@ -490,12 +439,32 @@ const confirmDelete = () => {
   if (!deleteId.value) {
     return
   }
+  const id = deleteId.value
+  try {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    fetch(`/admin/api/penyaluran/${id}`, { method: 'DELETE', credentials: 'same-origin', headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' } })
+      .then((res) => res.json())
+      .then((json) => {
+        if (!json.success) {
+          toast.error(json.message || 'Gagal menghapus penyaluran')
+          return
+        }
 
-  rowDataArray.value = rowDataArray.value.filter((item) => item.id !== deleteId.value)
-  toast.success('Penyaluran berhasil dihapus')
-  showDeleteModal.value = false
-  deleteId.value = null
-  refreshGrid()
+        rowDataArray.value = rowDataArray.value.filter((item) => item.id !== id)
+        toast.success('Penyaluran berhasil dihapus')
+        showDeleteModal.value = false
+        deleteId.value = null
+        try { window.dispatchEvent(new CustomEvent('penyaluran:changed')) } catch (e) {}
+        refreshGrid()
+      })
+      .catch((err) => {
+        console.error('Delete failed', err)
+        toast.error('Gagal menghapus penyaluran')
+      })
+  } catch (err) {
+    console.error('Delete error', err)
+    toast.error('Gagal menghapus penyaluran')
+  }
 }
 
 const cancelDelete = () => {
@@ -622,12 +591,28 @@ const refreshGrid = (scrollToTop = false) => {
         gridApi.purgeInfiniteCache()
         gridApi.refreshInfiniteCache()
 
-        if (scrollToTop) {
-          window.setTimeout(() => {
-            const inner = (agGridRef.value as any)?.api
-            if (inner) inner.ensureIndexVisible(0, 'top')
-          }, 100)
-        }
+          // Show AG Grid's no-rows overlay when filtered data is empty,
+          // otherwise hide any overlay.
+          if (filteredData.value.length === 0) {
+            try {
+              gridApi.showNoRowsOverlay()
+            } catch (e) {
+              // some AG Grid builds may use different overlay API, ignore errors
+            }
+          } else {
+            try {
+              gridApi.hideOverlay()
+            } catch (e) {
+              // ignore
+            }
+          }
+
+          if (scrollToTop) {
+            window.setTimeout(() => {
+              const inner = (agGridRef.value as any)?.api
+              if (inner) inner.ensureIndexVisible(0, 'top')
+            }, 100)
+          }
       } catch (error) {
         console.error('Error refreshing cache:', error)
       }
@@ -638,14 +623,85 @@ const refreshGrid = (scrollToTop = false) => {
 // Set datasource after component is mounted
 onMounted(() => {
   fetchUser()
-  refreshGrid()
+  loadPenyalurans()
+  loadMyCredit()
+  // listen for global changes when penyaluran is created/updated/deleted
+  window.addEventListener('penyaluran:changed', () => {
+    loadPenyalurans()
+    loadMyCredit()
+  })
+  // listen for delete requests coming from grid cell renderers
+  window.addEventListener('penyaluran:delete', (e: any) => {
+    const id = e?.detail || null
+    if (id) {
+      deleteId.value = id
+      showDeleteModal.value = true
+    }
+  })
 })
+
+const loadMyCredit = async () => {
+  try {
+    // fetch current user
+    const userRes = await fetch('/admin/api/user', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    const userJson = await userRes.json()
+    const user = userJson.success ? userJson.user : null
+
+    // fetch approved pengajuans (server may return all approved; filter by current user)
+    const pengajuanRes = await fetch('/admin/api/pengajuan-dana?per_page=1000&status=Approved', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    const pengajuanJson = await pengajuanRes.json()
+    const pengajuans = pengajuanJson.success && Array.isArray(pengajuanJson.data) ? pengajuanJson.data : []
+
+    // filter pengajuans for this fundraiser (current user)
+    const myPengajuans = user ? pengajuans.filter((p: any) => p.fundraiser && String(p.fundraiser.id) === String(user.id)) : []
+    const pengajuanIds = myPengajuans.map((p: any) => p.id)
+    const approvedTotal = myPengajuans.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0)
+
+    // fetch penyalurans and sum amounts linked to those pengajuans
+    const penyaluranRes = await fetch('/admin/api/penyaluran?per_page=1000', { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    const penyaluranJson = await penyaluranRes.json()
+    const penyalurans = penyaluranJson.success && Array.isArray(penyaluranJson.data) ? penyaluranJson.data : []
+
+    let usedTotal = penyalurans.reduce((sum: number, p: any) => {
+      const pid = p.pengajuan_dana_id || (p.pengajuan && p.pengajuan.id) || null
+      if (pid && pengajuanIds.includes(pid)) {
+        return sum + (Number(p.amount) || 0)
+      }
+      return sum
+    }, 0)
+
+    // Fallback: if no usedTotal found by pengajuan_id, try matching via p.pengajuan.fundraiser.id
+    if (usedTotal === 0 && user) {
+      const fallback = penyalurans.reduce((sum: number, p: any) => {
+        try {
+          const fundId = p.pengajuan && p.pengajuan.fundraiser && p.pengajuan.fundraiser.id
+          if (fundId && String(fundId) === String(user.id)) {
+            return sum + (Number(p.amount) || 0)
+          }
+        } catch (e) {
+          // ignore
+        }
+        return sum
+      }, 0)
+      if (fallback > 0) usedTotal = fallback
+    }
+
+    myCredit.value = Math.max(0, approvedTotal - usedTotal)
+  } catch (err) {
+    console.error('Error loading my credit', err)
+  }
+}
 
 // Clear debounce timer on component unmount
 onUnmounted(() => {
   if (filterDebounceTimer) {
     clearTimeout(filterDebounceTimer)
   }
+  window.removeEventListener('penyaluran:changed', () => {
+    loadPenyalurans()
+    loadMyCredit()
+  })
+  window.removeEventListener('penyaluran:delete', () => {})
 })
 
 // Handle sort changes

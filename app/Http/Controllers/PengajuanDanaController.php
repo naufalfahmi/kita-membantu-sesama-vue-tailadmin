@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use App\Models\PengajuanDanaDisbursement;
+use App\Models\PengajuanDanaApproval;
+use Illuminate\Support\Str;
 
 class PengajuanDanaController extends Controller
 {
@@ -169,6 +171,48 @@ class PengajuanDanaController extends Controller
     }
 
     /**
+     * Compute remaining allocation for a program in usedAt month.
+     * Returns integer remaining amount (>=0).
+     */
+    private function computeProgramRemaining(string $programId, $usedAt, ?string $excludePengajuanId = null): int
+    {
+        $start = \Carbon\Carbon::parse($usedAt)->startOfMonth()->toDateString();
+        $end = \Carbon\Carbon::parse($usedAt)->endOfMonth()->toDateString();
+
+        $inflow = \App\Models\Transaksi::where('program_id', $programId)
+            ->whereBetween('tanggal_transaksi', [$start, $end])
+            ->sum('nominal');
+
+        $program = \App\Models\Program::with('shares.type')->find($programId);
+        $allocation = null;
+        if ($program) {
+            foreach ($program->shares as $s) {
+                $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                if ($pst && ($pst->key ?? null) === 'program') { $allocation = $s; break; }
+            }
+            if (! $allocation && count($program->shares) > 0) $allocation = $program->shares[0];
+        }
+
+        $allocated = $inflow;
+        if ($allocation) {
+            if ($allocation->type === 'percentage' && $allocation->value !== null) {
+                $allocated = (int) floor($inflow * (float)$allocation->value / 100);
+            } elseif ($allocation->type === 'nominal' && $allocation->value !== null) {
+                $allocated = (int) $allocation->value;
+            }
+        }
+
+        $outflowQuery = PengajuanDanaDisbursement::where('program_id', $programId)
+            ->whereBetween('tanggal_disburse', [$start, $end]);
+        if ($excludePengajuanId) {
+            $outflowQuery->where('pengajuan_dana_id', '!=', $excludePengajuanId);
+        }
+        $outflow = $outflowQuery->sum('amount');
+
+        return max(0, $allocated - $outflow);
+    }
+
+    /**
      * Return options for frontend form: eligible fundraisers (self + descendants)
      * and user's kantor cabang assignments.
      */
@@ -234,6 +278,18 @@ class PengajuanDanaController extends Controller
         }
 
         try {
+            // Pre-save validation: if program submission, ensure amount <= remaining
+            if ($request->input('submission_type') === 'program' && $request->filled('program_id') && $request->filled('used_at')) {
+                try {
+                    $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'));
+                    if ((int)$request->input('amount') > $remaining) {
+                        return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan', 'remaining' => $remaining], 422);
+                    }
+                } catch (\Exception $e) {
+                    // fallback: allow save but log
+                }
+            }
+
             return DB::transaction(function () use ($request) {
                 $data = [
                     'fundraiser_id' => $request->input('fundraiser_id'),
@@ -335,6 +391,18 @@ class PengajuanDanaController extends Controller
         }
 
         try {
+            // Pre-update validation: if program submission, ensure amount <= remaining
+            if ($request->input('submission_type') === 'program' && $request->filled('program_id') && $request->filled('used_at')) {
+                try {
+                        $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), $p->id);
+                    if ((int)$request->input('amount') > $remaining) {
+                        return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan', 'remaining' => $remaining], 422);
+                    }
+                } catch (\Exception $e) {
+                    // fallback: allow update but log
+                }
+            }
+
             return DB::transaction(function () use ($request, $p) {
                 $p->update(array_merge($request->only(['fundraiser_id','submission_type','program_id','amount','used_at','purpose','kantor_cabang_id','status']), ['updated_by' => auth()->id()]));
 
@@ -377,5 +445,68 @@ class PengajuanDanaController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Gagal menghapus pengajuan dana', 'error' => config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan'], 500);
         }
+    }
+
+    /**
+     * Approve or reject a pengajuan dana.
+     * Expects JSON: { decision: 'Approved'|'Rejected', comment: '...' }
+     */
+    public function approve(Request $request, string $id)
+    {
+        $user = auth()->user();
+        if (! $user) return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+
+        // permission check (Spatie) - accept either 'approve pengajuan dana' or seeded 'approval pengajuan dana'
+        if (! ($user->can('approve pengajuan dana') || $user->can('approval pengajuan dana'))) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'decision' => 'required|string|max:50',
+            'comment' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        $decision = trim((string) $request->input('decision'));
+        $comment = (string) $request->input('comment');
+
+        return DB::transaction(function () use ($id, $decision, $comment, $user) {
+            $p = PengajuanDana::lockForUpdate()->find($id);
+            if (! $p) return response()->json(['success' => false, 'message' => 'Pengajuan dana tidak ditemukan'], 404);
+
+            $current = is_string($p->status) ? strtolower(trim($p->status)) : '';
+            if (in_array($current, ['approved','rejected'])) {
+                return response()->json(['success' => false, 'message' => 'Pengajuan sudah final'], 409);
+            }
+
+            // record approval row
+            $approval = PengajuanDanaApproval::create([
+                'id' => (string) Str::uuid(),
+                'pengajuan_dana_id' => $p->id,
+                'approver_id' => $user->id,
+                'decision' => $decision,
+                'comment' => $comment,
+            ]);
+
+            // update pengajuan status and updated_by
+            $p->status = $decision;
+            $p->updated_by = $user->id;
+            $p->save();
+
+            // if approved and program submission, create disbursements
+            if (is_string($decision) && strtolower($decision) === 'approved') {
+                if ($p->submission_type === 'program' && $p->program_id && $p->used_at) {
+                    $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, $user->id);
+                }
+            } else {
+                // if rejected, ensure there are no disbursements
+                PengajuanDanaDisbursement::where('pengajuan_dana_id', $p->id)->delete();
+            }
+
+            return response()->json(['success' => true, 'message' => 'Decision recorded', 'data' => ['approval' => $approval, 'pengajuan' => $p->fresh()]]);
+        });
     }
 }

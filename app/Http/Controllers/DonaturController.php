@@ -149,10 +149,14 @@ class DonaturController extends Controller
             } catch (\Exception $e) {
                 $assignedIds = [];
             }
-
             $hasSubordinates = $user->subordinates()->exists();
 
-            if (! empty($assignedIds)) {
+            // If the user's leader_id is NULL (no leader), restrict them
+            // to only see donaturs where they are PIC. This overrides
+            // other visibility widening logic.
+            if (is_null($user->leader_id)) {
+                $query->where('pic', $user->id);
+            } elseif (! empty($assignedIds)) {
                 if ($hasSubordinates) {
                     // Leaders with branch assignments: show donaturs in assigned
                     // branches OR donaturs where PIC is within user's descendants.
@@ -362,7 +366,12 @@ class DonaturController extends Controller
 
             $hasSubordinates = $user->subordinates()->exists();
 
-            if (! empty($assignedIds)) {
+            // If the user's leader_id is NULL (no leader), restrict them
+            // to only see donaturs where they are PIC. This overrides other
+            // visibility widening logic for show.
+            if (is_null($user->leader_id)) {
+                $query->where('pic', $user->id);
+            } elseif (! empty($assignedIds)) {
                 if (! $hasSubordinates) {
                     // Non-leaders with branch assignments: allow if donor is in assigned branch or caller is PIC
                     $query->where(function ($q) use ($assignedIds, $user) {
@@ -419,7 +428,10 @@ class DonaturController extends Controller
         }
 
         if (! $this->userIsAdmin($user)) {
-            if (! $user->subordinates()->exists()) {
+            // If user's leader_id is NULL, only allow updates where caller is PIC
+            if (is_null($user->leader_id)) {
+                $query->where('pic', $user->id);
+            } elseif (! $user->subordinates()->exists()) {
                 // No subordinates: only allow update when caller is PIC
                 $query->where('pic', $user->id);
             } else {
@@ -500,7 +512,10 @@ class DonaturController extends Controller
         }
 
         if (! $this->userIsAdmin($user)) {
-            if (! $user->subordinates()->exists()) {
+            // If user's leader_id is NULL, only allow delete where caller is PIC
+            if (is_null($user->leader_id)) {
+                $query->where('pic', $user->id);
+            } elseif (! $user->subordinates()->exists()) {
                 // No subordinates: only allow delete when caller is PIC
                 $query->where('pic', $user->id);
             } else {

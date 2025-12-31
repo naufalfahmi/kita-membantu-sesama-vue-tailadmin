@@ -83,10 +83,12 @@ class PengajuanDanaController extends Controller
      * This will create PengajuanDanaDisbursement rows consuming transaksi nominal FIFO.
      * Throws exception if insufficient funds.
      */
-    private function allocateDisbursements(string $pengajuanId, string $programId, $usedAt, int $amount, ?int $createdBy = null, string $shareKey = 'program'): void
+    private function allocateDisbursements(string $pengajuanId, string $programId, $usedAt, int $amount, ?int $createdBy = null, string $shareKey = 'program', int $lookback = 1): void
     {
-        $start = \Carbon\Carbon::parse($usedAt)->startOfMonth()->toDateString();
-        $end = \Carbon\Carbon::parse($usedAt)->endOfMonth()->toDateString();
+        // allocation month is the usedAt month minus lookback months (default lookback=1 -> previous month)
+        $base = \Carbon\Carbon::parse($usedAt)->startOfMonth()->subMonths($lookback);
+        $start = $base->toDateString();
+        $end = (clone $base)->endOfMonth()->toDateString();
 
         // compute allocated inflow per ProgramController logic
         $inflow = \App\Models\Transaksi::where('program_id', $programId)
@@ -175,10 +177,12 @@ class PengajuanDanaController extends Controller
      * Compute remaining allocation for a program in usedAt month.
      * Returns integer remaining amount (>=0).
      */
-    private function computeProgramRemaining(string $programId, $usedAt, ?string $excludePengajuanId = null, string $shareKey = 'program'): int
+    private function computeProgramRemaining(string $programId, $usedAt, ?string $excludePengajuanId = null, string $shareKey = 'program', int $lookback = 1): int
     {
-        $start = \Carbon\Carbon::parse($usedAt)->startOfMonth()->toDateString();
-        $end = \Carbon\Carbon::parse($usedAt)->endOfMonth()->toDateString();
+        // allocation month = usedAt month minus lookback months (default 1 => previous month)
+        $base = \Carbon\Carbon::parse($usedAt)->startOfMonth()->subMonths($lookback);
+        $start = $base->toDateString();
+        $end = (clone $base)->endOfMonth()->toDateString();
 
         $inflow = \App\Models\Transaksi::where('program_id', $programId)
             ->whereBetween('tanggal_transaksi', [$start, $end])
@@ -286,7 +290,8 @@ class PengajuanDanaController extends Controller
                     if ($stype === 'operasional') $shareKey = 'ops_2';
                     elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                     else $shareKey = 'program';
-                    $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), null, $shareKey);
+                    // use default lookback = 1 (previous month)
+                    $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), null, $shareKey, 1);
                     if ((int)$request->input('amount') > $remaining) {
                         return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan', 'remaining' => $remaining], 422);
                     }
@@ -318,7 +323,8 @@ class PengajuanDanaController extends Controller
                         if ($stype === 'operasional') $shareKey = 'ops_2';
                         elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                         else $shareKey = 'program';
-                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey);
+                        // allocate using default lookback = 1 (previous month)
+                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey, 1);
                     }
                 }
 
@@ -407,7 +413,8 @@ class PengajuanDanaController extends Controller
                     if ($stype === 'operasional') $shareKey = 'ops_2';
                     elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                     else $shareKey = 'program';
-                        $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), $p->id, $shareKey);
+                        // use default lookback = 1 (previous month)
+                        $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), $p->id, $shareKey, 1);
                     if ((int)$request->input('amount') > $remaining) {
                         return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan', 'remaining' => $remaining], 422);
                     }
@@ -429,7 +436,8 @@ class PengajuanDanaController extends Controller
                         if ($stype === 'operasional') $shareKey = 'ops_2';
                         elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                         else $shareKey = 'program';
-                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey);
+                        // allocate using default lookback = 1 (previous month)
+                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey, 1);
                     }
                 } else {
                     // if not program/operasional anymore, remove any previous disbursements
@@ -520,7 +528,8 @@ class PengajuanDanaController extends Controller
                     if ($stype === 'operasional') $shareKey = 'ops_2';
                     elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                     else $shareKey = 'program';
-                    $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, $user->id, $shareKey);
+                    // allocate using default lookback = 1 (previous month)
+                    $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, $user->id, $shareKey, 1);
                 }
             } else {
                 // if rejected, ensure there are no disbursements

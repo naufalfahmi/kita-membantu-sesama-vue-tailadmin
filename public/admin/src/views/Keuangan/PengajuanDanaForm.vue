@@ -284,7 +284,7 @@ const loadProgramBalance = async () => {
     let shareKey = 'program'
     if (String(formData.submissionType) === 'operasional') shareKey = 'ops_2'
     if (String(formData.submissionType) === 'gaji karyawan') shareKey = 'ops_1'
-    const res = await fetch(`/admin/api/program/${formData.programId}/balance?month=${month}&share_key=${encodeURIComponent(shareKey)}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    const res = await fetch(`/admin/api/program/${formData.programId}/balance?month=${month}&share_key=${encodeURIComponent(shareKey)}&lookback=1`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     const json = await res.json()
     if (!json.success) throw new Error(json.message || 'Failed to load balance')
     programBalance.value = json.data

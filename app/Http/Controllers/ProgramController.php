@@ -207,8 +207,13 @@ class ProgramController extends Controller
         $month = $request->get('month');
         // allow caller to request a specific share key (e.g. 'ops_1','ops_2','program')
         $shareKey = $request->get('share_key', 'program');
+        // lookback: how many months before the provided month to take inflow from (default 1 => previous month)
+        $lookback = (int) $request->get('lookback', 1);
         try {
-            $start = \Carbon\Carbon::parse(($month ? $month . '-01' : now()->format('Y-m-01')))->startOfMonth();
+            // determine base month (the month of usedAt or provided month), then subtract lookback months
+            $baseMonth = $month ? \Carbon\Carbon::parse($month . '-01')->startOfMonth() : \Carbon\Carbon::now()->startOfMonth();
+            $allocMonth = (clone $baseMonth)->subMonths($lookback)->startOfMonth();
+            $start = $allocMonth;
             $end = (clone $start)->endOfMonth();
 
             // inflow: sum of transaksi.nominal for program in month

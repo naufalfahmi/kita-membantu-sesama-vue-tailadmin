@@ -93,8 +93,17 @@
           <tr>
             <td>{{ $e->description }}</td>
             <td class="text-right">
-              @if(isset($e->qty) && (float)$e->qty !== 1)
-                {{ $e->qty }}
+              @php $qty = $e->qty ?? 0; $qtyFloat = (float)$qty; $qtyIsWhole = floor($qtyFloat) == $qtyFloat; @endphp
+              @if(isset($e->qty_type) && $e->qty_type === 'percent')
+                @if($qtyIsWhole)
+                  {{ (int)$qty }}% dari Rp {{ number_format($e->unit_value ?? 0, 0, ',', '.') }}
+                @else
+                  {{ number_format($qtyFloat, 2, ',', '.') }}% dari Rp {{ number_format($e->unit_value ?? 0, 0, ',', '.') }}
+                @endif
+              @else
+                @if(isset($e->qty) && $qtyFloat !== 1.0)
+                  {{ $e->qty }}
+                @endif
               @endif
             </td>
             <td class="text-right">Rp {{ number_format($e->amount ?? 0, 0, ',', '.') }}</td>
@@ -129,8 +138,17 @@
           <tr>
             <td>{{ $f->description }}</td>
             <td class="text-right">
-              @if(isset($f->qty) && (float)$f->qty !== 1)
-                {{ $f->qty }}
+              @php $qty = $f->qty ?? 0; $qtyFloat = (float)$qty; $qtyIsWhole = floor($qtyFloat) == $qtyFloat; @endphp
+              @if(isset($f->qty_type) && $f->qty_type === 'percent')
+                @if($qtyIsWhole)
+                  {{ (int)$qty }}% dari Rp {{ number_format($f->unit_value ?? 0, 0, ',', '.') }}
+                @else
+                  {{ number_format($qtyFloat, 2, ',', '.') }}% dari Rp {{ number_format($f->unit_value ?? 0, 0, ',', '.') }}
+                @endif
+              @else
+                @if(isset($f->qty) && $qtyFloat !== 1.0)
+                  {{ $f->qty }}
+                @endif
               @endif
             </td>
             <td class="text-right">Rp {{ number_format($f->amount ?? 0, 0, ',', '.') }}</td>
@@ -165,8 +183,17 @@
           <tr>
             <td>{{ $o->description }}</td>
             <td class="text-right">
-              @if(isset($o->qty) && (float)$o->qty !== 1)
-                {{ $o->qty }}
+              @php $qty = $o->qty ?? 0; $qtyFloat = (float)$qty; $qtyIsWhole = floor($qtyFloat) == $qtyFloat; @endphp
+              @if(isset($o->qty_type) && $o->qty_type === 'percent')
+                @if($qtyIsWhole)
+                  {{ (int)$qty }}% dari Rp {{ number_format($o->unit_value ?? 0, 0, ',', '.') }}
+                @else
+                  {{ number_format($qtyFloat, 2, ',', '.') }}% dari Rp {{ number_format($o->unit_value ?? 0, 0, ',', '.') }}
+                @endif
+              @else
+                @if(isset($o->qty) && $qtyFloat !== 1.0)
+                  {{ $o->qty }}
+                @endif
               @endif
             </td>
             <td class="text-right">Rp {{ number_format($o->amount ?? 0, 0, ',', '.') }}</td>
@@ -201,8 +228,17 @@
           <tr>
             <td>{{ $d->description }}</td>
             <td class="text-right">
-              @if(isset($d->qty) && (float)$d->qty !== 1)
-                {{ $d->qty }}
+              @php $qty = $d->qty ?? 0; $qtyFloat = (float)$qty; $qtyIsWhole = floor($qtyFloat) == $qtyFloat; @endphp
+              @if(isset($d->qty_type) && $d->qty_type === 'percent')
+                @if($qtyIsWhole)
+                  {{ (int)$qty }}% dari Rp {{ number_format($d->unit_value ?? 0, 0, ',', '.') }}
+                @else
+                  {{ number_format($qtyFloat, 2, ',', '.') }}% dari Rp {{ number_format($d->unit_value ?? 0, 0, ',', '.') }}
+                @endif
+              @else
+                @if(isset($d->qty) && $qtyFloat !== 1.0)
+                  {{ $d->qty }}
+                @endif
               @endif
             </td>
             <td class="text-right">Rp {{ number_format(abs($d->amount ?? 0), 0, ',', '.') }}</td>

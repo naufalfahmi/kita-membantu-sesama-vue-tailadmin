@@ -114,12 +114,24 @@ class PayrollService
     public function computeItemAmount(PayrollItem $item, PayrollRecord $record): float
     {
         if ($item->qty_type === 'fixed' || $item->qty_type === 'multiplier') {
-            return (float)$item->qty * (float)$item->unit_value;
+            $amount = (float)$item->qty * (float)$item->unit_value;
+            $desc = strtolower(trim((string)($item->description ?? '')));
+            $deductions = ['tidak masuk', 'terlambat'];
+            if (in_array($desc, $deductions) && $amount > 0) {
+                return -abs($amount);
+            }
+            return $amount;
         }
 
         if ($item->qty_type === 'percent') {
             // percent now applies to the item's own unit_value
-            return ($item->qty / 100.0) * (float)$item->unit_value;
+            $amount = ($item->qty / 100.0) * (float)$item->unit_value;
+            $desc = strtolower(trim((string)($item->description ?? '')));
+            $deductions = ['tidak masuk', 'terlambat'];
+            if (in_array($desc, $deductions) && $amount > 0) {
+                return -abs($amount);
+            }
+            return $amount;
         }
 
         return 0.0;

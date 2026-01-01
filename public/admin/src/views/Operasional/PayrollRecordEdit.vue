@@ -43,7 +43,7 @@
                 <th class="text-left p-2">Uraian</th>
                 <th class="text-left p-2">Qty</th>
                 <th class="sr-only">Tipe</th>
-                <th class="text-left p-2">Satuan</th>
+                <th class="text-left p-2 w-24">Satuan</th>
                 <th class="text-left p-2">Nilai Satuan</th>
                 <th class="text-left p-2">Jumlah</th>
                 <th class="text-left p-2">Aksi</th>
@@ -105,7 +105,7 @@
                 <th class="text-left p-2">Uraian</th>
                 <th class="text-left p-2">Qty</th>
                 <th class="sr-only">Tipe</th>
-                <th class="text-left p-2">Satuan</th>
+                <th class="text-left p-2 w-24">Satuan</th>
                 <th class="text-left p-2">Nilai Satuan</th>
                 <th class="text-left p-2">Jumlah</th>
                 <th class="text-left p-2">Aksi</th>
@@ -167,7 +167,7 @@
                 <th class="text-left p-2">Uraian</th>
                 <th class="text-left p-2">Qty</th>
                 <th class="sr-only">Tipe</th>
-                <th class="text-left p-2">Satuan</th>
+                <th class="text-left p-2 w-24">Satuan</th>
                 <th class="text-left p-2">Nilai Satuan</th>
                 <th class="text-left p-2">Jumlah</th>
                 <th class="text-left p-2">Aksi</th>
@@ -227,7 +227,7 @@
                 <th class="text-left p-2">Uraian</th>
                 <th class="text-left p-2">Qty</th>
                 <th class="sr-only">Tipe</th>
-                <th class="text-left p-2">Satuan</th>
+                <th class="text-left p-2 w-24">Satuan</th>
                 <th class="text-left p-2">Nilai Satuan</th>
                 <th class="text-left p-2">Jumlah</th>
                 <th class="text-left p-2">Aksi</th>
@@ -355,7 +355,12 @@ const loadRecord = async () => {
   record.value = json.data
   // ensure a default status exists
   if (!record.value.status) record.value.status = 'pending'
-  items.value = (json.data.items || []).map((it: any) => ({ ...it, qty: Number(it.qty), unit_value: Number(it.unit_value), qty_type: it.qty_type === 'fixed' ? 'multiplier' : it.qty_type }))
+  items.value = (json.data.items || []).map((it: any) => ({
+    ...it,
+    qty: Number(it.qty),
+    unit_value: Math.abs(Number(it.unit_value)),
+    qty_type: it.qty_type === 'fixed' ? 'multiplier' : it.qty_type
+  }))
 }
 
 onMounted(async () => { await loadRecord(); ensureDefaultItems() })
@@ -490,65 +495,25 @@ const saveAll = async () => {
   const periodId = route.params.periodId
   const recordId = route.params.recordId
 
-  // If the user is changing the record status to a non-pending value (locked/transferred),
-  // apply the status change first and do NOT attempt to save items (items can't be edited once locked).
-  if (record.value.status && record.value.status !== 'pending') {
-    try {
-      const csrfFirst = await getCsrfToken()
-
-      // If there's a file selected, use FormData, otherwise JSON
-      let resFirst
-      if (fileRef.value) {
-        const fd = new FormData()
-        fd.append('status', record.value.status)
-        fd.append('transfer_proof', fileRef.value)
-        resFirst = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}`, {
-          method: 'PUT',
-          headers: { 'X-CSRF-TOKEN': csrfFirst, 'X-Requested-With': 'XMLHttpRequest' },
-          credentials: 'same-origin',
-          body: fd
-        })
-      } else {
-        resFirst = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfFirst, 'X-Requested-With': 'XMLHttpRequest' },
-          credentials: 'same-origin',
-          body: JSON.stringify({ status: record.value.status })
-        })
-      }
-
-      const jsonFirst = await resFirst.json()
-      if (!jsonFirst.success) {
-        // show detailed validation errors if present
-        if (jsonFirst.errors) {
-          const firstKey = Object.keys(jsonFirst.errors)[0]
-          toast.error(jsonFirst.errors[firstKey][0])
-        } else if (jsonFirst.message) {
-          toast.error(jsonFirst.message)
-        } else {
-          toast.error('Gagal mengubah status')
-        }
-        return
-      }
-
-      // reload record to reflect the locked/transferred state
-      await loadRecord()
-      toast.success('Perubahan status tersimpan')
-      return
-    } catch (err) {
-      toast.error('Gagal mengubah status')
-      return
-    }
-  }
+  
 
   // Otherwise status remains pending — proceed to save existing or new items one by one for simplicity
   const tempMap: Record<string, string> = {}
 
-  // First pass: create or update items while avoiding setting base_item_id to unresolved temp ids
-  for (let i = 0; i < items.value.length; i++) {
-    const it = items.value[i]
+  // First pass: only attempt to create/update items that have meaningful data
+  const candidates = items.value.map((it: any, idx: number) => ({ it, origIndex: idx }))
+    .filter(({ it }) => {
+      // save if existing (has id) OR has description OR non-zero qty/unit_value
+      if (it.id) return true
+      if (it.description && (it.description || '').toString().trim() !== '') return true
+      if (Number(it.qty) !== 0) return true
+      if (Number(it.unit_value) !== 0) return true
+      return false
+    })
 
-    // note: percent now uses the row's own unit_value (Nilai Satuan) — no base selection
+  for (let j = 0; j < candidates.length; j++) {
+    const { it, origIndex } = candidates[j]
+
     const payload: any = {
       description: it.description,
       qty: Math.round(Number(it.qty) || 0),
@@ -556,11 +521,10 @@ const saveAll = async () => {
       unit: it.unit,
       unit_value: it.unit_value,
       group: it.group || getGroup(it),
-      order_index: i
+      order_index: j
     }
 
     if (!it.id) {
-      // create
       const csrf = await getCsrfToken()
       const res = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}/items`, {
         method: 'POST',
@@ -570,10 +534,14 @@ const saveAll = async () => {
       })
       const json = await res.json()
       if (!json.success) { toast.error('Gagal menambah item'); return }
-      // if the original item had a _tempId, map it to the new persisted id
       if (it._tempId) tempMap[it._tempId] = json.data.id
-      // update local item with returned data (id, amount)
-      items.value[i] = { ...json.data }
+      const created = json.data
+      items.value[origIndex] = {
+        ...created,
+        qty: Number(created.qty),
+        unit_value: Math.abs(Number(created.unit_value)),
+        qty_type: created.qty_type === 'fixed' ? 'multiplier' : created.qty_type
+      }
     } else {
       const csrf = await getCsrfToken()
       const res = await fetch(`/admin/api/operasional/payroll/periods/${periodId}/records/${recordId}/items/${it.id}`, {
@@ -584,7 +552,13 @@ const saveAll = async () => {
       })
       const json = await res.json()
       if (!json.success) { toast.error('Gagal mengubah item'); return }
-      items.value[i] = { ...json.data }
+      const updated = json.data
+      items.value[origIndex] = {
+        ...updated,
+        qty: Number(updated.qty),
+        unit_value: Math.abs(Number(updated.unit_value)),
+        qty_type: updated.qty_type === 'fixed' ? 'multiplier' : updated.qty_type
+      }
     }
   }
 

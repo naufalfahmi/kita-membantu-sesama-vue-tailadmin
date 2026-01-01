@@ -57,7 +57,7 @@
       <tr>
         <td>Nama Karyawan</td>
         <td>{{ $record->employee->name ?? '-' }}</td>
-        <td>Bulan</td>
+        <td>Periode</td>
         <td>{{ $periodLabel }}</td>
       </tr>
       <tr>
@@ -67,56 +67,156 @@
         <td>{{ now()->format('d-m-Y') }}</td>
       </tr>
       <tr>
-        <td>NIK</td>
+        <td>No. Induk</td>
         <td>{{ $record->employee->no_induk ?? '-' }}</td>
         <td>Status</td>
         <td>{{ ucfirst($record->status ?? '') }}</td>
       </tr>
     </table>
 
-    <table>
+    @if(isset($penghasilan) && $penghasilan->isNotEmpty())
+    <table style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:60%" />
+        <col style="width:20%" />
+        <col style="width:20%" />
+      </colgroup>
       <thead>
         <tr>
-          <th colspan="2">Pendapatan</th>
+          <th>Penghasilan</th>
+          <th class="text-right">Qty</th>
+          <th class="text-right">Jumlah</th>
         </tr>
       </thead>
       <tbody>
-        @forelse($earnings as $e)
+        @forelse($penghasilan as $e)
           <tr>
             <td>{{ $e->description }}</td>
+            <td class="text-right">
+              @if(isset($e->qty) && (float)$e->qty !== 1)
+                {{ $e->qty }}
+              @endif
+            </td>
             <td class="text-right">Rp {{ number_format($e->amount ?? 0, 0, ',', '.') }}</td>
           </tr>
         @empty
-          <tr><td colspan="2">-</td></tr>
+          <tr><td colspan="3">-</td></tr>
         @endforelse
         <tr class="total">
-          <td>Total Pendapatan</td>
-          <td class="text-right">Rp {{ number_format($gross ?? 0, 0, ',', '.') }}</td>
+          <td colspan="2">Total Penghasilan</td>
+          <td class="text-right">Rp {{ number_format($pengTotal ?? 0, 0, ',', '.') }}</td>
         </tr>
       </tbody>
     </table>
+    @endif
 
-    <table>
+    @if(isset($fundraising) && $fundraising->isNotEmpty())
+    <table style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:60%" />
+        <col style="width:20%" />
+        <col style="width:20%" />
+      </colgroup>
       <thead>
         <tr>
-          <th colspan="2">Potongan</th>
+          <th>Fundraising</th>
+          <th class="text-right">Qty</th>
+          <th class="text-right">Jumlah</th>
+        </tr>
+      </thead>
+      <tbody>
+        @forelse($fundraising as $f)
+          <tr>
+            <td>{{ $f->description }}</td>
+            <td class="text-right">
+              @if(isset($f->qty) && (float)$f->qty !== 1)
+                {{ $f->qty }}
+              @endif
+            </td>
+            <td class="text-right">Rp {{ number_format($f->amount ?? 0, 0, ',', '.') }}</td>
+          </tr>
+        @empty
+          <tr><td colspan="3">-</td></tr>
+        @endforelse
+        <tr class="total">
+          <td colspan="2">Total Fundraising</td>
+          <td class="text-right">Rp {{ number_format($fundTotal ?? 0, 0, ',', '.') }}</td>
+        </tr>
+      </tbody>
+    </table>
+    @endif
+
+    @if(isset($other) && $other->isNotEmpty())
+    <table style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:60%" />
+        <col style="width:20%" />
+        <col style="width:20%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Lain-lain</th>
+          <th class="text-right">Qty</th>
+          <th class="text-right">Jumlah</th>
+        </tr>
+      </thead>
+      <tbody>
+        @forelse($other as $o)
+          <tr>
+            <td>{{ $o->description }}</td>
+            <td class="text-right">
+              @if(isset($o->qty) && (float)$o->qty !== 1)
+                {{ $o->qty }}
+              @endif
+            </td>
+            <td class="text-right">Rp {{ number_format($o->amount ?? 0, 0, ',', '.') }}</td>
+          </tr>
+        @empty
+          <tr><td colspan="3">-</td></tr>
+        @endforelse
+        <tr class="total">
+          <td colspan="2">Total Lain-lain</td>
+          <td class="text-right">Rp {{ number_format($otherTotal ?? 0, 0, ',', '.') }}</td>
+        </tr>
+      </tbody>
+    </table>
+    @endif
+
+    @if(isset($deductions) && $deductions->isNotEmpty())
+    <table style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:60%" />
+        <col style="width:20%" />
+        <col style="width:20%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Potongan</th>
+          <th class="text-right">Qty</th>
+          <th class="text-right">Jumlah</th>
         </tr>
       </thead>
       <tbody>
         @forelse($deductions as $d)
           <tr>
             <td>{{ $d->description }}</td>
+            <td class="text-right">
+              @if(isset($d->qty) && (float)$d->qty !== 1)
+                {{ $d->qty }}
+              @endif
+            </td>
             <td class="text-right">Rp {{ number_format(abs($d->amount ?? 0), 0, ',', '.') }}</td>
           </tr>
         @empty
-          <tr><td colspan="2">-</td></tr>
+          <tr><td colspan="3">-</td></tr>
         @endforelse
         <tr class="total">
-          <td>Total Potongan</td>
+          <td colspan="2">Total Potongan</td>
           <td class="text-right">Rp {{ number_format($deductionsTotal ?? 0, 0, ',', '.') }}</td>
         </tr>
       </tbody>
     </table>
+    @endif
 
     <table>
       <tbody>

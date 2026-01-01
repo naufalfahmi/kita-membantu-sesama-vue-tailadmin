@@ -99,45 +99,63 @@
       </div>
     </div>
 
-    <table>
+    <table style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:60%" />
+        <col style="width:20%" />
+        <col style="width:20%" />
+      </colgroup>
       <thead>
         <tr>
-          <th colspan="2">Pendapatan</th>
+          <th>Description</th>
+          <th class="text-right">Qty</th>
+          <th class="text-right">Jumlah</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>Gaji Pokok</td>
+          <td class="text-right">-</td>
           <td class="text-right">Rp 5.000.000</td>
         </tr>
         <tr>
           <td>Tunjangan</td>
+          <td class="text-right">-</td>
           <td class="text-right">Rp 1.000.000</td>
         </tr>
         <tr class="total">
-          <td>Total Pendapatan</td>
+          <td colspan="2">Total Pendapatan</td>
           <td class="text-right">Rp 6.000.000</td>
         </tr>
       </tbody>
     </table>
 
-    <table>
+    <table style="table-layout:fixed;">
+      <colgroup>
+        <col style="width:60%" />
+        <col style="width:20%" />
+        <col style="width:20%" />
+      </colgroup>
       <thead>
         <tr>
-          <th colspan="2">Potongan</th>
+          <th>Description</th>
+          <th class="text-right">Qty</th>
+          <th class="text-right">Jumlah</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td>BPJS Kesehatan</td>
+          <td class="text-right">-</td>
           <td class="text-right">Rp 150.000</td>
         </tr>
         <tr>
           <td>BPJS Ketenagakerjaan</td>
+          <td class="text-right">-</td>
           <td class="text-right">Rp 200.000</td>
         </tr>
         <tr class="total">
-          <td>Total Potongan</td>
+          <td colspan="2">Total Potongan</td>
           <td class="text-right">Rp 350.000</td>
         </tr>
       </tbody>

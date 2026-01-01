@@ -138,6 +138,20 @@ class PayrollController extends Controller
             }
         }
 
+        // Only attach a transient `group` for deduction rows (negative values).
+        // For non-deduction items we avoid injecting a group so the frontend
+        // `getGroup()` function can classify items based on its own presets
+        // (this preserves existing client-side behavior for Fundraising/Lain-lain).
+        if ($record->items && $record->items->count() > 0) {
+            $items = $record->items->map(function ($it) {
+                if (empty($it->group) && floatval($it->unit_value) < 0) {
+                    $it->group = 'deduction';
+                }
+                return $it;
+            });
+            $record->setRelation('items', $items);
+        }
+
         return response()->json(['success' => true, 'data' => $record]);
     }
 
@@ -189,7 +203,7 @@ class PayrollController extends Controller
     {
         $user = auth()->user();
 
-        $records = PayrollRecord::with('period')
+        $records = PayrollRecord::with(['period', 'items'])
             ->where('employee_id', $user->id)
             ->get()
             // sort by period year/month descending so the latest period appears first
@@ -199,12 +213,21 @@ class PayrollController extends Controller
                 return ($year * 100) + $month;
             })->values()
             ->map(function ($r) {
+                $items = $r->items ?? collect([]);
+                $earnings = $items->filter(function ($it) { return (int) ($it->amount ?? 0) >= 0; });
+                $deductions = $items->filter(function ($it) { return (int) ($it->amount ?? 0) < 0; });
+                $gross = $earnings->sum('amount');
+                $deductionsTotal = abs($deductions->sum('amount'));
+                $net = $gross - $deductionsTotal;
+
                 return [
                     'id' => $r->id,
                     'period_id' => $r->payroll_period_id,
                     'period_label' => optional($r->period) ? optional($r->period)->month . '/' . optional($r->period)->year : null,
                     'status' => $r->status,
-                    'total' => $r->total_amount ?? 0,
+                    'total' => $net ?? 0,
+                    'gross' => $gross ?? 0,
+                    'deductions' => $deductionsTotal ?? 0,
                     'transfer_proof' => $r->transfer_proof ?? null,
                     'has_transfer_proof' => !empty($r->transfer_proof),
                 ];
@@ -217,7 +240,6 @@ class PayrollController extends Controller
     {
         $record = PayrollRecord::where('payroll_period_id', $periodId)->where('id', $recordId)->first();
         if (!$record) return response()->json(['success' => false, 'message' => 'Record not found'], 404);
-        if ($record->status !== PayrollRecord::STATUS_PENDING) return response()->json(['success' => false, 'message' => 'Cannot edit locked or transferred records'], 403);
 
         // accept legacy 'fixed' qty_type by normalizing to 'multiplier'
         if ($request->input('qty_type') === 'fixed') $request->merge(['qty_type' => 'multiplier']);
@@ -227,22 +249,35 @@ class PayrollController extends Controller
 
         $v = Validator::make($request->all(), [
             'description' => 'required|string',
-            'qty' => 'required|integer|min:0',
+            'qty' => 'required|numeric|min:0',
             'qty_type' => 'required|in:percent,multiplier',
             'unit' => 'nullable|string',
-            'unit_value' => 'required|numeric|min:0',
+            'unit_value' => 'required|numeric',
+            'group' => 'nullable|string',
         ]);
 
         if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
 
-        $payload = array_merge($v->validated(), ['payroll_record_id' => $record->id]);
+        $payload = $v->validated();
+        $payload['payroll_record_id'] = $record->id;
 
-        // Note: base_item_id support has been removed; percent now uses the item's own unit_value
+        // If this item is a deduction, store its unit_value as negative so recompute uses negative amounts
+        if (!empty($payload['group']) && $payload['group'] === 'deduction') {
+            $payload['unit_value'] = -abs($payload['unit_value']);
+        } else {
+            $payload['unit_value'] = $payload['unit_value'] ?? 0;
+        }
 
+        // Ensure new items are appended rather than accepting client-provided order_index which
+        // may reorder existing items unexpectedly. Compute next order_index server-side.
+        $maxIndex = (int) $record->items()->max('order_index');
+        $payload['order_index'] = $maxIndex + 1;
 
         $item = PayrollItem::create($payload);
+        // include a transient `group` attribute so frontend can classify without recomputing
+        $item->group = $payload['group'] ?? $this->guessGroupFromDescription($item->description);
 
-        // recompute total
+        // recompute total (this will use PayrollService::computeItemAmount and respect negative unit_value)
         $this->service->recomputeRecordTotal($record);
 
         return response()->json(['success' => true, 'data' => $item]);
@@ -252,7 +287,6 @@ class PayrollController extends Controller
     {
         $record = PayrollRecord::where('payroll_period_id', $periodId)->where('id', $recordId)->first();
         if (!$record) return response()->json(['success' => false, 'message' => 'Record not found'], 404);
-        if ($record->status !== PayrollRecord::STATUS_PENDING) return response()->json(['success' => false, 'message' => 'Cannot edit locked or transferred records'], 403);
 
         $item = PayrollItem::where('payroll_record_id', $record->id)->where('id', $itemId)->first();
         if (!$item) return response()->json(['success' => false, 'message' => 'Item not found'], 404);
@@ -265,22 +299,44 @@ class PayrollController extends Controller
 
         $v = Validator::make($request->all(), [
             'description' => 'sometimes|required|string',
-            'qty' => 'sometimes|required|integer|min:0',
+            'qty' => 'sometimes|required|numeric|min:0',
             'qty_type' => 'sometimes|required|in:percent,multiplier',
             'unit' => 'nullable|string',
-            'unit_value' => 'sometimes|required|numeric|min:0',
+            'unit_value' => 'sometimes|required|numeric',
+            'group' => 'nullable|string',
         ]);
 
         if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
 
         $payload = $v->validated();
-        // Note: base_item_id no longer used; percent uses item's unit_value
 
+        // Apply group-based sign for unit_value when provided; if group is deduction, ensure unit_value stored negative
+        if (isset($payload['group']) && !isset($payload['unit_value'])) {
+            // group provided but no unit_value in payload — adjust existing unit_value
+            if ($payload['group'] === 'deduction') {
+                $item->unit_value = -abs($item->unit_value);
+            } else {
+                $item->unit_value = abs($item->unit_value);
+            }
+        }
+
+        if (isset($payload['unit_value'])) {
+            if (isset($payload['group']) && $payload['group'] === 'deduction') {
+                $payload['unit_value'] = -abs($payload['unit_value']);
+            } else {
+                $payload['unit_value'] = $payload['unit_value'];
+            }
+        }
+        // Do not accept client-provided order_index on update to avoid accidental reordering.
+        if (isset($payload['order_index'])) unset($payload['order_index']);
 
         $item->fill($payload);
         $item->save();
 
         $this->service->recomputeRecordTotal($record);
+
+        // include group hint in response
+        $item->group = $payload['group'] ?? $this->guessGroupFromDescription($item->description);
 
         return response()->json(['success' => true, 'data' => $item]);
     }
@@ -289,7 +345,6 @@ class PayrollController extends Controller
     {
         $record = PayrollRecord::where('payroll_period_id', $periodId)->where('id', $recordId)->first();
         if (!$record) return response()->json(['success' => false, 'message' => 'Record not found'], 404);
-        if ($record->status !== PayrollRecord::STATUS_PENDING) return response()->json(['success' => false, 'message' => 'Cannot edit locked or transferred records'], 403);
 
         $item = PayrollItem::where('payroll_record_id', $record->id)->where('id', $itemId)->first();
         if (!$item) return response()->json(['success' => false, 'message' => 'Item not found'], 404);
@@ -363,6 +418,35 @@ class PayrollController extends Controller
         \App\Jobs\ExecutePayrollTransfer::dispatch($period->id);
 
         return response()->json(['success' => true, 'message' => 'Transfer job dispatched']);
+    }
+
+    /**
+     * Guess a logical group for an item based on its description.
+     * This is a best-effort helper used to provide a transient `group`
+     * attribute in API responses so the frontend can classify items
+     * without requiring additional mapping client-side.
+     */
+    private function guessGroupFromDescription(?string $desc)
+    {
+        $desc = strtolower((string) $desc);
+        if ($desc === '') return 'penghasilan';
+
+        $deductionKeywords = ['tidak masuk', 'terlambat', 'potongan', 'cuti', 'absen', 'pajak', 'pph', 'bpjs'];
+        foreach ($deductionKeywords as $kw) {
+            if (strpos($desc, $kw) !== false) return 'deduction';
+        }
+
+        $fundKeywords = ['fundraising', 'donasi', 'campaign', 'galang'];
+        foreach ($fundKeywords as $kw) {
+            if (strpos($desc, $kw) !== false) return 'fundraising';
+        }
+
+        $otherKeywords = ['lain', 'lain-lain', 'lainlain', 'lainnya'];
+        foreach ($otherKeywords as $kw) {
+            if (strpos($desc, $kw) !== false) return 'lain-lain';
+        }
+
+        return 'penghasilan';
     }
 
     /**

@@ -204,7 +204,7 @@
             </div>
           </div>
 
-          <div>
+            <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Leader
             </label>
@@ -228,6 +228,24 @@
                   <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
               </button>
+            </div>
+          </div>
+
+          <div v-if="isLeaderRole">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Bawahan (Subordinates)
+            </label>
+            <div v-if="employeeSelectOptions.length">
+              <SearchableMultiSelect
+                v-model="formData.subordinate_ids"
+                :options="employeeSelectOptions"
+                placeholder="Pilih Bawahan"
+                :search-input="jabatanSearchInput"
+                @update:search-input="jabatanSearchInput = $event"
+              />
+            </div>
+            <div v-else class="mt-2 text-sm text-gray-500">
+              Belum ada karyawan untuk dipilih.
             </div>
           </div>
 
@@ -360,6 +378,17 @@ const kantorCabangSelectOptions = computed(() =>
 const leaderOptions = ref<any[]>([])
 const leaderSelectOptions = computed(() => leaderOptions.value.map((item: any) => ({ value: String(item.id), label: item.name || item.nama || '-' })))
 
+const employeeSelectOptions = computed(() => leaderSelectOptions.value)
+
+const isLeaderRole = computed(() => {
+  const found = jabatanOptions.value.find((r: any) => String(r.id) === String(formData.role_id))
+  if (found) {
+    const name = (found.name || found.nama || '').toString().toLowerCase()
+    if (name.includes('leader') || name.includes('kepala') || name.includes('manager')) return true
+  }
+  return (formData.subordinate_ids || []).length > 0
+})
+
 const formData = reactive({
   name: '',
   no_induk: '',
@@ -377,6 +406,7 @@ const formData = reactive({
   kantor_cabang_id: '',
   kantor_cabang_ids: [] as string[],
   leader_id: '',
+  subordinate_ids: [] as string[],
   is_active: true,
 })
 
@@ -466,6 +496,8 @@ const loadData = async (id: string) => {
         formData.kantor_cabang_id = formData.kantor_cabang_ids[0] || ''
       }
       formData.leader_id = data.leader ? String(data.leader.id) : ''
+      // load subordinate ids (supports array of objects or plain ids)
+      formData.subordinate_ids = (data.subordinates || []).map((s: any) => String(s.id ?? s))
       formData.is_active = Boolean(data.is_active)
       formData.password = ''
     } else {
@@ -534,6 +566,7 @@ const handleSave = async () => {
       kantor_cabang_id: toNullable(formData.kantor_cabang_id),
       kantor_cabang_ids: formData.kantor_cabang_ids,
       leader_id: toNullable(formData.leader_id),
+      subordinate_ids: formData.subordinate_ids,
       is_active: formData.is_active,
     }
 

@@ -193,6 +193,8 @@ class KaryawanController extends Controller
             'leader_id' => 'nullable|string|exists:users,id',
             'kantor_cabang_ids' => 'nullable|array',
             'kantor_cabang_ids.*' => 'uuid|exists:kantor_cabang,id',
+            'subordinate_ids' => 'nullable|array',
+            'subordinate_ids.*' => 'string|exists:users,id',
             'is_active' => 'boolean',
             'role_id' => 'nullable|exists:roles,id',
         ]);
@@ -275,6 +277,28 @@ class KaryawanController extends Controller
                 }
             }
 
+            // Sync subordinate relationship: set leader_id on selected users
+            if ($request->has('subordinate_ids')) {
+                $ids = $request->input('subordinate_ids', []);
+                if (!is_array($ids)) {
+                    if (is_string($ids)) {
+                        $ids = $ids === '' ? [] : array_filter(array_map('trim', explode(',', $ids)));
+                    } else {
+                        $ids = (array) $ids;
+                    }
+                }
+                // prevent self-assignment
+                $ids = array_values(array_filter($ids, function ($i) use ($karyawan) { return $i !== (string) $karyawan->id; }));
+
+                // Clear existing subordinates that are not in the new list
+                User::where('leader_id', $karyawan->id)->whereNotIn('id', $ids)->update(['leader_id' => null]);
+
+                // Assign selected users to this leader
+                if (!empty($ids)) {
+                    User::whereIn('id', $ids)->update(['leader_id' => $karyawan->id]);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Karyawan berhasil ditambahkan',
@@ -353,6 +377,8 @@ class KaryawanController extends Controller
             'leader_id' => 'nullable|string|exists:users,id',
             'kantor_cabang_ids' => 'nullable|array',
             'kantor_cabang_ids.*' => 'uuid|exists:kantor_cabang,id',
+            'subordinate_ids' => 'nullable|array',
+            'subordinate_ids.*' => 'string|exists:users,id',
             'is_active' => 'boolean',
             'role_id' => 'nullable|exists:roles,id',
         ]);
@@ -428,6 +454,28 @@ class KaryawanController extends Controller
                     }
                 } else {
                     $karyawan->syncRoles([]);
+                }
+            }
+
+            // Sync subordinate relationship: set leader_id on selected users
+            if ($request->has('subordinate_ids')) {
+                $ids = $request->input('subordinate_ids', []);
+                if (!is_array($ids)) {
+                    if (is_string($ids)) {
+                        $ids = $ids === '' ? [] : array_filter(array_map('trim', explode(',', $ids)));
+                    } else {
+                        $ids = (array) $ids;
+                    }
+                }
+                // prevent self-assignment
+                $ids = array_values(array_filter($ids, function ($i) use ($karyawan) { return $i !== (string) $karyawan->id; }));
+
+                // Clear existing subordinates that are not in the new list
+                User::where('leader_id', $karyawan->id)->whereNotIn('id', $ids)->update(['leader_id' => null]);
+
+                // Assign selected users to this leader
+                if (!empty($ids)) {
+                    User::whereIn('id', $ids)->update(['leader_id' => $karyawan->id]);
                 }
             }
 
@@ -535,6 +583,9 @@ class KaryawanController extends Controller
                 'id' => $role->id,
                 'name' => $role->name,
             ] : null,
+            'subordinates' => $user->subordinates->map(function ($u) {
+                return ['id' => $u->id, 'name' => $u->name];
+            })->values()->all(),
             'created_at' => optional($user->created_at)->toIso8601String(),
             'updated_at' => optional($user->updated_at)->toIso8601String(),
         ];

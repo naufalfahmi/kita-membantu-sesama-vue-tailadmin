@@ -166,9 +166,9 @@
                 <span class="font-medium">Keluar:</span> {{ workSummary.keluarTime }}
               </p>
               <p class="text-gray-600 dark:text-gray-400">
-                <span class="font-medium">Total Jam Kerja:</span> 
+                <span class="font-medium">Total Jam Kerja:</span>
                 <span class="text-gray-800 dark:text-gray-200 font-semibold">
-                  {{ workSummary.totalHours }} jam
+                  {{ formatTotalHours(workSummary.masukTimeRaw, workSummary.keluarTimeRaw, workSummary.totalHours) }}
                 </span>
               </p>
             </div>
@@ -336,8 +336,8 @@
               </p>
               <p class="text-gray-600 dark:text-gray-400">
                 <span class="font-medium">Status:</span> 
-                <span :class="getStatusClass(todayStatus.attendance.status)">
-                  {{ getStatusLabel(todayStatus.attendance.status) }}
+                <span :class="getStatusClass(todayStatus.attendance.computed_status || todayStatus.attendance.status)">
+                  {{ getStatusLabel(todayStatus.attendance.computed_status || todayStatus.attendance.status) }}
                 </span>
               </p>
             </div>
@@ -704,6 +704,8 @@ const submitAttendance = async () => {
         workSummary.value = {
           masukTime: formatDateTime(result.data.jam_masuk),
           keluarTime: formatDateTime(result.data.jam_keluar),
+          masukTimeRaw: result.data.jam_masuk,
+          keluarTimeRaw: result.data.jam_keluar,
           totalHours: result.data.total_jam_kerja,
         }
       }
@@ -741,10 +743,41 @@ const formatTimeOnly = (timeString: string | null) => {
   return timeString.substring(0, 5)
 }
 
+// format total hours similar to list view: ± X jam Y menit
+const formatTotalHours = (masukRaw: string | null, keluarRaw: string | null, rawValue: any) => {
+  // try timestamps first
+  if (masukRaw && keluarRaw) {
+    try {
+      const m = new Date(masukRaw)
+      const k = new Date(keluarRaw)
+      let diffMinutes = Math.round((k.getTime() - m.getTime()) / 60000)
+      if (diffMinutes < 0) diffMinutes += 24 * 60
+      const hours = Math.floor(diffMinutes / 60)
+      const minutes = diffMinutes % 60
+      if (minutes === 0) return `± ${hours} jam`
+      return `± ${hours} jam ${minutes} menit`
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  if (rawValue !== null && rawValue !== undefined && !isNaN(Number(rawValue))) {
+    const dec = Number(rawValue)
+    let hours = Math.floor(dec)
+    let minutes = Math.round((dec - hours) * 60)
+    if (minutes === 60) { hours += 1; minutes = 0 }
+    if (minutes === 0) return `± ${hours} jam`
+    return `± ${hours} jam ${minutes} menit`
+  }
+
+  return '-'
+}
+
 const getStatusLabel = (status: string) => {
+  // Treat 'terlambat' as 'hadir' for display
+  if (status === 'terlambat') status = 'hadir'
   const labels: Record<string, string> = {
     hadir: 'Hadir',
-    terlambat: 'Terlambat',
     pulang_awal: 'Pulang Awal',
     tidak_hadir: 'Tidak Hadir',
     izin: 'Izin',
@@ -755,9 +788,10 @@ const getStatusLabel = (status: string) => {
 }
 
 const getStatusClass = (status: string) => {
+  // Treat 'terlambat' as 'hadir' for display
+  if (status === 'terlambat') status = 'hadir'
   const classes: Record<string, string> = {
     hadir: 'text-green-600 dark:text-green-400 font-medium',
-    terlambat: 'text-orange-600 dark:text-orange-400 font-medium',
     pulang_awal: 'text-yellow-600 dark:text-yellow-400 font-medium',
     tidak_hadir: 'text-red-600 dark:text-red-400 font-medium',
     izin: 'text-blue-600 dark:text-blue-400 font-medium',

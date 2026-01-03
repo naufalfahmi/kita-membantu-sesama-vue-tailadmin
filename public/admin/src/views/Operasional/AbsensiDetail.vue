@@ -196,20 +196,20 @@
             <div>
               <p class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">Total Jam Kerja</p>
               <p class="text-2xl font-bold text-brand-600 dark:text-brand-400">
-                {{ absensiData.total_jam_kerja !== null ? `${absensiData.total_jam_kerja} jam` : '-' }}
+                {{ formatTotalHours(absensiData.jam_masuk, absensiData.jam_keluar, absensiData.total_jam_kerja) }}
               </p>
             </div>
             <div>
               <p class="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">Status</p>
               <span
-                :class="getStatusClass(absensiData.status)"
+                :class="getStatusClass(absensiData.computed_status || absensiData.status)"
                 class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
               >
                 <span
-                  :class="getStatusDotClass(absensiData.status)"
+                  :class="getStatusDotClass(absensiData.computed_status || absensiData.status)"
                   class="h-2 w-2 rounded-full"
                 ></span>
-                {{ getStatusLabel(absensiData.status) }}
+                {{ getStatusLabel(absensiData.computed_status || absensiData.status) }}
               </span>
             </div>
             <div>
@@ -335,9 +335,10 @@ const formatDateTime = (dateString: string | null) => {
 
 // Get status label
 const getStatusLabel = (status: string) => {
+  // Treat 'terlambat' as 'hadir' for display
+  if (status === 'terlambat') status = 'hadir'
   const labels: Record<string, string> = {
     hadir: 'Hadir',
-    terlambat: 'Terlambat',
     pulang_awal: 'Pulang Awal',
     tidak_hadir: 'Tidak Hadir',
     izin: 'Izin',
@@ -349,9 +350,10 @@ const getStatusLabel = (status: string) => {
 
 // Get status class
 const getStatusClass = (status: string) => {
+  // Treat 'terlambat' as 'hadir' for display
+  if (status === 'terlambat') status = 'hadir'
   const classes: Record<string, string> = {
     hadir: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    terlambat: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
     pulang_awal: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
     tidak_hadir: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
     izin: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -363,9 +365,10 @@ const getStatusClass = (status: string) => {
 
 // Get status dot class
 const getStatusDotClass = (status: string) => {
+  // Treat 'terlambat' as 'hadir' for display
+  if (status === 'terlambat') status = 'hadir'
   const classes: Record<string, string> = {
     hadir: 'bg-green-500',
-    terlambat: 'bg-orange-500',
     pulang_awal: 'bg-yellow-500',
     tidak_hadir: 'bg-red-500',
     izin: 'bg-blue-500',
@@ -373,6 +376,35 @@ const getStatusDotClass = (status: string) => {
     cuti: 'bg-indigo-500',
   }
   return classes[status] || 'bg-gray-500'
+}
+
+// format total hours as "± X jam Y menit" from timestamps or raw decimal value
+const formatTotalHours = (masuk: any, keluar: any, rawValue: any) => {
+  if (masuk && keluar) {
+    try {
+      const m = new Date(masuk)
+      const k = new Date(keluar)
+      let diffMinutes = Math.round((k.getTime() - m.getTime()) / 60000)
+      if (diffMinutes < 0) diffMinutes += 24 * 60
+      const hours = Math.floor(diffMinutes / 60)
+      const minutes = diffMinutes % 60
+      if (minutes === 0) return `± ${hours} jam`
+      return `± ${hours} jam ${minutes} menit`
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  if (rawValue !== null && rawValue !== undefined && !isNaN(Number(rawValue))) {
+    const dec = Number(rawValue)
+    let hours = Math.floor(dec)
+    let minutes = Math.round((dec - hours) * 60)
+    if (minutes === 60) { hours += 1; minutes = 0 }
+    if (minutes === 0) return `± ${hours} jam`
+    return `± ${hours} jam ${minutes} menit`
+  }
+
+  return '-'
 }
 
 // Handle back

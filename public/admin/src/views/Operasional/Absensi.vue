@@ -245,6 +245,40 @@ const formatDateString = (d: any) => {
   }
 }
 
+// format total hours as "± X jam Y menit" from timestamps or raw decimal value
+const formatTotalHours = (masuk: any, keluar: any, rawValue: any) => {
+  // try timestamps first
+  if (masuk && keluar) {
+    try {
+      const m = new Date(masuk)
+      const k = new Date(keluar)
+      let diffMinutes = Math.round((k.getTime() - m.getTime()) / 60000)
+      if (diffMinutes < 0) diffMinutes += 24 * 60
+      let hours = Math.floor(diffMinutes / 60)
+      let minutes = diffMinutes % 60
+      if (minutes === 0) return `± ${hours} jam`
+      return `± ${hours} jam ${minutes} menit`
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  // fallback to raw decimal hours (e.g., 7.93)
+  if (rawValue !== null && rawValue !== undefined && !isNaN(Number(rawValue))) {
+    const dec = Number(rawValue)
+    let hours = Math.floor(dec)
+    let minutes = Math.round((dec - hours) * 60)
+    if (minutes === 60) {
+      hours += 1
+      minutes = 0
+    }
+    if (minutes === 0) return `± ${hours} jam`
+    return `± ${hours} jam ${minutes} menit`
+  }
+
+  return '-'
+}
+
 // AG Grid infinite datasource - created via factory so we can rebind easily like Keuangan
 // This datasource implements a simple client-side block cache and in-flight request deduping
 // so blocks already fetched won't be requested again (reduces load on backend while scrolling).
@@ -486,10 +520,7 @@ const columnDefs = [
     filter: false,
     width: 100,
     valueFormatter: (params: any) => {
-      if (params.value !== null && params.value !== undefined) {
-        return `${params.value} jam`
-      }
-      return '-'
+      return formatTotalHours(params.data?.jam_masuk, params.data?.jam_keluar, params.value)
     },
   },
   {
@@ -499,7 +530,53 @@ const columnDefs = [
     filter: false,
     width: 120,
     cellRenderer: (params: any) => {
-      const status = params.value || 'hadir'
+      // derive a safe status based on timestamps and tipe_absensi if available
+      let status = params.value || 'hadir'
+      const masuk = params.data?.jam_masuk
+      const keluar = params.data?.jam_keluar
+      const tipe = params.data?.tipe_absensi
+
+      if (!masuk) {
+        status = 'tidak_hadir'
+      } else {
+        // check terlambat using tipe_absensi jam_masuk if available
+          if (tipe && tipe.jam_masuk) {
+          try {
+            const actualMasuk = new Date(masuk).toTimeString().slice(0, 8)
+            if (actualMasuk > tipe.jam_masuk) {
+              status = 'terlambat'
+            } else {
+              status = 'hadir'
+            }
+          } catch (e) {
+            status = params.value || 'hadir'
+          }
+        } else {
+          status = params.value || 'hadir'
+        }
+      
+      // Treat 'terlambat' as 'hadir' for display purposes
+      if (status === 'terlambat') status = 'hadir'
+      }
+
+      if (masuk && keluar) {
+        try {
+          const m = new Date(masuk)
+          const k = new Date(keluar)
+          if (k.getTime() < m.getTime()) {
+            // if keluar earlier than masuk assume early leave / cross-midnight; mark as pulang_awal
+            status = 'pulang_awal'
+          } else if (tipe && tipe.jam_keluar) {
+            const actualKeluar = new Date(keluar).toTimeString().slice(0, 8)
+            if (actualKeluar < tipe.jam_keluar && status !== 'terlambat') {
+              status = 'pulang_awal'
+            }
+          }
+        } catch (e) {
+          // ignore parse errors
+        }
+      }
+
       const statusConfig: Record<string, { label: string; class: string }> = {
         hadir: { label: 'Hadir', class: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
         terlambat: { label: 'Terlambat', class: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
@@ -510,7 +587,7 @@ const columnDefs = [
         cuti: { label: 'Cuti', class: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
       }
       const config = statusConfig[status] || statusConfig.hadir
-      
+
       const span = document.createElement('span')
       span.className = `inline-flex px-2 py-1 rounded-full text-xs font-medium ${config.class}`
       span.textContent = config.label
@@ -644,8 +721,8 @@ const handleExportExcel = async () => {
         'Tipe Absensi': item.tipe_absensi?.nama || item.tipe_absensi?.label || '-',
         'Jam Masuk': item.jam_masuk ? new Date(item.jam_masuk).toLocaleString('id-ID') : '-',
         'Jam Keluar': item.jam_keluar ? new Date(item.jam_keluar).toLocaleString('id-ID') : '-',
-        'Total Jam Kerja': item.total_jam_kerja ? `${item.total_jam_kerja} jam` : '-',
-        'Status': item.status || '-',
+        'Total Jam Kerja': formatTotalHours(item.jam_masuk, item.jam_keluar, item.total_jam_kerja),
+        'Status': (item.status === 'terlambat' ? 'hadir' : (item.status || '-')),
         'Catatan': item.catatan || '-',
       }
     })
@@ -668,8 +745,8 @@ const handleExportExcel = async () => {
       'Tipe Absensi': item.tipe_absensi?.nama || item.tipe_absensi?.label || '-',
       'Jam Masuk': item.jam_masuk ? new Date(item.jam_masuk).toLocaleString('id-ID') : '-',
       'Jam Keluar': item.jam_keluar ? new Date(item.jam_keluar).toLocaleString('id-ID') : '-',
-      'Total Jam Kerja': item.total_jam_kerja ? `${item.total_jam_kerja} jam` : '-',
-      'Status': item.status || '-',
+      'Total Jam Kerja': formatTotalHours(item.jam_masuk, item.jam_keluar, item.total_jam_kerja),
+      'Status': (item.status === 'terlambat' ? 'hadir' : (item.status || '-')),
       'Catatan': item.catatan || '-',
     }))
     const worksheet = XLSX.utils.json_to_sheet(dataToExport)

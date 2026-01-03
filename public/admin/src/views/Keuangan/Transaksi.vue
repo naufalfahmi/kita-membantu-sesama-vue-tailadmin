@@ -529,6 +529,14 @@ const formatYMDLocal = (d: any) => {
 const columnDefs = computed(() => {
   const roleName = String(user?.value?.role?.name || '').toLowerCase()
   const isFundrisingRole = roleName === 'fundrising' || roleName === 'fundraising'
+  const isRoleAdminCabang = (() => {
+    const roles = user?.value?.roles || (user?.value?.role ? [user.value.role] : [])
+    if (!Array.isArray(roles)) return false
+    return roles.some((r: any) => {
+      const name = typeof r === 'string' ? r : r?.name
+      return typeof name === 'string' && name.trim().toLowerCase() === 'admin cabang'
+    })
+  })()
 
   // If the current user's jabatan/role is Fundrising, show only the requested columns
   if (isFundrisingRole) {
@@ -621,13 +629,17 @@ const columnDefs = computed(() => {
       // flex: 1,
       valueFormatter: (params: any) => params.value || '-',
     },
-    {
-      headerName: 'Dibuat oleh',
-      field: 'fundraiser',
-      sortable: true,
-      // flex: 1,
-      valueFormatter: (params: any) => params.value || '-',
-    },
+    // 'Dibuat oleh' column: hide for Admin Cabang users
+    ...(!isRoleAdminCabang
+      ? [
+          {
+            headerName: 'Dibuat oleh',
+            field: 'fundraiser',
+            sortable: true,
+            valueFormatter: (params: any) => params.value || '-',
+          },
+        ]
+      : []),
     {
       headerName: 'Fundraiser',
       field: 'fundraiser_pic',

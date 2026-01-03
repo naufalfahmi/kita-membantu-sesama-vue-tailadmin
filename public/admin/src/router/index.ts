@@ -613,6 +613,12 @@ const router = createRouter({
       meta: { title: 'Keuangan', permission: 'view keuangan' },
     },
     {
+      path: '/keuangan/program-shares-summary',
+      name: 'Program Shares Summary',
+      component: () => import('../views/Keuangan/ProgramSharesSummary.vue'),
+      meta: { title: 'Ringkasan Program - Shares', permission: 'view keuangan' },
+    },
+    {
       path: '/keuangan/keuangan/new',
       name: 'Tambah Keuangan',
       component: () => import('../views/Keuangan/KeuanganForm.vue'),

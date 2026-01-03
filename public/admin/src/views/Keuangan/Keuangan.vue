@@ -12,145 +12,52 @@
             @click="handleExportExcel"
             class="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600"
           >
-            <svg
-              class="fill-current"
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                fill-rule="evenodd"
-                clip-rule="evenodd"
-                d="M10 3.33333C10.4602 3.33333 10.8333 3.70643 10.8333 4.16667V9.16667H15.8333C16.2936 9.16667 16.6667 9.53976 16.6667 10C16.6667 10.4602 16.2936 10.8333 15.8333 10.8333H10.8333V15.8333C10.8333 16.2936 10.4602 16.6667 10 16.6667C9.53976 16.6667 9.16667 16.2936 9.16667 15.8333V10.8333H4.16667C3.70643 10.8333 3.33333 10.4602 3.33333 10C3.33333 9.53976 3.70643 9.16667 4.16667 9.16667H9.16667V4.16667C9.16667 3.70643 9.53976 3.33333 10 3.33333Z"
-                fill="currentColor"
-              />
+            <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 3h10v2H5V3zm0 12h10v2H5v-2zM3 7h14v6H3V7z" fill="currentColor"/>
             </svg>
-            Tambah Keuangan
+            Export Excel
           </button>
         </div>
       </div>
 
-      <!-- Filter Section -->
+      <!-- Filter Section: only date-range picker -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              PIC
-            </label>
-            <input
-              type="text"
-              v-model="filterPIC"
-              placeholder="Cari PIC..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Kantor Cabang
-            </label>
-            <input
-              type="text"
-              v-model="filterKantorCabang"
-              placeholder="Cari kantor cabang..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Tanggal Keuangan
-            </label>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-1 lg:grid-cols-1">
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal Transaksi</label>
             <div class="relative">
               <flat-pickr
                 v-model="filterTanggalKeuangan"
                 :config="flatpickrDateConfig"
-                class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                placeholder="Pilih tanggal keuangan"
+                class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                placeholder="Pilih rentang tanggal transaksi"
               />
-              <span
-                class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400"
-              >
-                <svg
-                  class="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 9.99999C18.3333 5.39762 14.6024 1.66666 10 1.66666C5.39763 1.66666 1.66667 5.39762 1.66667 9.99999C1.66667 14.6024 5.39763 18.3333 10 18.3333Z"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <path
-                    d="M10 5V10L13.3333 11.6667"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
             </div>
           </div>
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Jumlah Min
-            </label>
-            <input
-              type="number"
-              v-model="filterJumlahMin"
-              placeholder="Jumlah minimum..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
         </div>
-        <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div class="flex-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Jumlah Max
-            </label>
-            <input
-              type="number"
-              v-model="filterJumlahMax"
-              placeholder="Jumlah maksimum..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
-          </div>
-          <div class="flex items-end">
-            <button
-              @click="resetFilter"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
-            >
-              Reset Filter
-            </button>
-          </div>
+        <div class="mt-4">
+          <button @click="resetFilter" class="h-11 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">Reset Filter</button>
         </div>
       </div>
 
       <div class="relative" style="width: 100%; height: 450px;">
         <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 100%;">
-          <ag-grid-vue
-            ref="agGridRef"
-            class="ag-theme-alpine"
-            style="width: 100%; height: 100%;"
+              <ag-grid-vue
+                ref="agGridRef"
+                @grid-ready="onGridReady"
+                @first-data-rendered="onFirstDataRendered"
+                class="ag-theme-alpine"
+                style="width: 100%; height: 100%;"
             :columnDefs="columnDefs"
             :defaultColDef="defaultColDef"
+            :pinnedBottomRowData="pinnedBottomRowData"
             :rowModelType="'infinite'"
-            :datasource="dataSource"
-            :rowBuffer="10"
-            :cacheBlockSize="10"
-            :maxBlocksInCache="5"
-            :maxConcurrentDatasourceRequests="2"
-            :infiniteInitialRowCount="10"
-            :suppressSorting="false"
-            theme="legacy"
-            :animateRows="true"
-            :suppressHorizontalScroll="true"
+            :cacheBlockSize="50"
+            :maxBlocksInCache="10"
+              :suppressSorting="false"
+              theme="legacy"
+              :animateRows="true"
+              :suppressHorizontalScroll="false"
             @sortChanged="onSortChanged"
           />
         </div>
@@ -177,12 +84,12 @@
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             ></path>
           </svg>
-          <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
-            {{ filterPIC || filterKantorCabang || filterTanggalKeuangan || filterJumlahMin || filterJumlahMax ? 'Tidak ada data ditemukan' : 'Tidak ada data' }}
-          </p>
-          <p class="text-gray-500 dark:text-gray-500 text-sm">
-            {{ filterPIC || filterKantorCabang || filterTanggalKeuangan || filterJumlahMin || filterJumlahMax ? 'Coba ubah filter pencarian Anda' : 'Belum ada data yang tersedia' }}
-          </p>
+                  <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
+                    {{ filterTanggalKeuangan ? 'Tidak ada data ditemukan' : 'Tidak ada data' }}
+                  </p>
+                  <p class="text-gray-500 dark:text-gray-500 text-sm">
+                    {{ filterTanggalKeuangan ? 'Coba ubah filter pencarian Anda' : 'Belum ada data yang tersedia' }}
+                  </p>
         </div>
       </div>
     </div>
@@ -210,7 +117,6 @@ import 'flatpickr/dist/flatpickr.css'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/composables/useAuth'
@@ -228,6 +134,8 @@ const route = useRoute()
 const router = useRouter()
 const currentPageTitle = ref<string>(String(route.meta.title || 'Keuangan'))
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
+const gridApiRef = ref<any>(null)
+const gridColumnApiRef = ref<any>(null)
 const toast = useToast()
 const { fetchUser, hasPermission, isAdmin } = useAuth()
 const canCreate = computed(() => isAdmin() || hasPermission('create keuangan'))
@@ -242,99 +150,23 @@ const flatpickrDateConfig = {
   altInput: true,
   altFormat: 'd/m/Y',
   wrap: false,
+  mode: 'range',
 }
 
-// Column definitions
+// Column definitions for program-shares summary
 const columnDefs = [
+  { headerName: 'Total Transaksi', field: 'total_transaksi', flex: 1, valueFormatter: currencyFormatter },
   {
-    headerName: 'PIC',
-    field: 'pic',
-    sortable: true,
-    filter: false,
-    flex: 1,
-  },
-  {
-    headerName: 'Jumlah',
-    field: 'jumlah',
-    sortable: true,
-    filter: false,
-    flex: 1,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-          minimumFractionDigits: 0,
-        }).format(params.value)
-      }
-      return ''
-    },
-  },
-  {
-    headerName: 'Kantor Cabang',
-    field: 'kantorCabang',
-    sortable: true,
-    filter: false,
-    flex: 1,
-  },
-  {
-    headerName: 'Tanggal Keuangan',
-    field: 'tanggalKeuangan',
-    sortable: true,
-    filter: false,
-    flex: 1,
-    valueFormatter: (params: any) => {
-      if (params.value) {
-        return new Date(params.value).toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-      }
-      return ''
-    },
-  },
-  {
-    headerName: 'Actions',
-    field: 'actions',
-    sortable: false,
-    filter: false,
-    width: 120,
-    cellRenderer: (params: any) => {
-      const div = document.createElement('div')
-      div.className = 'flex items-center gap-3'
-      
-      const editBtn = document.createElement('button')
-      editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors'
-      editBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-        </svg>
-      `
-      editBtn.onclick = () => handleEdit(params.data.id)
-      
-      const deleteBtn = document.createElement('button')
-      deleteBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors'
-      deleteBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"></path>
-          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      `
-      deleteBtn.onclick = () => handleDelete(params.data.id)
-      
-      if (canUpdate.value) {
-        div.appendChild(editBtn)
-      }
-      if (canDelete.value) {
-        div.appendChild(deleteBtn)
-      }
-      
-      return div
-    },
+    headerName: 'Nama Program',
+    children: [
+      { headerName: 'DP', field: 'dp', valueFormatter: currencyFormatter },
+      { headerName: 'Operasional (OPS 1)', field: 'ops_1', valueFormatter: currencyFormatter },
+      { headerName: 'Gaji Karyawan (OPS 2)', field: 'ops_2', valueFormatter: currencyFormatter },
+      { headerName: 'Program', field: 'program', valueFormatter: currencyFormatter },
+      { headerName: 'Fee Mitra', field: 'fee_mitra', valueFormatter: currencyFormatter },
+      { headerName: 'Bonus', field: 'bonus', valueFormatter: currencyFormatter },
+      { headerName: 'Championship', field: 'championship', valueFormatter: currencyFormatter },
+    ],
   },
 ]
 
@@ -344,6 +176,42 @@ const defaultColDef = {
   sortable: true,
   filter: false,
 }
+// enforce a minimum column width so columns don't collapse too small
+defaultColDef.minWidth = 120
+defaultColDef.cellClass = 'text-sm'
+
+// Currency formatter used by column defs
+function currencyFormatter(params: any) {
+  if (params && params.value !== undefined && params.value !== null) {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(params.value)
+  }
+  return ''
+}
+
+// Map share key to header label
+function toHeader(key: string) {
+  switch ((key || '').toString()) {
+    case 'dp':
+      return 'DP'
+    case 'ops_1':
+      return 'OPS 1'
+    case 'ops_2':
+      return 'OPS 2'
+    case 'program':
+      return 'Program'
+    case 'fee_mitra':
+      return 'Fee Mitra'
+    case 'bonus':
+      return 'Bonus'
+    case 'championship':
+      return 'Championship'
+    default:
+      return String(key)
+  }
+}
+
+// Pinned bottom rows for totals
+const pinnedBottomRowData = ref<any[]>([])
 
 // Sample data - generate 200 items for infinite scroll testing
 const generateRowData = (): KeuanganRow[] => {
@@ -386,66 +254,11 @@ const generateRowData = (): KeuanganRow[] => {
 
 const rowDataArray = ref<KeuanganRow[]>(generateRowData())
 
-// Filter state
-const filterPIC = ref('')
-const filterKantorCabang = ref('')
+// Filter state (only date-range)
 const filterTanggalKeuangan = ref('')
-const filterJumlahMin = ref('')
-const filterJumlahMax = ref('')
 
-// Filtered data based on filter
-const filteredData = computed(() => {
-  let filtered = [...rowDataArray.value]
-  
-  // Filter by PIC
-  if (filterPIC.value) {
-    const searchTerm = filterPIC.value.toLowerCase()
-    filtered = filtered.filter((item) =>
-      item.pic.toLowerCase().includes(searchTerm)
-    )
-  }
-  
-  // Filter by Kantor Cabang
-  if (filterKantorCabang.value) {
-    const searchTerm = filterKantorCabang.value.toLowerCase()
-    filtered = filtered.filter((item) =>
-      item.kantorCabang.toLowerCase().includes(searchTerm)
-    )
-  }
-  
-  // Filter by Tanggal Keuangan
-  if (filterTanggalKeuangan.value) {
-    filtered = filtered.filter((item) => {
-      const itemDate = new Date(item.tanggalKeuangan)
-      const filterDate = new Date(filterTanggalKeuangan.value)
-      
-      // Compare date (year, month, day)
-      return (
-        itemDate.getFullYear() === filterDate.getFullYear() &&
-        itemDate.getMonth() === filterDate.getMonth() &&
-        itemDate.getDate() === filterDate.getDate()
-      )
-    })
-  }
-  
-  // Filter by Jumlah Min
-  if (filterJumlahMin.value) {
-    const minAmount = parseFloat(filterJumlahMin.value)
-    if (!isNaN(minAmount)) {
-      filtered = filtered.filter((item) => item.jumlah >= minAmount)
-    }
-  }
-  
-  // Filter by Jumlah Max
-  if (filterJumlahMax.value) {
-    const maxAmount = parseFloat(filterJumlahMax.value)
-    if (!isNaN(maxAmount)) {
-      filtered = filtered.filter((item) => item.jumlah <= maxAmount)
-    }
-  }
-  
-  return filtered
-})
+// Filtered data is the current rowDataArray (server-side filtered by date range)
+const filteredData = computed(() => rowDataArray.value)
 
 // Show empty state when filtered data is empty
 const showEmptyState = computed(() => filteredData.value.length === 0)
@@ -483,38 +296,81 @@ const cancelDelete = () => {
   deleteId.value = null
 }
 
-// Handle export to Excel
+// Handle export to Excel - export exactly the AG Grid view including pinned rows
 const handleExportExcel = () => {
-  // Get all filtered data
-  const dataToExport = filteredData.value.map((item) => {
-    const tanggalKeuangan = new Date(item.tanggalKeuangan)
-    
-    return {
-      'PIC': item.pic,
-      'Jumlah': new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0,
-      }).format(item.jumlah),
-      'Kantor Cabang': item.kantorCabang,
-      'Tanggal Keuangan': tanggalKeuangan.toLocaleDateString('id-ID', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
+  // Build flattened fields and a two-row header with merges for program groups
+  const fields: string[] = []
+  const headerRow1: any[] = []
+  const headerRow2: any[] = []
+  const merges: any[] = []
+
+  // iterate top-level columnDefs in order
+  let colIndex = 0
+  columnDefs.forEach((c: any) => {
+    if (c.field) {
+      // single column (e.g., Tanggal Transaksi, Nominal Transaksi) -> merge vertically across 2 rows
+      const title = c.headerName || c.field
+      headerRow1.push(title)
+      headerRow2.push('')
+      // merge rows 0..1 at this column
+      merges.push({ s: { r: 0, c: colIndex }, e: { r: 1, c: colIndex } })
+      fields.push(c.field)
+      colIndex += 1
+    } else if (c.children && Array.isArray(c.children)) {
+      const groupTitle = c.headerName || ''
+      const childCount = c.children.length
+      // place group title spanning childCount columns in headerRow1
+      for (let i = 0; i < childCount; i++) {
+        headerRow1.push(i === 0 ? groupTitle : '')
+      }
+      // merge the group title across the children columns
+      merges.push({ s: { r: 0, c: colIndex }, e: { r: 0, c: colIndex + childCount - 1 } })
+
+      // second header row contains child headers
+      c.children.forEach((ch: any) => {
+        headerRow2.push(ch.headerName || ch.field)
+        fields.push(ch.field)
+        colIndex += 1
+      })
     }
   })
-  
-  // Create workbook and worksheet
-  const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+
+  // Build AOA rows: headerRow1, headerRow2, then data rows
+  const aoa: any[] = []
+  aoa.push(headerRow1)
+  aoa.push(headerRow2)
+
+  // add data rows in display order
+  rowDataArray.value.forEach((r: any) => {
+    const row: any[] = []
+    fields.forEach((f: string) => {
+      const raw = r[f]
+      row.push((typeof raw === 'number') ? raw : (raw ?? ''))
+    })
+    aoa.push(row)
+  })
+
+  // append pinned rows
+  if (pinnedBottomRowData.value && pinnedBottomRowData.value.length) {
+    pinnedBottomRowData.value.forEach((pr: any) => {
+      const prow: any[] = []
+      fields.forEach((f: string) => {
+        const raw = pr[f]
+        prow.push((typeof raw === 'number') ? raw : (raw ?? ''))
+      })
+      aoa.push(prow)
+    })
+  }
+
+  const worksheet = XLSX.utils.aoa_to_sheet(aoa)
+  // apply merges
+  worksheet['!merges'] = worksheet['!merges'] || []
+  merges.forEach((m: any) => worksheet['!merges'].push(m))
+
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Keuangan')
-  
-  // Generate filename with current date
   const now = new Date()
   const filename = `Keuangan_${now.toISOString().split('T')[0]}.xlsx`
-  
-  // Write file and download
   XLSX.writeFile(workbook, filename)
 }
 
@@ -595,37 +451,289 @@ const createDataSource = (): IDatasource => {
 // Infinite scroll datasource - create as ref for reactivity
 const dataSource = ref<IDatasource>(createDataSource())
 
-const refreshGrid = (scrollToTop = false) => {
-  const newDataSource = createDataSource()
-  dataSource.value.getRows = newDataSource.getRows
+// Rows will be populated from program-shares summary endpoint
+const fetchSummary = async () => {
+  try {
+    // include optional date range from filterTanggalKeuangan
+    let url = '/admin/api/keuangan/program-shares-summary'
+    try {
+      const fr = filterTanggalKeuangan.value
+      let startDate: any = null
+      let endDate: any = null
+      if (fr) {
+        if (Array.isArray(fr)) {
+          startDate = fr[0] ? (fr[0] instanceof Date ? fr[0].toISOString().split('T')[0] : String(fr[0])) : null
+          endDate = fr[1] ? (fr[1] instanceof Date ? fr[1].toISOString().split('T')[0] : String(fr[1])) : null
+        } else if (typeof fr === 'string') {
+          const sep = fr.includes(' to ') ? ' to ' : (fr.includes(' - ') ? ' - ' : '')
+          if (sep) {
+            const parts = fr.split(sep)
+            startDate = parts[0]?.trim() || null
+            endDate = parts[1]?.trim() || null
+          } else {
+            startDate = fr || null
+            endDate = fr || null
+          }
+        }
+      }
+      const params: any = {}
+      if (startDate) params.start_date = startDate
+      if (endDate) params.end_date = endDate
+      const qp = new URLSearchParams(params).toString()
+      if (qp) url += `?${qp}`
+    } catch (e) { /* ignore parsing errors and call without range */ }
+    const res = await fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    const payload = await res.json()
+    if (!payload.success) {
+      toast.error('Gagal memuat ringkasan program')
+      return
+    }
 
+    // Pivot: build group columns per program and rows per share key
+    const programs = payload.data.rows || []
+    const shareKeys = payload.data.columns && payload.data.columns.length ? payload.data.columns : ['dp','ops_1','ops_2','program','fee_mitra','bonus','championship']
+
+    // Build dynamic columnDefs: first column is 'Tanggal Transaksi' (left pinned), then one group column per program with children for each share key
+    const dynamicCols: any[] = []
+    dynamicCols.push({ headerName: 'Tanggal Transaksi', field: 'tanggal', pinned: 'left', width: 250 })
+      // nominal transaksi column next to tanggal
+      dynamicCols.push({ headerName: 'Nominal Transaksi', field: 'nominal', pinned: 'left', width: 160, valueFormatter: currencyFormatter, resizable: true })
+
+    programs.forEach((p: any) => {
+      // build children starting with per-program nominal transaksi
+      const children: any[] = []
+      children.push({ headerName: 'Nominal Transaksi', field: `p_${p.program_id || p.id}_nominal`, valueFormatter: currencyFormatter, resizable: true, width: 160 })
+      const shareChildren = shareKeys.map((k: string) => {
+        // include share meta (percentage/nominal) in the child header, not in the program group header
+        let childMeta = ''
+        try {
+          const sharesMeta = p.shares_meta || {}
+          const meta = sharesMeta[k] || sharesMeta[k.toString()] || null
+          if (meta) {
+            if (meta.type === 'percentage' && meta.value !== null && meta.value !== undefined) {
+              const num = Number(meta.value)
+              if (!Number.isFinite(num)) {
+                childMeta = ` (${meta.value}%)`
+              } else {
+                // show integer when whole, otherwise show up to 2 decimals
+                childMeta = Number.isInteger(num) ? ` (${num}%)` : ` (${num % 1 === 0 ? num : parseFloat(num.toFixed(2))}%)`
+              }
+            } else if (meta.type === 'nominal' && meta.value !== null && meta.value !== undefined) {
+              childMeta = ` (${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(meta.value)})`
+            }
+          }
+        } catch (e) { /* ignore */ }
+
+        return {
+          headerName: `${toHeader(k)}${childMeta}`,
+          field: `p_${p.program_id || p.id}_${k}`,
+          valueFormatter: currencyFormatter,
+          resizable: true,
+          minWidth: 120,
+        }
+      })
+
+      // append share children after nominal
+      children.push(...shareChildren)
+
+      const header = `${p.program_name || p.nama_program || p.nama || 'Program'}`
+      dynamicCols.push({ headerName: header, children })
+    })
+
+    columnDefs.splice(0, columnDefs.length, ...dynamicCols)
+
+    // Ensure AG Grid updates with new columns and data
+    nextTick(() => {
+      const gridApi = gridApiRef.value || (agGridRef.value as any)?.api
+      if (gridApi) {
+        try {
+          gridApi.setColumnDefs(columnDefs)
+          // If using infinite row model, set datasource, otherwise set row data
+          try {
+            if (gridApi.setDatasource && dataSource.value) {
+              gridApi.setDatasource(dataSource.value)
+            } else {
+              gridApi.setRowData(rowDataArray.value)
+            }
+          } catch (e) {
+            // fallback
+            try { gridApi.setRowData(rowDataArray.value) } catch (err) { /* ignore */ }
+          }
+          gridApi.setPinnedBottomRowData(pinnedBottomRowData.value)
+          // adjust column sizes
+          try { gridApi.sizeColumnsToFit() } catch (e) { /* ignore */ }
+          // give the grid a moment to render then autosize columns to content
+          setTimeout(() => {
+            try { autoSizeAllColumns() } catch (err) { /* ignore */ }
+          }, 80)
+        } catch (e) {
+          console.error('Failed to apply dynamic columns to grid', e)
+        }
+      }
+    })
+
+    // Build rows: aggregate transaksi per tanggal_transaksi (one row per date)
+    const transaksis = payload.data.transaksis || []
+    const rowsByDate: Record<string, any> = {}
+    const formatDateDisplay = (d: string) => {
+      if (!d) return ''
+      const dt = new Date(d)
+      if (isNaN(dt.getTime())) return d
+      return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    }
+
+    transaksis.forEach((t: any) => {
+      const rawDate = (t.tanggal_transaksi || t.tanggal || t.date || '').toString()
+      const dateKey = rawDate
+      if (! rowsByDate[dateKey]) {
+        rowsByDate[dateKey] = { tanggal: formatDateDisplay(rawDate), kode: null, nominal: 0 }
+        // initialize program-share fields and per-program nominal
+        programs.forEach((p: any) => {
+          // per-program nominal
+          rowsByDate[dateKey][`p_${p.program_id || p.id}_nominal`] = 0
+          shareKeys.forEach((k: string) => {
+            rowsByDate[dateKey][`p_${p.program_id || p.id}_${k}`] = 0
+          })
+        })
+      }
+
+      const row = rowsByDate[dateKey]
+      row.kode = row.kode || t.kode || null
+      row.nominal = (row.nominal || 0) + (t.nominal || 0)
+
+      programs.forEach((p: any) => {
+        shareKeys.forEach((k: string) => {
+          const fld = `p_${p.program_id || p.id}_${k}`
+          const transField = `p_${p.program_id || p.id}`
+          if (k === 'program' && (t[transField] !== undefined)) {
+            row[fld] += (t[transField] || 0)
+          } else {
+            row[fld] += (t[fld] || 0)
+          }
+        })
+        // accumulate per-program nominal (transaction nominal belongs to the program)
+        try {
+          const progId = p.program_id || p.id
+          if (t.program_id && String(t.program_id) === String(progId)) {
+            row[`p_${progId}_nominal`] = (row[`p_${progId}_nominal`] || 0) + (t.nominal || 0)
+          }
+        } catch (e) { /* ignore */ }
+      })
+    })
+
+    const pivotRows = Object.values(rowsByDate)
+    rowDataArray.value = pivotRows
+
+    // compute total nominal across pivot rows for pinned TOTAL
+    const totalNominal = pivotRows.reduce((s: number, r: any) => s + (r.nominal || 0), 0)
+
+    // Pinned totals per program and pinned disbursed per program (children fields)
+    const totalsRow: any = { tanggal: 'TOTAL' }
+    const disbRow: any = { tanggal: 'DISBURSED TOTALS' }
+    const disbByProgram = (payload.data && payload.data.disbursed_totals_by_program) ? payload.data.disbursed_totals_by_program : {}
+    programs.forEach((p: any) => {
+      // totals for per-program nominal
+      const nominalFld = `p_${p.program_id || p.id}_nominal`
+      totalsRow[nominalFld] = p.total_transaksi || 0
+      disbRow[nominalFld] = 0
+      shareKeys.forEach((k: string) => {
+        const fld = `p_${p.program_id || p.id}_${k}`
+        totalsRow[fld] = p[k] || 0
+        // prefer per-program-per-share disbursed value, fallback to per-program total mapped to 'program' share
+        const perShareKey = fld
+        const perProgramKey = `p_${p.program_id || p.id}`
+        let disbVal = 0
+        if (disbByProgram && disbByProgram[perShareKey] !== undefined) disbVal = disbByProgram[perShareKey]
+        else if (k === 'program' && disbByProgram && disbByProgram[perProgramKey] !== undefined) disbVal = disbByProgram[perProgramKey]
+        disbRow[fld] = disbVal || 0
+      })
+    })
+
+    // set total nominal on totalsRow
+    totalsRow.nominal = totalNominal
+
+    pinnedBottomRowData.value = [totalsRow, disbRow]
+
+    // refresh grid datasource
+    refreshGrid(true)
+  } catch (e) {
+    console.error(e)
+    toast.error('Terjadi kesalahan saat memuat ringkasan program')
+  }
+}
+
+const refreshGrid = (scrollToTop = false) => {
   nextTick(() => {
-    const gridApi = (agGridRef.value as any)?.api
+    const gridApi = gridApiRef.value || (agGridRef.value as any)?.api
     if (gridApi) {
       try {
-        gridApi.purgeInfiniteCache()
-        gridApi.refreshInfiniteCache()
+        // For infinite row model, purge cache so grid will request fresh blocks
+        try {
+          if (gridApi.purgeInfiniteCache) {
+            gridApi.purgeInfiniteCache()
+          } else if (gridApi.setDatasource && dataSource.value) {
+            gridApi.setDatasource(dataSource.value)
+          } else {
+            gridApi.setRowData(rowDataArray.value)
+          }
+        } catch (e) { /* ignore */ }
+
+        gridApi.setPinnedBottomRowData(pinnedBottomRowData.value)
 
         if (scrollToTop) {
           window.setTimeout(() => {
-            const innerApi = (agGridRef.value as any)?.api
+            const innerApi = gridApiRef.value || (agGridRef.value as any)?.api
             if (innerApi) {
-              innerApi.ensureIndexVisible(0, 'top')
+              try { innerApi.ensureIndexVisible(0, 'top') } catch (e) { /* ignore */ }
             }
           }, 100)
         }
       } catch (error) {
-        console.error('Error refreshing cache:', error)
+        console.error('Error refreshing grid:', error)
       }
     }
   })
 }
 
 // Set datasource after component is mounted
-onMounted(() => {
-  fetchUser()
+onMounted(async () => {
+  await fetchUser()
+  await fetchSummary()
   refreshGrid()
 })
+
+// AG Grid lifecycle handlers
+function onGridReady(params: any) {
+  gridApiRef.value = params.api
+  gridColumnApiRef.value = params.columnApi
+  // attach infinite datasource when grid is ready
+  try {
+    const ds = dataSource.value || createDataSource()
+    if (params.api.setDatasource) params.api.setDatasource(ds as any)
+  } catch (e) {
+    console.error('Failed to set datasource for infinite row model', e)
+  }
+}
+
+function autoSizeAllColumns() {
+  const colApi = gridColumnApiRef.value
+  if (!colApi) return
+  const allCols = colApi.getAllColumns()
+  if (!allCols || !allCols.length) return
+  const colIds = allCols.map((c: any) => c.getColId())
+  try {
+    colApi.autoSizeColumns(colIds, false)
+  } catch (e) {
+    // fallback: ensure columns fit container
+    try { gridApiRef.value?.sizeColumnsToFit() } catch (err) { /* ignore */ }
+  }
+}
+
+function onFirstDataRendered(params: any) {
+  try { params.api.sizeColumnsToFit() } catch (e) { /* ignore */ }
+  // then auto-size by content where possible
+  autoSizeAllColumns()
+}
 
 // Clear debounce timer on component unmount
 onUnmounted(() => {
@@ -643,24 +751,23 @@ const onSortChanged = () => {
 let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Watch for filter changes and refresh grid with debounce
-watch([filterPIC, filterKantorCabang, filterTanggalKeuangan, filterJumlahMin, filterJumlahMax], () => {
+watch([filterTanggalKeuangan], () => {
   // Clear existing timer
   if (filterDebounceTimer) {
     clearTimeout(filterDebounceTimer)
   }
-  
-  // Debounce filter update to prevent flickering
-  filterDebounceTimer = setTimeout(() => {
+
+  // Debounce filter update to prevent flickering and refetch summary when date range changes
+  filterDebounceTimer = setTimeout(async () => {
+    try {
+      await fetchSummary()
+    } catch (e) { /* ignore */ }
     refreshGrid(true)
   }, 300) // 300ms debounce delay to prevent flickering
 })
-// Reset filter
+// Reset filter (only date-range)
 const resetFilter = () => {
-  filterPIC.value = ''
-  filterKantorCabang.value = ''
   filterTanggalKeuangan.value = ''
-  filterJumlahMin.value = ''
-  filterJumlahMax.value = ''
 }
 </script>
 

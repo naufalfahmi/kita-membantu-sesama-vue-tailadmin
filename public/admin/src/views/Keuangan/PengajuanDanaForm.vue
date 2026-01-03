@@ -19,10 +19,16 @@
             <SearchableSelect v-model="formData.submissionType" :options="submissionTypeList" placeholder="Pilih tipe pengajuan" :search-input="submissionTypeSearchInput" @update:search-input="submissionTypeSearchInput = $event" />
           </div>
 
-          <div v-if="formData.submissionType === 'program' || formData.submissionType === 'operasional' || formData.submissionType === 'gaji karyawan'" class="lg:col-span-1">
+          <div class="lg:col-span-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
             <SearchableSelect v-model="formData.programId" :options="programList" placeholder="Pilih program" />
+            
             <!-- <div v-if="loadingBalance" class="mt-2 text-sm text-gray-500">Memuat saldo...</div> -->
+          </div>
+
+          <div class="lg:col-span-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang <span class="text-red-500">*</span></label>
+            <SearchableSelect v-model="formData.branchId" :options="kantorCabangList" placeholder="Pilih atau cari kantor cabang" :search-input="kantorCabangSearchInput" @update:search-input="kantorCabangSearchInput = $event" />
           </div>
 
           <div class="lg:col-span-1">
@@ -64,11 +70,18 @@
             </div>
           </div>
 
-
-          <div class="lg:col-span-2">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang <span class="text-red-500">*</span></label>
-            <SearchableSelect v-model="formData.branchId" :options="kantorCabangList" placeholder="Pilih atau cari kantor cabang" :search-input="kantorCabangSearchInput" @update:search-input="kantorCabangSearchInput = $event" />
+          <div class="lg:col-span-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal Transaksi (opsional)</label>
+            <div class="flex items-center gap-2">
+              <flat-pickr v-model="allocationRange" :config="flatpickrRangeConfig" class="dark:bg-dark-900 h-10 flex-1 appearance-none rounded-lg border border-gray-300 bg-transparent px-3 py-2 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90" placeholder="Pilih rentang tanggal" />
+              <button v-if="((Array.isArray(allocationRange) && allocationRange.length > 0) || (allocationRange && String(allocationRange).length > 0))" type="button" title="Hapus Leader" @click="clearAllocationRange" class="h-10 w-10 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+              </button>
+            </div>
           </div>
+
+
+          
 
           <div v-if="programDetail" class="lg:col-span-2">
             <div class="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/40">
@@ -99,7 +112,10 @@
               <div v-if="programBalance" class="mt-3 border-t pt-3">
                 <div class="flex items-center justify-between">
                   <div>
-                    <div class="text-xs text-gray-500">Sisa alokasi bulan {{ formatMonthYear(programBalance.month) }}</div>
+                    <div class="text-xs text-gray-500">
+                      <span v-if="programBalance.start_date && programBalance.end_date">Sisa alokasi {{ formatDateLong(programBalance.start_date) }} - {{ formatDateLong(programBalance.end_date) }}</span>
+                      <span v-else>Sisa alokasi bulan {{ formatMonthYear(programBalance.month) }}</span>
+                    </div>
                     <div class="text-lg font-medium">{{ formatCurrency(programBalance.remaining) }}</div>
                   </div>
                   <div class="text-right text-xs text-gray-500">
@@ -171,6 +187,18 @@ const flatpickrConfig = {
   minDate: 'today',
 }
 
+const flatpickrRangeConfig = {
+  dateFormat: 'Y-m-d',
+  mode: 'range' as any,
+  altInput: true,
+  altFormat: 'd F Y',
+  locale: 'id' as any,
+  wrap: true,
+  clickOpens: true,
+  allowInput: false,
+  // no minDate here; allow selection of past ranges as needed
+}
+
 const applicantList: Ref<Array<{ value: string; label: string }>> = ref([])
 const submissionTypeList = [
   { value: 'program', label: 'Program' },
@@ -183,6 +211,7 @@ const programList: Ref<Array<{ value: string; label: string }>> = ref([])
 const applicantSearchInput = ref('')
 const submissionTypeSearchInput = ref('')
 const kantorCabangSearchInput = ref('')
+const allocationRange = ref([] as any)
 
 const currentUserId = ref('')
 
@@ -241,6 +270,28 @@ const formatMonthYear = (ym: string | null) => {
   }
 }
 
+const formatDateLong = (dStr: string | null) => {
+  if (!dStr) return ''
+  try {
+    // expect YYYY-MM-DD
+    const parts = String(dStr).split('-')
+    if (parts.length < 3) return dStr
+    const y = Number(parts[0])
+    const m = Number(parts[1]) - 1
+    const day = Number(parts[2])
+    const dt = new Date(Date.UTC(y, m, day))
+    return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(dt)
+  } catch (e) {
+    return dStr
+  }
+}
+
+const clearAllocationRange = () => {
+  allocationRange.value = []
+  // reload balance after clearing so API falls back to month-based usedAt
+  loadProgramBalance()
+}
+
 const programShares = computed(() => {
   if (!programDetail.value || !Array.isArray(programDetail.value.shares)) return []
   // choose share key based on submission type
@@ -265,28 +316,81 @@ const programShares = computed(() => {
 })
 
 const loadProgramBalance = async () => {
-  if (!formData.programId || !formData.usedAt) {
+  if (!formData.programId) {
     programBalance.value = null
     return
   }
   loadingBalance.value = true
   try {
-    // month param in YYYY-MM
-    const d = new Date(formData.usedAt)
-    if (isNaN(d.getTime())) {
-      programBalance.value = null
-        // no transaksi list in this form anymore
-      loadingBalance.value = false
-      return
-    }
-    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     // choose share_key based on submission type
     let shareKey = 'program'
     if (String(formData.submissionType) === 'operasional') shareKey = 'ops_2'
     if (String(formData.submissionType) === 'gaji karyawan') shareKey = 'ops_1'
-    const res = await fetch(`/admin/api/program/${formData.programId}/balance?month=${month}&share_key=${encodeURIComponent(shareKey)}&lookback=1`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+
+    // if allocationRange selected (two dates), use start_date & end_date
+    let url = ''
+    let selectedStart: string | null = null
+    let selectedEnd: string | null = null
+    const parseRangeToIso = (val: any) => {
+      // Return [startIso, endIso] or [null,null]
+      if (!val) return [null, null]
+      // If array with two entries
+      if (Array.isArray(val) && val.length >= 2) {
+        const toIso = (v: any) => {
+          if (!v) return null
+          if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+          const dt = new Date(v)
+          if (isNaN(dt.getTime())) return null
+          return dt.toISOString().split('T')[0]
+        }
+        return [toIso(val[0]), toIso(val[1])]
+      }
+      // If single string, try to extract two yyyy-mm-dd occurrences
+      if (typeof val === 'string') {
+        const m = Array.from(val.matchAll(/(\d{4}-\d{2}-\d{2})/g)).map(x => x[1])
+        if (m.length >= 2) return [m[0], m[1]]
+        // fallback: split on non-digit sequences and try
+        const parts = val.split(/[^0-9-]+/).filter(Boolean)
+        if (parts.length >= 2 && /^\d{4}-\d{2}-\d{2}$/.test(parts[0]) && /^\d{4}-\d{2}-\d{2}$/.test(parts[1])) return [parts[0], parts[1]]
+      }
+      // If object/date-like
+      try {
+        const dt = new Date(val)
+        if (!isNaN(dt.getTime())) {
+          const iso = dt.toISOString().split('T')[0]
+          return [iso, iso]
+        }
+      } catch (e) {}
+      return [null, null]
+    }
+    if (allocationRange) {
+      const [s, e] = parseRangeToIso(allocationRange.value)
+      selectedStart = s
+      selectedEnd = e
+    }
+    if (selectedStart && selectedEnd) {
+      url = `/admin/api/program/${formData.programId}/balance?start_date=${encodeURIComponent(selectedStart)}&end_date=${encodeURIComponent(selectedEnd)}&share_key=${encodeURIComponent(shareKey)}`
+    } else {
+      // month param in YYYY-MM (fallback to usedAt)
+      const d = new Date(formData.usedAt)
+      if (isNaN(d.getTime())) {
+        programBalance.value = null
+        loadingBalance.value = false
+        return
+      }
+      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      url = `/admin/api/program/${formData.programId}/balance?month=${month}&share_key=${encodeURIComponent(shareKey)}&lookback=1`
+    }
+
+    const res = await fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     const json = await res.json()
     if (!json.success) throw new Error(json.message || 'Failed to load balance')
+    // If the API didn't return start/end date but we requested a range, inject them so UI reflects selection
+    if (selectedStart && selectedEnd) {
+      if (!json.data) json.data = {}
+      if (!json.data.start_date) json.data.start_date = selectedStart
+      if (!json.data.end_date) json.data.end_date = selectedEnd
+    }
     programBalance.value = json.data
     // Do NOT auto-fill `amount` for any submission type; user must enter nominal manually
   } catch (err) {
@@ -318,6 +422,7 @@ const loadProgramDetail = async () => {
 watch([
   () => formData.programId,
   () => formData.usedAt,
+  () => allocationRange.value,
 ], () => {
   if (balanceTimer) window.clearTimeout(balanceTimer)
   balanceTimer = window.setTimeout(() => {

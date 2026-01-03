@@ -335,11 +335,10 @@ const fetchReferenceData = async () => {
     const kantorUrl = isKantorAdmin ? '/admin/api/kantor-cabang?per_page=1000' : '/admin/api/kantor-cabang?per_page=1000&only_assigned=1'
     requests.push(fetch(kantorUrl, { credentials: 'same-origin' }))
 
-    // If current user is admin, request full karyawan list so they can
-    // choose any fundraiser. Otherwise request subtree-limited list.
-    const karyawanUrl = (currentUser.value && currentUser.value.is_admin)
-      ? '/admin/api/karyawan?per_page=1000'
-      : '/admin/api/karyawan?per_page=1000&only_subtree=1'
+    // Request only users with the Fundraising role for the PIC select.
+    // Note: role name in DB is sometimes stored as 'fundrising' (legacy),
+    // so use that lowercase value to match existing data.
+    const karyawanUrl = '/admin/api/karyawan?per_page=1000&role_name=fundrising'
     requests.push(fetch(karyawanUrl, { credentials: 'same-origin' }))
 
     // Fetch next kode only for new donatur

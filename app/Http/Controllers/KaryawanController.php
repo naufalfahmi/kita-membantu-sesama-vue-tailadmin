@@ -25,6 +25,22 @@ class KaryawanController extends Controller
             ])
             ->karyawan();
 
+        // Support filtering by role name (case-insensitive). When provided,
+        // return users having that role. This is used by frontend pickers
+        // (e.g. Fundraiser select) to list all users with a given role.
+        $roleName = $request->input('role_name') ?? $request->input('role');
+        $skipSubtreeForRoleFilter = false;
+        if (!empty($roleName)) {
+            $lower = mb_strtolower((string) $roleName);
+            $query->whereHas('roles', function ($q) use ($lower) {
+                $q->whereRaw('LOWER(name) = ?', [$lower]);
+            });
+            // When explicitly requesting by role name we skip the default
+            // subtree visibility restriction so the frontend can get the
+            // full list of users with that role.
+            $skipSubtreeForRoleFilter = true;
+        }
+
         // If caller requests only_subtree, restrict visible users to the caller's subtree
         // (applies even for admin callers when requested). Otherwise, keep existing
         // behavior: non-admins see limited subtree while admins see all.
@@ -44,18 +60,26 @@ class KaryawanController extends Controller
         } else {
             // If caller is not admin, restrict visible users to the caller's subtree.
             if ($authUser && ! $this->userIsAdmin($authUser)) {
-                // If user has subordinates, show only descendants excluding self (leaders)
-                if ($authUser->subordinates()->exists()) {
-                    $allowed = User::descendantIdsOf($authUser->id);
-                    $allowed = array_values(array_diff($allowed, [$authUser->id]));
-                    if (empty($allowed)) {
-                        $query->whereRaw('1 = 0');
-                    } else {
-                        $query->whereIn('id', $allowed);
-                    }
+                // If a role_name filter was provided we skip this subtree
+                // restriction so that callers requesting a specific role get
+                // the full list of users with that role.
+                if (!empty($roleName)) {
+                    // do nothing (skip subtree restriction)
                 } else {
-                    // Subordinate users see only themselves
-                    $query->where('id', $authUser->id);
+                    // apply original subtree restriction
+                    // If user has subordinates, show only descendants excluding self (leaders)
+                    if ($authUser->subordinates()->exists()) {
+                        $allowed = User::descendantIdsOf($authUser->id);
+                        $allowed = array_values(array_diff($allowed, [$authUser->id]));
+                        if (empty($allowed)) {
+                            $query->whereRaw('1 = 0');
+                        } else {
+                            $query->whereIn('id', $allowed);
+                        }
+                    } else {
+                        // Subordinate users see only themselves
+                        $query->where('id', $authUser->id);
+                    }
                 }
             }
         }

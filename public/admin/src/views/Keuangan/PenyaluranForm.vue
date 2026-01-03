@@ -19,25 +19,20 @@
         <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
           <!-- Nominal -->
           <div class="lg:col-span-1">
-            <label
-              class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
-            >
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Nominal <span class="text-red-500">*</span>
             </label>
             <div class="relative">
-              <span
-                class="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400"
-              >
-                Rp
-              </span>
               <input
-                type="text"
-                v-model="formData.amount"
-                @input="formatAmount"
-                placeholder="Masukkan nominal penyaluran"
+                type="number"
+                v-model.number="formData.amount"
+                placeholder="Masukkan nominal"
+                min="1"
+                step="1"
                 required
-                class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-12 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pr-24 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
               />
+              <span class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-4 top-1/2 dark:text-gray-400 text-sm">{{ formattedAmountDisplay }}</span>
             </div>
           </div>
 
@@ -419,7 +414,7 @@ const selectedFiles = ref<File[]>([])
 
 // Form data
 const formData = reactive({
-  amount: '',
+  amount: null as number | null,
   program: '',
   submissionType: 'program',
   pic: '',
@@ -436,6 +431,11 @@ const formData = reactive({
 
 const creditTotal = ref<number>(0)
 const formattedCreditTotal = computed(() => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(creditTotal.value || 0))
+
+const formattedAmountDisplay = computed(() => {
+  const v = Number(formData.amount || 0)
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(v)
+})
 
 const loadCreditForType = async (type: string) => {
   try {
@@ -457,21 +457,7 @@ const loadCreditForType = async (type: string) => {
 }
 
 // Format amount input (remove non-numeric characters except dots and commas)
-const formatAmount = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  let value = target.value.replace(/[^\d.,]/g, '')
-  
-  // Replace comma with dot for decimal
-  value = value.replace(/,/g, '.')
-  
-  // Only allow one dot
-  const parts = value.split('.')
-  if (parts.length > 2) {
-    value = parts[0] + '.' + parts.slice(1).join('')
-  }
-  
-  formData.amount = value
-}
+  // formatAmount removed — using native number input with v-model.number
 
 // Handle file selection
 const handleFileSelect = (event: Event) => {
@@ -535,7 +521,7 @@ const loadData = async () => {
 
       const p = json.data
       // Map fields into formData
-      formData.amount = p.amount != null ? String(p.amount) : formData.amount
+      formData.amount = p.amount != null ? Number(p.amount) : formData.amount
       formData.program = p.program_name || (p.pengajuan && (p.pengajuan.program?.nama_program || p.pengajuan.program?.nama)) || formData.program
       formData.pic = p.pic || (p.pengajuan && p.pengajuan.fundraiser ? p.pengajuan.fundraiser.name : formData.pic)
       formData.village = p.village || p.kelurahan || formData.village
@@ -657,7 +643,7 @@ onMounted(async () => {
         formData.submissionType = d.submission_type || formData.submissionType
         formData.program = (d.program && (d.program.nama || d.program.nama_program)) || formData.program
         formData.pic = d.fundraiser ? d.fundraiser.name : formData.pic
-        formData.amount = d.amount || formData.amount
+        formData.amount = (typeof d.amount !== 'undefined' && d.amount !== null) ? Number(d.amount) : formData.amount
         formData.report = d.purpose || formData.report
       }
     } catch (e) {

@@ -146,7 +146,14 @@ interface DonaturRow {
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { fetchUser, hasPermission, isAdmin } = useAuth()
+const { fetchUser, hasPermission, isAdmin, user } = useAuth()
+
+const isFundraiser = computed(() => {
+  const r = (user.value && (user.value as any).role) || null
+  const name = r ? ((r.name && String(r.name)) || String(r)) : ''
+  const n = String(name || '').trim().toLowerCase()
+  return n === 'fundrising' || n === 'fundraising' || n === 'fundraiser'
+})
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Donatur')
 const canCreate = computed(() => isAdmin() || hasPermission('create donatur'))
 const canUpdate = computed(() => isAdmin() || hasPermission('update donatur'))
@@ -358,7 +365,14 @@ const fetchData = async () => {
     if (filterNama.value) {
       params.append('search', filterNama.value)
     }
-    if (filterPic.value) {
+
+    // If current user is a fundraiser (and not admin), restrict list to their PIC
+    if (!isAdmin() && isFundraiser.value && user.value && (user.value as any).id) {
+      const uid = String((user.value as any).id)
+      params.append('pic', uid)
+      // reflect in UI filter if not explicitly set
+      if (!filterPic.value) filterPic.value = uid
+    } else if (filterPic.value) {
       params.append('pic', filterPic.value)
     }
     if (filterJenis.value && filterJenis.value.length) {

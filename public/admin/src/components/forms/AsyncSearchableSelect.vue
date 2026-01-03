@@ -151,7 +151,23 @@ const emit = defineEmits<{
 }>()
 
 // determine admin status to optionally limit donatur results to assigned branches
-const { isAdmin } = useAuth()
+const { isAdmin, fetchUser, user } = useAuth()
+
+// detect fundraiser-like role names to force pic filter
+const isFundraiser = computed(() => {
+  const r = (user.value && (user.value as any).role) || null
+  const name = r ? ((r.name && String(r.name)) || String(r)) : ''
+  const n = String(name || '').trim().toLowerCase()
+  return n === 'fundrising' || n === 'fundraising' || n === 'fundraiser'
+})
+
+// detect director of fundraising role (e.g., "Direktur Fundrising")
+const isDirectorFundraising = computed(() => {
+  const r = (user.value && (user.value as any).role) || null
+  const name = r ? ((r.name && String(r.name)) || String(r)) : ''
+  const n = String(name || '').trim().toLowerCase()
+  return n.includes('direktur') && (n.includes('fund') || n.includes('fundr'))
+})
 
 const isOpen = ref(false)
 const loading = ref(false)
@@ -187,8 +203,19 @@ const fetchPage = async (q = '', p = 1) => {
     params.append('page', String(p))
 
     // If fetching donatur and user is not admin, request only assigned kantor cabang
-    if (props.fetchUrl && props.fetchUrl.includes('/admin/api/donatur') && !isAdmin()) {
+    // but DO NOT add only_assigned for director of fundraising so backend
+    // visibility rules can return donors of their subordinates.
+    if (
+      props.fetchUrl &&
+      props.fetchUrl.includes('/admin/api/donatur') &&
+      !isAdmin() &&
+      !isDirectorFundraising.value
+    ) {
       params.append('only_assigned', '1')
+      // If the current user is a fundraiser, further restrict to their PIC only
+      if (isFundraiser.value && user.value && (user.value as any).id) {
+        params.append('pic', String((user.value as any).id))
+      }
     }
     const res = await fetch(`${props.fetchUrl}?${params.toString()}`, { credentials: 'same-origin' })
     if (!res.ok) throw new Error('Failed to fetch')
@@ -310,6 +337,14 @@ onMounted(() => {
   if (props.modelValue) {
     fetchById(props.modelValue)
   }
+  // Ensure current user is loaded so isAdmin() and isFundraiser work reliably
+  ;(async () => {
+    try {
+      await fetchUser()
+    } catch (e) {
+      // ignore
+    }
+  })()
 })
 
 onBeforeUnmount(() => {

@@ -93,9 +93,15 @@ class DonaturController extends Controller
         // assigned branches (via pivot) or their primary kantor_cabang_id.
         if ($request->boolean('only_assigned') && auth()->check()) {
             try {
-                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+                $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
             } catch (\Exception $e) {
                 $assignedIds = [];
+            }
+
+            // If the pivot assignment is empty but the user has a primary
+            // `kantor_cabang_id`, treat that as an assigned branch as well.
+            if (empty($assignedIds) && $user->kantor_cabang_id) {
+                $assignedIds = [$user->kantor_cabang_id];
             }
 
             if (! empty($assignedIds)) {
@@ -123,9 +129,13 @@ class DonaturController extends Controller
                 $skipVisibility = true;
             } else {
                 try {
-                    $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+                    $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
                 } catch (\Exception $e) {
                     $assignedIds = [];
+                }
+
+                if (empty($assignedIds) && $user->kantor_cabang_id) {
+                    $assignedIds = [$user->kantor_cabang_id];
                 }
 
                 // Allow if user is assigned to the branch or their primary matches
@@ -145,16 +155,60 @@ class DonaturController extends Controller
             // Users who are assigned to branches should see donaturs in
             // those branches regardless of leader/subordinate status.
             try {
-                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+                $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
             } catch (\Exception $e) {
                 $assignedIds = [];
             }
+
+            if (empty($assignedIds) && $user->kantor_cabang_id) {
+                $assignedIds = [$user->kantor_cabang_id];
+            }
             $hasSubordinates = $user->subordinates()->exists();
 
-            // If the user's leader_id is NULL (no leader), restrict them
-            // to only see donaturs where they are PIC. This overrides
-            // other visibility widening logic.
-            if (is_null($user->leader_id)) {
+            // If the user's leader_id is NULL and they have NO subordinates,
+            // restrict them to only see donaturs where they are PIC. If they
+            // DO have subordinates (e.g., Director), allow visibility over
+            // descendants per usual rules. Additionally, users with the
+            // "Admin Cabang" role should be able to view all donaturs in
+            // their assigned branches.
+            // Determine whether user has 'Admin Cabang' role by querying
+            // role names from the DB (robust against different shapes).
+            $isAdminCabang = false;
+            $userRoleNames = [];
+            try {
+                $userRoleNames = $user->roles()->pluck('name')->map(function ($n) {
+                    return strtolower(trim($n));
+                })->toArray();
+                $isAdminCabang = in_array('admin cabang', $userRoleNames, true);
+            } catch (\Throwable $e) {
+                // fall back to any in-memory roles property
+                $rolesSource = $user->roles ?? ($user->role ? [$user->role] : []);
+                if (is_array($rolesSource)) {
+                    foreach ($rolesSource as $r) {
+                        $name = is_string($r) ? $r : ($r->name ?? null);
+                        if ($name && strtolower(trim($name)) === 'admin cabang') {
+                            $isAdminCabang = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Log user role names and primary kantor_cabang for debugging
+            try {
+                \Log::debug('DonaturController@index user roles', [
+                    'user_id' => $user->id ?? null,
+                    'role_names' => $userRoleNames,
+                    'primary_kantor_cabang_id' => $user->kantor_cabang_id ?? null,
+                ]);
+            } catch (\Throwable $e) {
+                // ignore logging errors
+            }
+
+            if (! empty($assignedIds) && $isAdminCabang) {
+                // Admin Cabang: show all donaturs in the assigned branches
+                $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
+            } elseif (is_null($user->leader_id) && ! $hasSubordinates) {
                 $query->where('pic', $user->id);
             } elseif (! empty($assignedIds)) {
                 if ($hasSubordinates) {
@@ -174,6 +228,21 @@ class DonaturController extends Controller
                     });
                 }
             } else {
+                // Log visibility decision for debugging Admin Cabang issues
+                try {
+                    \Log::debug('DonaturController@index visibility decision', [
+                        'user_id' => $user->id ?? null,
+                        'is_admin' => $isAdmin,
+                        'is_admin_cabang' => $isAdminCabang ?? false,
+                        'has_subordinates' => $hasSubordinates,
+                        'assigned_branch_ids' => $assignedIds ?? [],
+                        'request_only_assigned' => $request->boolean('only_assigned'),
+                        'request_kantor_cabang_id' => $request->input('kantor_cabang_id'),
+                        'skip_visibility' => $skipVisibility,
+                    ]);
+                } catch (\Throwable $e) {
+                    // ignore logging errors
+                }
                 // No explicit branch assignments: fall back to previous rules
                 if (! $hasSubordinates) {
                     // No subordinates: restrict to donaturs where caller is PIC only
@@ -255,7 +324,7 @@ class DonaturController extends Controller
             // Helpful debug information for visibility issues in frontend
             $assignedIdsForLog = [];
             try {
-                $assignedIdsForLog = auth()->user() ? auth()->user()->kantorCabangs()->pluck('kantor_cabang.id')->toArray() : [];
+                $assignedIdsForLog = auth()->user() ? auth()->user()->kantorCabangs()->pluck('id')->toArray() : [];
             } catch (\Throwable $_) {
                 $assignedIdsForLog = [];
             }
@@ -358,18 +427,36 @@ class DonaturController extends Controller
 
         if (! $this->userIsAdmin($user)) {
             // Allow visibility when user is assigned to the donor's kantor cabang
-            try {
-                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
-            } catch (\Exception $e) {
-                $assignedIds = [];
-            }
+                try {
+                    $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
+                } catch (\Exception $e) {
+                    $assignedIds = [];
+                }
+
+                if (empty($assignedIds) && $user->kantor_cabang_id) {
+                    $assignedIds = [$user->kantor_cabang_id];
+                }
 
             $hasSubordinates = $user->subordinates()->exists();
 
-            // If the user's leader_id is NULL (no leader), restrict them
-            // to only see donaturs where they are PIC. This overrides other
-            // visibility widening logic for show.
-            if (is_null($user->leader_id)) {
+            // Detect 'Admin Cabang' role in a case-insensitive manner.
+            $isAdminCabang = false;
+            $rolesSource = $user->roles ?? ($user->role ? [$user->role] : []);
+            if (is_array($rolesSource)) {
+                foreach ($rolesSource as $r) {
+                    $name = is_string($r) ? $r : ($r->name ?? null);
+                    if ($name && strtolower(trim($name)) === 'admin cabang') {
+                        $isAdminCabang = true;
+                        break;
+                    }
+                }
+            }
+
+            // Admin Cabang users with assigned branches can view all donaturs
+            // in those branches. Do that check before falling back to PIC-only.
+            if (! empty($assignedIds) && $isAdminCabang) {
+                $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
+            } elseif (is_null($user->leader_id) && ! $hasSubordinates) {
                 $query->where('pic', $user->id);
             } elseif (! empty($assignedIds)) {
                 if (! $hasSubordinates) {
@@ -428,11 +515,12 @@ class DonaturController extends Controller
         }
 
         if (! $this->userIsAdmin($user)) {
-            // If user's leader_id is NULL, only allow updates where caller is PIC
-            if (is_null($user->leader_id)) {
-                $query->where('pic', $user->id);
-            } elseif (! $user->subordinates()->exists()) {
-                // No subordinates: only allow update when caller is PIC
+            // If the user has no subordinates, restrict updates to donaturs
+            // where they are PIC. If they do have subordinates (e.g. leader
+            // or director), allow updates for descendants.
+            $hasSubordinates = $user->subordinates()->exists();
+
+            if (! $hasSubordinates) {
                 $query->where('pic', $user->id);
             } else {
                 $allowed = User::descendantIdsOf($user->id);
@@ -512,11 +600,12 @@ class DonaturController extends Controller
         }
 
         if (! $this->userIsAdmin($user)) {
-            // If user's leader_id is NULL, only allow delete where caller is PIC
-            if (is_null($user->leader_id)) {
-                $query->where('pic', $user->id);
-            } elseif (! $user->subordinates()->exists()) {
-                // No subordinates: only allow delete when caller is PIC
+            // If the user has no subordinates, restrict deletes to donaturs
+            // where they are PIC. Leaders with subordinates may delete
+            // donaturs owned by descendants.
+            $hasSubordinates = $user->subordinates()->exists();
+
+            if (! $hasSubordinates) {
                 $query->where('pic', $user->id);
             } else {
                 $allowed = User::descendantIdsOf($user->id);

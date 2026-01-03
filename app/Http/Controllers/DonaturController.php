@@ -205,6 +205,16 @@ class DonaturController extends Controller
                 // ignore logging errors
             }
 
+            // Detect if user is Director of Fundraising (role name variants)
+            $isDirectorFundrising = false;
+            $directorNames = ['direktur fundrising', 'direktur fundraising'];
+            foreach ($userRoleNames as $rn) {
+                if (in_array($rn, $directorNames, true)) {
+                    $isDirectorFundrising = true;
+                    break;
+                }
+            }
+
             if (! empty($assignedIds) && $isAdminCabang) {
                 // Admin Cabang: show all donaturs in the assigned branches
                 $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
@@ -212,13 +222,19 @@ class DonaturController extends Controller
                 $query->where('pic', $user->id);
             } elseif (! empty($assignedIds)) {
                 if ($hasSubordinates) {
-                    // Leaders with branch assignments: show donaturs in assigned
-                    // branches OR donaturs where PIC is within user's descendants.
+                    // Leaders with branch assignments: normally show donaturs in
+                    // assigned branches OR donaturs where PIC is within user's descendants.
+                    // However, Directors of Fundraising should only see donaturs
+                    // where PIC is themselves or a descendant (no full-branch view).
                     $allowed = User::descendantIdsOf($user->id);
-                    $query->where(function ($q) use ($assignedIds, $allowed) {
-                        $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
-                          ->orWhereIn('donaturs.pic', $allowed);
-                    });
+                    if ($isDirectorFundrising) {
+                        $query->whereIn('donaturs.pic', $allowed);
+                    } else {
+                        $query->where(function ($q) use ($assignedIds, $allowed) {
+                            $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
+                              ->orWhereIn('donaturs.pic', $allowed);
+                        });
+                    }
                 } else {
                     // Non-leaders with branch assignments: show donaturs in
                     // assigned branches OR donaturs where caller is PIC.

@@ -41,30 +41,60 @@ class TransaksiController extends Controller
         if (! $isAdmin) {
             // Restrict by kantor cabang assignments (pivot `kantor_cabang_user`) when available.
             try {
-                    $assignedBranchIds = $user->kantorCabangs()->pluck('id')->toArray();
+                $assignedBranchIds = $user->kantorCabangs()->pluck('id')->toArray();
             } catch (\Exception $e) {
                 $assignedBranchIds = [];
             }
 
-            if (! empty($assignedBranchIds)) {
-                $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
-            } elseif ($user->kantor_cabang_id) {
-                // Fallback to the user's primary kantor_cabang_id
-                $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
-            } else {
-                // If user has no branch assignment and no primary branch, keep query but
-                // subsequent visibility filter will still apply (created_by / pic).
+            // Fallback to primary branch if pivot empty
+            if (empty($assignedBranchIds) && $user->kantor_cabang_id) {
+                $assignedBranchIds = [$user->kantor_cabang_id];
             }
 
-            $allowed = User::descendantIdsOf($user->id);
+            // Detect Admin Cabang role via DB-backed role names
+            $isAdminCabang = false;
+            $userRoleNames = [];
+            try {
+                $userRoleNames = $user->roles()->pluck('name')->map(fn ($n) => strtolower(trim($n)))->toArray();
+                $isAdminCabang = in_array('admin cabang', $userRoleNames, true);
+            } catch (\Throwable $e) {
+                // ignore
+            }
 
-            // Allow users to see transaksis they created, their subordinates created,
-            // or any transaksi where the related donatur's PIC is the user or a subordinate.
-            $query->where(function ($q) use ($allowed, $user) {
-                // Qualify column to avoid ambiguity when query uses joins
-                $q->whereIn('transaksis.created_by', $allowed)
-                    ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
-            });
+            // If Admin Cabang with assigned branches, allow viewing all transaksis
+            // in those branches and skip descendant-created_by filtering.
+            if (! empty($assignedBranchIds) && $isAdminCabang) {
+                $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
+            } else {
+                if (! empty($assignedBranchIds)) {
+                    $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
+                } elseif ($user->kantor_cabang_id) {
+                    $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
+                }
+
+                $allowed = User::descendantIdsOf($user->id);
+
+                // Allow users to see transaksis they created, their subordinates created,
+                // or any transaksi where the related donatur's PIC is the user or a subordinate.
+                $query->where(function ($q) use ($allowed, $user) {
+                    // Qualify column to avoid ambiguity when query uses joins
+                    $q->whereIn('transaksis.created_by', $allowed)
+                        ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
+                });
+            }
+
+            // Log role/assignment for debugging
+            try {
+                \Log::debug('TransaksiController@index visibility', [
+                    'user_id' => $user->id ?? null,
+                    'is_admin' => $isAdmin,
+                    'is_admin_cabang' => $isAdminCabang,
+                    'assigned_branch_ids' => $assignedBranchIds,
+                    'role_names' => $userRoleNames,
+                ]);
+            } catch (\Throwable $e) {
+                // ignore
+            }
         }
 
         if ($request->filled('search')) {
@@ -265,18 +295,34 @@ class TransaksiController extends Controller
                 $assignedBranchIds = [];
             }
 
-            if (! empty($assignedBranchIds)) {
-                $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
-            } elseif ($user->kantor_cabang_id) {
-                $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
+            if (empty($assignedBranchIds) && $user->kantor_cabang_id) {
+                $assignedBranchIds = [$user->kantor_cabang_id];
             }
 
-            $allowed = User::descendantIdsOf($user->id);
+            $isAdminCabang = false;
+            try {
+                $userRoleNames = $user->roles()->pluck('name')->map(fn ($n) => strtolower(trim($n)))->toArray();
+                $isAdminCabang = in_array('admin cabang', $userRoleNames, true);
+            } catch (\Throwable $e) {
+                $isAdminCabang = false;
+            }
 
-            $query->where(function ($q) use ($allowed, $user) {
-                $q->whereIn('transaksis.created_by', $allowed)
-                    ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
-            });
+            if (! empty($assignedBranchIds) && $isAdminCabang) {
+                $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
+            } else {
+                if (! empty($assignedBranchIds)) {
+                    $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
+                } elseif ($user->kantor_cabang_id) {
+                    $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
+                }
+
+                $allowed = User::descendantIdsOf($user->id);
+
+                $query->where(function ($q) use ($allowed, $user) {
+                    $q->whereIn('transaksis.created_by', $allowed)
+                        ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
+                });
+            }
         }
 
         // Apply same filters as index
@@ -547,12 +593,36 @@ class TransaksiController extends Controller
 
         $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
-            $allowed = User::descendantIdsOf($user->id);
-            $query->where(function ($q) use ($allowed, $user) {
-                // Qualify column to avoid ambiguity when query uses joins
-                $q->whereIn('transaksis.created_by', $allowed)
-                    ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
-            });
+            try {
+                $assignedBranchIds = $user->kantorCabangs()->pluck('id')->toArray();
+            } catch (\Exception $e) {
+                $assignedBranchIds = [];
+            }
+
+            if (empty($assignedBranchIds) && $user->kantor_cabang_id) {
+                $assignedBranchIds = [$user->kantor_cabang_id];
+            }
+
+            $isAdminCabang = false;
+            $userRoleNames = [];
+            try {
+                $userRoleNames = $user->roles()->pluck('name')->map(fn ($n) => strtolower(trim($n)))->toArray();
+                $isAdminCabang = in_array('admin cabang', $userRoleNames, true);
+            } catch (\Throwable $e) {
+                // ignore
+            }
+
+            if (! empty($assignedBranchIds) && $isAdminCabang) {
+                // Admin Cabang: allow viewing by branch only
+                $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
+            } else {
+                $allowed = User::descendantIdsOf($user->id);
+                $query->where(function ($q) use ($allowed, $user) {
+                    // Qualify column to avoid ambiguity when query uses joins
+                    $q->whereIn('transaksis.created_by', $allowed)
+                        ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
+                });
+            }
         }
 
         $transaksi = $query->find($id);

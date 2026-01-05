@@ -469,12 +469,12 @@ class DonaturController extends Controller
                 }
             }
 
-            // Admin Cabang users with assigned branches can view all donaturs
-            // in those branches. Do that check before falling back to PIC-only.
+            // If user has assigned branches, allow viewing donaturs in those branches
+            // (Admin Cabang users can view all in assigned branches; non-admins
+            // with assignments see donors in those branches or donors where they
+            // are PIC / their descendants depending on leadership).
             if (! empty($assignedIds) && $isAdminCabang) {
                 $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
-            } elseif (is_null($user->leader_id) && ! $hasSubordinates) {
-                $query->where('pic', $user->id);
             } elseif (! empty($assignedIds)) {
                 if (! $hasSubordinates) {
                     // Non-leaders with branch assignments: allow if donor is in assigned branch or caller is PIC
@@ -490,6 +490,9 @@ class DonaturController extends Controller
                           ->orWhereIn('donaturs.pic', $allowed);
                     });
                 }
+            } elseif (is_null($user->leader_id) && ! $hasSubordinates) {
+                // Users without a leader and without subordinates: restrict to PIC only
+                $query->where('pic', $user->id);
             } else {
                 // No assigned branches: fall back to previous PIC/descendant rules
                 if (! $hasSubordinates) {
@@ -501,9 +504,43 @@ class DonaturController extends Controller
                     });
                 }
             }
+            try {
+                \Log::debug('DonaturController@show visibility debug', [
+                    'user_id' => $user->id ?? null,
+                    'is_admin' => $this->userIsAdmin($user),
+                    'assigned_branch_ids' => $assignedIds ?? [],
+                    'requested_id' => $id,
+                ]);
+            } catch (\Throwable $_) {
+                // ignore
+            }
+
+        }
+
+        try {
+            \Log::debug('DonaturController@show sql', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+            ]);
+        } catch (\Throwable $_) {
+            // ignore
         }
 
         $donatur = $query->find($id);
+
+        try {
+            if ($donatur) {
+                \Log::debug('DonaturController@show found', [
+                    'id' => $donatur->id,
+                    'pic' => $donatur->pic,
+                    'kantor_cabang_id' => $donatur->kantor_cabang_id,
+                ]);
+            } else {
+                \Log::debug('DonaturController@show not found after query', ['requested_id' => $id]);
+            }
+        } catch (\Throwable $_) {
+            // ignore
+        }
 
         if (! $donatur) {
             return response()->json([

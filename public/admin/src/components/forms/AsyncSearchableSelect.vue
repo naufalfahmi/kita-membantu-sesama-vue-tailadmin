@@ -148,6 +148,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   'update:search-input': [value: string]
+  'fetched': [item: any]
 }>()
 
 // determine admin status to optionally limit donatur results to assigned branches
@@ -266,6 +267,13 @@ const fetchById = async (id: string) => {
       // include into options if not exists
       if (!options.value.find((o) => o.value === opt.value)) {
         options.value.unshift(opt)
+      }
+      // emit full fetched item so parent can use the full payload without
+      // needing to fetch it separately
+      try {
+        emit('fetched', item)
+      } catch (e) {
+        // ignore
       }
     }
   } catch (e) {

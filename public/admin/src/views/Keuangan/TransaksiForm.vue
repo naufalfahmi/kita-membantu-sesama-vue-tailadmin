@@ -54,6 +54,7 @@
               v-model="formData.donorId"
               fetch-url="/admin/api/donatur"
               placeholder="Donatur"
+              @fetched="onDonorFetched"
             />
           </div>
 
@@ -523,13 +524,51 @@ onMounted(async () => {
 })
 
 // Watch donor selection and load donor details (to show fundraiser)
+const lastFetchedDonorId = ref<string | null>(null)
+const pendingDonorFetch = ref<AbortController | null>(null)
+
 watch(() => formData.donorId, async (newDonorId) => {
+  // reset display and fundraiser id when donor cleared
+  if (!newDonorId) {
+    fundraiserDisplay.value = null
+    formData.fundraiserId = ''
+    lastFetchedDonorId.value = null
+    return
+  }
+
+  // quick-path: if already fetched recently, skip
+  if (lastFetchedDonorId.value && String(lastFetchedDonorId.value) === String(newDonorId)) {
+    return
+  }
+
+  // wait briefly to allow AsyncSearchableSelect to fetch-by-id and emit 'fetched'
+  // (avoid duplicate parallel requests). If after the short wait no fetched
+  // event arrived, perform the fetch here.
   fundraiserDisplay.value = null
   formData.fundraiserId = ''
-  if (!newDonorId) return
+
+  const waitMs = 150
+  await new Promise((resolve) => setTimeout(resolve, waitMs))
+
+  if (lastFetchedDonorId.value && String(lastFetchedDonorId.value) === String(newDonorId)) {
+    return
+  }
+
+  // mark as fetching so subsequent changes can be guarded
+  lastFetchedDonorId.value = String(newDonorId)
+
+  // create abort controller so onDonorFetched can cancel this request
+  const controller = new AbortController()
+  pendingDonorFetch.value = controller
+
   try {
-    const res = await fetch(`/admin/api/donatur/${newDonorId}`, { credentials: 'same-origin' })
-    if (!res.ok) return
+    const res = await fetch(`/admin/api/donatur/${newDonorId}`, { credentials: 'same-origin', signal: controller.signal })
+    if (!res.ok) {
+      // clear last fetched on failure so a retry is possible
+      lastFetchedDonorId.value = null
+      pendingDonorFetch.value = null
+      return
+    }
     const json = await res.json()
     if (json.success && json.data) {
       const donor = json.data
@@ -548,10 +587,45 @@ watch(() => formData.donorId, async (newDonorId) => {
         formData.mitraId = String(donor.mitra_id)
       }
     }
-  } catch (e) {
-    console.error('Failed to load donor details:', e)
+  } catch (e: any) {
+    if (e && e.name === 'AbortError') {
+      // aborted by onDonorFetched, ignore
+    } else {
+      console.error('Failed to load donor details:', e)
+      lastFetchedDonorId.value = null
+    }
+  } finally {
+    pendingDonorFetch.value = null
   }
 })
+
+// Handler for AsyncSearchableSelect fetch-by-id result to avoid duplicate fetches
+const onDonorFetched = (donor: any) => {
+  if (!donor || !donor.id) return
+  lastFetchedDonorId.value = String(donor.id)
+  // abort any pending controller initiated by the watcher fetch
+  try {
+    if (pendingDonorFetch.value) {
+      pendingDonorFetch.value.abort()
+    }
+  } catch (e) {
+    // ignore
+  }
+  pendingDonorFetch.value = null
+  // donor.pic_user contains PIC info; use as fundraiser if present
+  if (donor.pic_user) {
+    fundraiserDisplay.value = { id: donor.pic_user.id, name: donor.pic_user.nama }
+    formData.fundraiserId = donor.pic_user.id
+  } else if (donor.pic) {
+    fundraiserDisplay.value = { id: donor.pic, name: '' }
+    formData.fundraiserId = donor.pic
+  }
+  if (donor.mitra && donor.mitra.id) {
+    formData.mitraId = String(donor.mitra.id)
+  } else if (donor.mitra_id) {
+    formData.mitraId = String(donor.mitra_id)
+  }
+}
 
 // Watch program selection and nominal to compute breakdown
 const computeProgramBreakdown = () => {

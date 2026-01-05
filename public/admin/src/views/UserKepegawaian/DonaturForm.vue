@@ -44,14 +44,31 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Fundraiser
             </label>
-            <SearchableSelect
-              v-model="formData.pic"
-              :options="picOptions"
-              placeholder="Pilih Fundraiser"
-              :search-input="picSearchInput"
-              @update:search-input="picSearchInput = $event"
-              :disabled="isFundrising"
-            />
+            <div class="flex items-center gap-3">
+              <div class="flex-1">
+                <SearchableSelect
+                  v-model="formData.pic"
+                  :options="picOptions"
+                  placeholder="Pilih Fundraiser"
+                  :search-input="picSearchInput"
+                  @update:search-input="picSearchInput = $event"
+                  :disabled="isFundrising"
+                />
+              </div>
+
+              <button
+                v-if="formData.pic"
+                type="button"
+                title="Hapus Fundraiser"
+                @click.stop="clearPic"
+                class="h-10 w-10 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div>
@@ -360,6 +377,11 @@ const clearMitra = () => {
   // and clear any search input state
   formData.mitra_id = null
   mitraSearchInput.value = ''
+}
+
+const clearPic = () => {
+  formData.pic = null
+  picSearchInput.value = ''
 }
 
 const fetchReferenceData = async () => {

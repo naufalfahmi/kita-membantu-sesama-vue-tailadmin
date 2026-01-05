@@ -561,6 +561,13 @@ const columnDefs = computed(() => {
         flex: 1,
         valueFormatter: (params: any) => params.value || '-',
       },
+      {
+        headerName: 'Mitra',
+        field: 'mitra',
+        sortable: true,
+        flex: 1,
+        valueFormatter: (params: any) => params.value || '-',
+      },
           {
             headerName: 'Fundrising',
             field: 'fundraiser',
@@ -625,6 +632,13 @@ const columnDefs = computed(() => {
     {
       headerName: 'Kantor Cabang',
       field: 'kantor_cabang',
+      sortable: true,
+      // flex: 1,
+      valueFormatter: (params: any) => params.value || '-',
+    },
+    {
+      headerName: 'Mitra',
+      field: 'mitra',
       sortable: true,
       // flex: 1,
       valueFormatter: (params: any) => params.value || '-',

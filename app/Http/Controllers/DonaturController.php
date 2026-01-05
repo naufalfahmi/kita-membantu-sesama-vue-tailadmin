@@ -62,7 +62,7 @@ class DonaturController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Donatur::with(['kantorCabang:id,nama', 'picUser:id,name']);
+        $query = Donatur::with(['kantorCabang:id,nama', 'picUser:id,name', 'mitra:id,nama']);
 
         // Filter berdasarkan user yang login (kecuali admin/superadmin)
         $user = auth()->user();
@@ -93,7 +93,7 @@ class DonaturController extends Controller
         // assigned branches (via pivot) or their primary kantor_cabang_id.
         if ($request->boolean('only_assigned') && auth()->check()) {
             try {
-                $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
             } catch (\Exception $e) {
                 $assignedIds = [];
             }
@@ -129,7 +129,7 @@ class DonaturController extends Controller
                 $skipVisibility = true;
             } else {
                 try {
-                    $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
+                    $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
                 } catch (\Exception $e) {
                     $assignedIds = [];
                 }
@@ -155,7 +155,7 @@ class DonaturController extends Controller
             // Users who are assigned to branches should see donaturs in
             // those branches regardless of leader/subordinate status.
             try {
-                $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
             } catch (\Exception $e) {
                 $assignedIds = [];
             }
@@ -340,7 +340,7 @@ class DonaturController extends Controller
             // Helpful debug information for visibility issues in frontend
             $assignedIdsForLog = [];
             try {
-                $assignedIdsForLog = auth()->user() ? auth()->user()->kantorCabangs()->pluck('id')->toArray() : [];
+                $assignedIdsForLog = auth()->user() ? auth()->user()->kantorCabangs()->pluck('kantor_cabang.id')->toArray() : [];
             } catch (\Throwable $_) {
                 $assignedIdsForLog = [];
             }
@@ -389,6 +389,7 @@ class DonaturController extends Controller
             'tanggal_lahir' => 'nullable|date',
             'status' => ['nullable', 'string', Rule::in($this->allowedStatuses)],
             'kantor_cabang_id' => 'nullable|uuid|exists:kantor_cabang,id',
+            'mitra_id' => 'nullable|uuid|exists:mitras,id',
         ]);
 
         if ($validator->fails()) {
@@ -417,7 +418,7 @@ class DonaturController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Donatur berhasil ditambahkan',
-                'data' => $this->transformDonatur($donatur->fresh(['kantorCabang:id,nama','picUser:id,name'])),
+                'data' => $this->transformDonatur($donatur->fresh(['kantorCabang:id,nama','picUser:id,name','mitra:id,nama'])),
             ], 201);
         } catch (\Throwable $th) {
             return response()->json([
@@ -444,7 +445,7 @@ class DonaturController extends Controller
         if (! $this->userIsAdmin($user)) {
             // Allow visibility when user is assigned to the donor's kantor cabang
                 try {
-                    $assignedIds = $user->kantorCabangs()->pluck('id')->toArray();
+                    $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
                 } catch (\Exception $e) {
                     $assignedIds = [];
                 }
@@ -572,6 +573,7 @@ class DonaturController extends Controller
             'tanggal_lahir' => 'nullable|date',
             'status' => ['nullable', 'string', Rule::in($this->allowedStatuses)],
             'kantor_cabang_id' => 'nullable|uuid|exists:kantor_cabang,id',
+            'mitra_id' => 'nullable|uuid|exists:mitras,id',
         ]);
 
         if ($validator->fails()) {
@@ -591,7 +593,7 @@ class DonaturController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Donatur berhasil diperbarui',
-                'data' => $this->transformDonatur($donatur->fresh(['kantorCabang:id,nama','picUser:id,name'])),
+                'data' => $this->transformDonatur($donatur->fresh(['kantorCabang:id,nama','picUser:id,name','mitra:id,nama'])),
             ]);
         } catch (\Throwable $th) {
             return response()->json([
@@ -685,6 +687,11 @@ class DonaturController extends Controller
                 'id' => $donatur->kantorCabang->id,
                 'nama' => $donatur->kantorCabang->nama,
             ] : null,
+            'mitra_id' => $donatur->mitra_id,
+            'mitra' => $donatur->mitra ? [
+                'id' => $donatur->mitra->id,
+                'nama' => $donatur->mitra->nama,
+            ] : null,
             'tanggal_dibuat' => optional($donatur->created_at)->toDateString(),
             'created_at' => optional($donatur->created_at)->toIso8601String(),
             'updated_at' => optional($donatur->updated_at)->toIso8601String(),
@@ -708,7 +715,7 @@ class DonaturController extends Controller
             $data['alamat'] = null;
         }
 
-        $nullableKeys = ['kode', 'pic', 'alamat', 'provinsi', 'kota_kab', 'kecamatan', 'kelurahan', 'no_handphone', 'email', 'tanggal_lahir', 'kantor_cabang_id', 'status'];
+        $nullableKeys = ['kode', 'pic', 'alamat', 'provinsi', 'kota_kab', 'kecamatan', 'kelurahan', 'no_handphone', 'email', 'tanggal_lahir', 'kantor_cabang_id', 'status', 'mitra_id'];
 
         foreach ($nullableKeys as $key) {
             if (array_key_exists($key, $data)) {

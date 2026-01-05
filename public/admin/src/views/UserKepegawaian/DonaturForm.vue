@@ -56,6 +56,19 @@
 
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Mitra
+            </label>
+            <SearchableSelect
+              v-model="formData.mitra_id"
+              :options="mitraSelectOptions"
+              placeholder="Pilih Mitra (opsional)"
+              :search-input="mitraSearchInput"
+              @update:search-input="mitraSearchInput = $event"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
               Nama <span class="text-red-500">*</span>
             </label>
             <input
@@ -265,8 +278,10 @@ interface KaryawanOption {
 
 const kantorCabangOptions = ref<KantorCabangOption[]>([])
 const karyawanOptions = ref<KaryawanOption[]>([])
+const mitraOptions = ref<any[]>([])
 const kantorCabangSearchInput = ref('')
 const picSearchInput = ref('')
+const mitraSearchInput = ref('')
 const statusSearchInput = ref('')
 const isSubmitting = ref(false)
 
@@ -284,11 +299,19 @@ const picOptions = computed(() =>
   }))
 )
 
+const mitraSelectOptions = computed(() =>
+  mitraOptions.value.map((item: any) => ({
+    value: String(item.id),
+    label: item.nama || item.name || '-',
+  }))
+)
+
 const formData = reactive({
   kode: '',
   nama: '',
   jenis_donatur: [] as string[],
   pic: '',
+  mitra_id: '',
   provinsi: '',
   kota_kab: '',
   kecamatan: '',
@@ -365,6 +388,20 @@ const fetchReferenceData = async () => {
       }
     }
 
+    // Fetch mitra list for optional association
+    try {
+      const mitraRes = await fetch('/admin/api/mitra?per_page=1000', { credentials: 'same-origin' })
+      if (mitraRes.ok) {
+        const json = await mitraRes.json()
+        if (json.success) {
+          const payload = Array.isArray(json.data) ? json.data : json.data?.data
+          mitraOptions.value = Array.isArray(payload) ? payload : []
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
+
     // If backend returned no karyawan (e.g. user has no subordinates), ensure
     // the current user is available as a PIC option so the select isn't empty.
     if (Array.isArray(karyawanOptions.value) && karyawanOptions.value.length === 0 && currentUser.value) {
@@ -395,6 +432,7 @@ const loadData = async (id: string) => {
       formData.jenis_donatur = Array.isArray(data.jenis_donatur) ? data.jenis_donatur : []
       // PIC returned as pic (id) and pic_user (object) — prefer id from pic_user
       formData.pic = data.pic_user?.id ? String(data.pic_user.id) : (data.pic || '')
+      formData.mitra_id = data.mitra?.id ? String(data.mitra.id) : (data.mitra_id || '')
       formData.alamat = data.alamat || ''
       formData.provinsi = data.provinsi || ''
       formData.kota_kab = data.kota_kab || ''
@@ -449,6 +487,7 @@ const handleSave = async () => {
       nama: formData.nama.trim(),
       jenis_donatur: formData.jenis_donatur,
       pic: toNullable(formData.pic),
+      mitra_id: toNullable(formData.mitra_id),
       alamat: toNullable(formData.alamat),
       provinsi: toNullable(formData.provinsi),
       kota_kab: toNullable(formData.kota_kab),

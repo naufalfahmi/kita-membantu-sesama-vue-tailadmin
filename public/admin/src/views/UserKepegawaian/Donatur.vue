@@ -53,6 +53,11 @@
           </div>
 
           <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Mitra</label>
+            <SearchableSelect v-model="filterMitra" :options="mitraSelectOptions" placeholder="Semua Mitra" />
+          </div>
+
+          <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Jenis Donatur</label>
             <SearchableMultiSelect
               v-model="filterJenis"
@@ -134,6 +139,7 @@ interface DonaturRow {
   jenis_donatur: string[]
   pic: string | null
   pic_user?: { id: string; nama?: string }
+  mitra?: { id: string; nama?: string } | null
   provinsi?: string | null
   kota_kab?: string | null
   kecamatan?: string | null
@@ -170,6 +176,7 @@ const deleteId = ref<string | null>(null)
 const filterNama = ref('')
 const filterPic = ref('')
 const filterJenis = ref<string[]>([])
+const filterMitra = ref('')
 const filterKantorCabang = ref('')
 let debounceTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -188,10 +195,16 @@ const jenisSelectOptions = computed(() => [
 
 const kantorCabangOptions = ref<any[]>([])
 const karyawanOptions = ref<any[]>([])
+const mitraOptions = ref<any[]>([])
 
 const picSelectOptions = computed(() => [
   { value: '', label: 'Semua Fundraiser' },
   ...karyawanOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
+])
+
+const mitraSelectOptions = computed(() => [
+  { value: '', label: 'Semua Mitra' },
+  ...mitraOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
 ])
 
 const kantorCabangSelectOptions = computed(() => [
@@ -257,6 +270,13 @@ const columnDefs = computed(() => {
     {
       headerName: 'Kantor Cabang',
       field: 'kantor_cabang',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => params.value?.nama || '-',
+    },
+    {
+      headerName: 'Mitra',
+      field: 'mitra',
       sortable: true,
       flex: 1,
       valueFormatter: (params: any) => params.value?.nama || '-',
@@ -381,6 +401,9 @@ const fetchData = async () => {
     if (filterKantorCabang.value) {
       params.append('kantor_cabang_id', filterKantorCabang.value)
     }
+    if (filterMitra.value) {
+      params.append('mitra_id', filterMitra.value)
+    }
 
     const res = await fetch(`/admin/api/donatur?${params.toString()}`, {
       credentials: 'same-origin',
@@ -478,6 +501,7 @@ const resetFilter = () => {
   filterPic.value = ''
   filterJenis.value = []
   filterKantorCabang.value = ''
+  filterMitra.value = ''
   fetchData()
 }
 
@@ -490,16 +514,26 @@ const handleJenisFilterChange = (values: string[]) => {
 }
 
 // Trigger fetch automatically whenever non-text filters change
-watch([filterPic, filterJenis, filterKantorCabang], () => {
+watch([filterPic, filterJenis, filterKantorCabang, filterMitra], () => {
   fetchData()
 }, { deep: true })
 
 const fetchReferenceData = async () => {
   try {
-    const [kantorRes, karyawanRes] = await Promise.all([
-      // Request only assigned kantor cabang for this user to match backend visibility
-      fetch('/admin/api/kantor-cabang?per_page=1000&only_assigned=1', { credentials: 'same-origin' }),
+    const isRoleAdminCabang = (() => {
+      if (!user.value) return false
+      const roles = user.value.roles || (user.value.role ? [user.value.role] : [])
+      return Array.isArray(roles) && roles.some((r: any) => {
+        const name = typeof r === 'string' ? r : r?.name
+        return typeof name === 'string' && ['admin', 'admin cabang'].includes(name.trim().toLowerCase())
+      })
+    })()
+
+    const kantorUrl = (isAdmin() || isRoleAdminCabang) ? '/admin/api/kantor-cabang?per_page=1000' : '/admin/api/kantor-cabang?per_page=1000&only_assigned=1'
+    const [kantorRes, karyawanRes, mitraRes] = await Promise.all([
+      fetch(kantorUrl, { credentials: 'same-origin' }),
       fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
+      fetch('/admin/api/mitra?per_page=1000', { credentials: 'same-origin' }),
     ])
 
     if (kantorRes.ok) {
@@ -515,6 +549,14 @@ const fetchReferenceData = async () => {
       if (json.success) {
         const payload = Array.isArray(json.data) ? json.data : json.data?.data
         karyawanOptions.value = Array.isArray(payload) ? payload : []
+      }
+    }
+
+    if (mitraRes && mitraRes.ok) {
+      const json = await mitraRes.json()
+      if (json.success) {
+        const payload = Array.isArray(json.data) ? json.data : json.data?.data
+        mitraOptions.value = Array.isArray(payload) ? payload : []
       }
     }
   } catch (error) {

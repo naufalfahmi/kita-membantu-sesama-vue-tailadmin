@@ -231,6 +231,11 @@ const fetchData = async () => {
       params.set('search', filterNama.value.trim())
     }
 
+    // If current user is not admin, request only assigned mitra
+    if (!isAdmin()) {
+      params.set('only_assigned', '1')
+    }
+
     const response = await fetch(`/admin/api/mitra?${params.toString()}`, {
       credentials: 'same-origin',
     })
@@ -327,9 +332,9 @@ const resetFilter = () => {
   fetchData()
 }
 
-onMounted(() => {
-  fetchUser()
-  fetchData()
+onMounted(async () => {
+  await fetchUser()
+  await fetchData()
 })
 </script>
 

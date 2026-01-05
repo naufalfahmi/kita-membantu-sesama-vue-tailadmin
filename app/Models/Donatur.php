@@ -34,6 +34,7 @@ class Donatur extends Model
         'tanggal_lahir',
         'status',
         'kantor_cabang_id',
+        'mitra_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -87,5 +88,13 @@ class Donatur extends Model
     public function picUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'pic');
+    }
+
+    /**
+     * Get the mitra associated with the donatur.
+     */
+    public function mitra(): BelongsTo
+    {
+        return $this->belongsTo(Mitra::class, 'mitra_id');
     }
 }

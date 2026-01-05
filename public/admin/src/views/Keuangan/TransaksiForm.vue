@@ -518,6 +518,12 @@ watch(() => formData.donorId, async (newDonorId) => {
         fundraiserDisplay.value = { id: donor.pic, name: '' }
         formData.fundraiserId = donor.pic
       }
+      // If donor has associated mitra, auto-select it in the form
+      if (donor.mitra && donor.mitra.id) {
+        formData.mitraId = String(donor.mitra.id)
+      } else if (donor.mitra_id) {
+        formData.mitraId = String(donor.mitra_id)
+      }
     }
   } catch (e) {
     console.error('Failed to load donor details:', e)

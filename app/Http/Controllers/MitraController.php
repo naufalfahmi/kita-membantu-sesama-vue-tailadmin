@@ -26,10 +26,32 @@ class MitraController extends Controller
 
         $isAdmin = $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
         if (! $isAdmin) {
-            $subIds = $user->subordinates()->pluck('id')->toArray();
-            $allowed = array_merge([$user->id], $subIds);
-            // Qualify column to avoid ambiguity when joins are used
-            $query->whereIn('mitras.created_by', $allowed);
+            try {
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+            } catch (\Throwable $e) {
+                $assignedIds = [];
+            }
+
+            try {
+                \Log::debug('MitraController@index user visibility', [
+                    'user_id' => $user->id ?? null,
+                    'primary_kantor_cabang_id' => $user->kantor_cabang_id ?? null,
+                    'assigned_kantor_ids' => $assignedIds,
+                ]);
+            } catch (\Throwable $_) {
+                // ignore logging errors
+            }
+
+            if (empty($assignedIds) && $user->kantor_cabang_id) {
+                $assignedIds = [$user->kantor_cabang_id];
+            }
+
+            if (! empty($assignedIds)) {
+                $query->whereIn('mitras.kantor_cabang_id', $assignedIds);
+            } else {
+                // If user has no assigned branches, return empty result
+                $query->whereRaw('1 = 0');
+            }
         }
 
         if ($request->filled('search')) {
@@ -190,10 +212,24 @@ class MitraController extends Controller
         }
 
         $query = Mitra::with(['kantorCabang:id,nama']);
-        if (! $user->hasAnyRole(['admin', 'superadmin', 'super-admin'])) {
-            $subIds = $user->subordinates()->pluck('id')->toArray();
-            $allowed = array_merge([$user->id], $subIds);
-            $query->whereIn('created_by', $allowed);
+        $isAdmin = $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
+
+        if (! $isAdmin) {
+            try {
+                $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
+            } catch (\Throwable $e) {
+                $assignedIds = [];
+            }
+
+            if (empty($assignedIds) && $user->kantor_cabang_id) {
+                $assignedIds = [$user->kantor_cabang_id];
+            }
+
+            if (! empty($assignedIds)) {
+                $query->whereIn('mitras.kantor_cabang_id', $assignedIds);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
         }
 
         $mitra = $query->find($id);

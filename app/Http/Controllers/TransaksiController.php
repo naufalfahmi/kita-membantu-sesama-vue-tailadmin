@@ -41,7 +41,7 @@ class TransaksiController extends Controller
         if (! $isAdmin) {
             // Restrict by kantor cabang assignments (pivot `kantor_cabang_user`) when available.
             try {
-                $assignedBranchIds = $user->kantorCabangs()->pluck('id')->toArray();
+                $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
             } catch (\Exception $e) {
                 $assignedBranchIds = [];
             }
@@ -305,7 +305,7 @@ class TransaksiController extends Controller
         $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
             try {
-                $assignedBranchIds = $user->kantorCabangs()->pluck('id')->toArray();
+                $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
             } catch (\Exception $e) {
                 $assignedBranchIds = [];
             }
@@ -609,7 +609,7 @@ class TransaksiController extends Controller
         $isAdmin = $this->userIsAdmin($user);
         if (! $isAdmin) {
             try {
-                $assignedBranchIds = $user->kantorCabangs()->pluck('id')->toArray();
+                $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
             } catch (\Exception $e) {
                 $assignedBranchIds = [];
             }

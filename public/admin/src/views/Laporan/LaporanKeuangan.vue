@@ -50,37 +50,34 @@
           <!-- Filter Tanggal (Range Picker) -->
           <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-4">
             <div>
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Mulai</label>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal</label>
               <flat-pickr
-                v-model="balanceStart"
-                :config="flatpickrDateConfig"
+                v-model="balanceRange"
+                :config="rangePickrConfig"
                 class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300"
-                placeholder="Pilih tanggal mulai"
-              />
-            </div>
-            <div>
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Akhir</label>
-              <flat-pickr
-                v-model="balanceEnd"
-                :config="flatpickrDateConfig"
-                class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300"
-                placeholder="Pilih tanggal akhir"
+                placeholder="Pilih rentang tanggal"
               />
             </div>
             <div>
               <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
-              <select v-model="selectedProgram" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
-                <option value="">Semua Program</option>
-                <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.nama_program || p.name || p.nama }}</option>
-              </select>
+              <SearchableSelect
+                v-model="selectedProgram"
+                :options="programs.map(p => ({ value: String(p.id), label: p.nama_program || p.name || p.nama }))"
+                placeholder="Semua Program"
+                :search-input="programSearchInput"
+                @update:search-input="programSearchInput = $event"
+              />
             </div>
             <div class="flex items-end justify-end gap-2">
               <div class="mr-2 w-full">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
-                <select v-model="selectedKantor" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
-                  <option value="">Semua Kantor Cabang</option>
-                  <option v-for="k in kantorCabangs" :key="k.id" :value="k.id">{{ k.nama || k.name }}</option>
-                </select>
+                <SearchableSelect
+                  v-model="selectedKantor"
+                  :options="kantorCabangs.map(k => ({ value: String(k.id), label: k.nama || k.name }))"
+                  placeholder="Semua Kantor Cabang"
+                  :search-input="kantorSearchInput"
+                  @update:search-input="kantorSearchInput = $event"
+                />
               </div>
               <div class="flex gap-2">
                 <button
@@ -107,14 +104,14 @@
                 @click="showBalanceTransactions = true"
                 class="h-10 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                Tampilkan Transaksi
+                Tampilkan Cash Flow
               </button>
               <button
                 v-else
                 @click="showBalanceTransactions = false"
                 class="h-10 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                Sembunyikan Transaksi
+                Sembunyikan Cash Flow
               </button>
             </div>
           </div>
@@ -578,6 +575,7 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 
 const route = useRoute()
@@ -676,10 +674,36 @@ const balanceTotals = ref({
 
 const balanceTransactions = ref([])
 const balancePagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
+
+// Range picker config and model
+const rangePickrConfig = {
+  mode: 'range',
+  dateFormat: 'Y-m-d',
+  altInput: true,
+  altFormat: 'd/m/Y',
+  wrap: false,
+}
+
+const balanceRange = ref([balanceStart.value, balanceEnd.value])
+
+watch(balanceRange, (v) => {
+  if (Array.isArray(v)) {
+    balanceStart.value = v[0] || balanceStart.value
+    balanceEnd.value = v[1] || balanceEnd.value
+  } else if (typeof v === 'string') {
+    const parts = v.split(' to ')
+    balanceStart.value = parts[0] || balanceStart.value
+    balanceEnd.value = parts[1] || balanceEnd.value
+  }
+})
+
 const programs = ref([])
 const kantorCabangs = ref([])
 const selectedProgram = ref('')
 const selectedKantor = ref('')
+
+const programSearchInput = ref('')
+const kantorSearchInput = ref('')
 
 
 // Progress Chart Options (same as before)
@@ -783,8 +807,11 @@ const applyBalanceFilter = () => {
 }
 
 const resetBalanceFilter = () => {
-  balanceStart.value = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
-  balanceEnd.value = new Date().toISOString().split('T')[0]
+  const start = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+  const end = new Date().toISOString().split('T')[0]
+  balanceStart.value = start
+  balanceEnd.value = end
+  balanceRange.value = [start, end]
   selectedProgram.value = ''
   selectedKantor.value = ''
   applyBalanceFilter()
@@ -814,6 +841,7 @@ const fetchKantorCabangs = async () => {
 
 watch(activeTab, (v) => {
   if (v === 'balance') {
+    balanceRange.value = [balanceStart.value, balanceEnd.value]
     fetchBalanceData(1)
     fetchPrograms()
     fetchKantorCabangs()
@@ -822,6 +850,7 @@ watch(activeTab, (v) => {
 
 onMounted(() => {
   if (activeTab.value === 'balance') {
+    balanceRange.value = [balanceStart.value, balanceEnd.value]
     fetchBalanceData(1)
     fetchPrograms()
     fetchKantorCabangs()

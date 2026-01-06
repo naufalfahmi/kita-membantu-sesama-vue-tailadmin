@@ -91,82 +91,90 @@ const canCreate = computed(() => isAdmin() || hasPermission('create payroll mitr
 const canUpdate = computed(() => isAdmin() || hasPermission('update payroll mitra'))
 const canDelete = computed(() => isAdmin() || hasPermission('delete payroll mitra'))
 
-// AG Grid Column Definitions
-const columnDefs = [
-  { headerName: 'Nama Mitra', field: 'nama_mitra', sortable: true, flex: 1 },
-  // 'Mitra' column removed as requested
-  { 
-    headerName: 'Program', 
-    valueGetter: (p: any) => p.data?.program?.nama_program || '-', 
-    flex: 1 
-  },
-  {
-    headerName: 'Tanggal Payroll',
-    field: 'payroll_date',
-    width: 150,
-    valueFormatter: (p: any) => {
-      if (p.node && p.node.rowPinned === 'bottom') return ''
-      if (!p.value) return '-'
-      const date = new Date(p.value)
-      return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('id-ID')
-    }
-  },
-  { 
-    headerName: 'Jumlah', 
-    field: 'jumlah', 
-    width: 140, 
-    valueFormatter: (p: any) => p.value ? Number(p.value).toLocaleString('id-ID') : '0' 
-  },
-  { 
-    headerName: 'Persentase', 
-    field: 'persentase', 
-    width: 120,
-    valueFormatter: (p: any) => {
-      // don't show percent for pinned bottom row
-      if (p.node && p.node.rowPinned === 'bottom') return ''
-      const v = Number(p.value) || 0
-      return `${v.toFixed(0)}%`
-    }
-  },
-  { 
-    headerName: 'Total', 
-    field: 'total', 
-    width: 160, 
-    valueFormatter: (p: any) => p.value ? Number(p.value).toLocaleString('id-ID') : '0' 
-  },
-  { 
-    headerName: 'Actions', 
-    field: 'actions', 
-    width: 140, 
-    sortable: false, 
-    filter: false,
-    cellRenderer: (params: any) => {
-      // don't render action buttons for pinned bottom row
-      if (params.node && params.node.rowPinned === 'bottom') {
-        return document.createElement('div')
+// AG Grid Column Definitions (omit Actions column entirely when user lacks update/delete permissions)
+const columnDefs = computed(() => {
+  const cols: any[] = [
+    { headerName: 'Nama Mitra', field: 'nama_mitra', sortable: true, flex: 1 },
+    // 'Mitra' column removed as requested
+    { 
+      headerName: 'Program', 
+      valueGetter: (p: any) => p.data?.program?.nama_program || '-', 
+      flex: 1 
+    },
+    {
+      headerName: 'Tanggal Payroll',
+      field: 'payroll_date',
+      width: 150,
+      valueFormatter: (p: any) => {
+        if (p.node && p.node.rowPinned === 'bottom') return ''
+        if (!p.value) return '-'
+        const date = new Date(p.value)
+        return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('id-ID')
       }
-      const div = document.createElement('div')
-      div.className = 'flex items-center gap-3 h-full'
-      
-      if (canUpdate.value) {
-        const editBtn = document.createElement('button')
-        editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50'
-        editBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>'
-        editBtn.onclick = () => handleEdit(params.data.id)
-        div.appendChild(editBtn)
+    },
+    { 
+      headerName: 'Jumlah', 
+      field: 'jumlah', 
+      width: 140, 
+      valueFormatter: (p: any) => p.value ? Number(p.value).toLocaleString('id-ID') : '0' 
+    },
+    { 
+      headerName: 'Persentase', 
+      field: 'persentase', 
+      width: 120,
+      valueFormatter: (p: any) => {
+        // don't show percent for pinned bottom row
+        if (p.node && p.node.rowPinned === 'bottom') return ''
+        const v = Number(p.value) || 0
+        return `${v.toFixed(0)}%`
       }
-      
-      if (canDelete.value) {
-        const delBtn = document.createElement('button')
-        delBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50'
-        delBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
-        delBtn.onclick = () => handleDelete(params.data.id)
-        div.appendChild(delBtn)
+    },
+    { 
+      headerName: 'Total', 
+      field: 'total', 
+      width: 160, 
+      valueFormatter: (p: any) => p.value ? Number(p.value).toLocaleString('id-ID') : '0' 
+    },
+  ]
+
+  // Only include Actions column when user can update or delete
+  if (canUpdate.value || canDelete.value) {
+    cols.push({
+      headerName: 'Actions', 
+      field: 'actions', 
+      width: 140, 
+      sortable: false, 
+      filter: false,
+      cellRenderer: (params: any) => {
+        // don't render action buttons for pinned bottom row
+        if (params.node && params.node.rowPinned === 'bottom') {
+          return document.createElement('div')
+        }
+        const div = document.createElement('div')
+        div.className = 'flex items-center gap-3 h-full'
+        
+        if (canUpdate.value) {
+          const editBtn = document.createElement('button')
+          editBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-brand-500 hover:bg-brand-50'
+          editBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>'
+          editBtn.onclick = () => handleEdit(params.data.id)
+          div.appendChild(editBtn)
+        }
+        
+        if (canDelete.value) {
+          const delBtn = document.createElement('button')
+          delBtn.className = 'flex items-center justify-center w-8 h-8 rounded-lg text-red-500 hover:bg-red-50'
+          delBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>'
+          delBtn.onclick = () => handleDelete(params.data.id)
+          div.appendChild(delBtn)
+        }
+        return div
       }
-      return div
-    } 
+    })
   }
-]
+
+  return cols
+})
 
 const defaultColDef = { resizable: true, sortable: true, filter: true }
 

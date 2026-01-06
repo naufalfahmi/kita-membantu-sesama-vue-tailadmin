@@ -112,7 +112,7 @@ import 'flatpickr/dist/flatpickr.css'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
-const { fetchUser } = useAuth()
+const { fetchUser, user, isAdmin } = useAuth()
 
 const isEdit = computed(() => route.params.id !== undefined && route.params.id !== 'new')
 const title = computed(() => isEdit.value ? 'Edit Payroll Mitra' : 'Tambah Payroll Mitra')
@@ -238,8 +238,23 @@ watch(
 
 const loadOptions = async () => {
   try {
+    // Decide mitra URL: show all mitra only to global admins (not branch admins)
+    const isRoleAdminCabang = (() => {
+      if (!user.value) return false
+      const roles = (user.value as any).roles || ((user.value as any).role ? [(user.value as any).role] : [])
+      return Array.isArray(roles) && roles.some((r: any) => {
+        const name = typeof r === 'string' ? r : r?.name
+        return typeof name === 'string' && name.trim().toLowerCase() === 'admin cabang'
+      })
+    })()
+
+    const isGlobalAdmin = Boolean(user.value && (user.value as any).is_admin)
+    const mitraUrl = (isGlobalAdmin && !isRoleAdminCabang)
+      ? '/admin/api/mitra?per_page=1000'
+      : '/admin/api/mitra?per_page=1000&only_assigned=1'
+
     const [mRes, pRes] = await Promise.all([
-      fetch('/admin/api/mitra?per_page=1000', { credentials: 'same-origin' }),
+      fetch(mitraUrl, { credentials: 'same-origin' }),
       fetch('/admin/api/program?per_page=1000', { credentials: 'same-origin' }),
     ])
     const mJson = await mRes.json()

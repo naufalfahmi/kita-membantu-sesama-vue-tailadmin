@@ -51,7 +51,7 @@
           <div class="mb-6">
             <div class="grid grid-cols-1 gap-3 md:grid-cols-6">
               <!-- Range picker spans larger area on md+ -->
-              <div class="md:col-span-3">
+              <div class="md:col-span-2">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal</label>
                 <flat-pickr
                   v-model="balanceRange"
@@ -88,13 +88,6 @@
               <!-- Buttons aligned to right and bottom -->
               <div class="md:col-span-1 flex items-end justify-end">
                 <div class="flex gap-2">
-                  <button
-                    @click="applyBalanceFilter"
-                    :disabled="!isRangeComplete"
-                    :class="['h-11 rounded-lg px-4 py-2.5 text-sm font-medium', isRangeComplete ? 'bg-brand-500 text-white hover:bg-brand-600' : 'bg-gray-100 text-gray-400 cursor-not-allowed']"
-                  >
-                    Terapkan
-                  </button>
                   <button
                     @click="resetBalanceFilter"
                     class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
@@ -681,9 +674,7 @@ watch(balanceRange, (v) => {
   scheduleFetch()
 })
 
-watch([selectedProgram, selectedKantor], () => {
-  scheduleFetch()
-})
+
 
 const programs = ref([])
 const kantorCabangs = ref([])
@@ -692,6 +683,11 @@ const selectedKantor = ref('')
 
 const programSearchInput = ref('')
 const kantorSearchInput = ref('')
+
+// Apply fetch when program/kantor filters change
+watch([selectedProgram, selectedKantor], () => {
+  scheduleFetch()
+})
 
 // Accordion state
 const accordionOpen = ref(false)
@@ -709,12 +705,17 @@ const displayedTransactions = computed(() => {
   return balanceTransactions.value
 })
 
-const toggleAccordion = (filter = 'all') => {
+const toggleAccordion = async (filter = 'all') => {
+  console.log('toggleAccordion called', { filter, accordionOpen: accordionOpen.value, accordionFilter: accordionFilter.value })
   if (accordionOpen.value && accordionFilter.value === filter) {
     accordionOpen.value = false
   } else {
     accordionFilter.value = filter
     accordionOpen.value = true
+    // Ensure transactions are fresh when opening
+    balancePagination.value.current_page = 1
+    await fetchBalanceData(1)
+    console.log('toggleAccordion: fetched transactions count', balanceTransactions.value.length)
   }
 }
 
@@ -792,6 +793,7 @@ const progressChartSeries = computed(() => [persentaseMasuk.value])
 
 const fetchBalanceData = async (page = 1) => {
   try {
+    console.log('fetchBalanceData start', { start: balanceStart.value, end: balanceEnd.value, program: selectedProgram.value, kantor: selectedKantor.value, page })
     balancePagination.value.current_page = page
     const params = new URLSearchParams()
     params.append('start', balanceStart.value)
@@ -815,6 +817,7 @@ const fetchBalanceData = async (page = 1) => {
     }
 
     const json = await res.json()
+    console.log('fetchBalanceData json', json)
     if (!json.success) {
       console.error('API returned error', json.message)
       return
@@ -829,10 +832,7 @@ const fetchBalanceData = async (page = 1) => {
   }
 }
 
-const applyBalanceFilter = () => {
-  balancePagination.value.current_page = 1
-  fetchBalanceData(1)
-}
+
 
 const resetBalanceFilter = () => {
   const start = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]

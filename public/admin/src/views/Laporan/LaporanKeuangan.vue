@@ -234,141 +234,6 @@
 
         </div>
 
-        <!-- Tab: Management -->
-        <div
-          v-if="activeTab === 'management'"
-          role="tabpanel"
-          id="tabpanel-management"
-          aria-labelledby="tab-management"
-        >
-          <!-- Filter Section -->
-          <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-            <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">
-                Filter & Export
-              </h3>
-              <button
-                @click="handleExportExcelManagement"
-                class="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-600"
-              >
-                <svg
-                  class="fill-current"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M10.8333 3.33333V9.16667H16.6667L10.8333 3.33333ZM4.16667 2.5H11.6667L17.5 8.33333V15.8333C17.5 16.2754 17.3244 16.6993 17.0118 17.0118C16.6993 17.3244 16.2754 17.5 15.8333 17.5H4.16667C3.72464 17.5 3.30072 17.3244 2.98816 17.0118C2.67559 16.6993 2.5 16.2754 2.5 15.8333V4.16667C2.5 3.72464 2.67559 3.30072 2.98816 2.98816C3.30072 2.67559 3.72464 2.5 4.16667 2.5Z"
-                    fill="currentColor"
-                  />
-                </svg>
-                Export Excel
-              </button>
-            </div>
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div class="flex-1">
-                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Tanggal
-                </label>
-                <div class="relative">
-                  <flat-pickr
-                    v-model="filterManagementTanggal"
-                    :config="flatpickrDateConfig"
-                    class="dark:bg-dark-900 h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 pl-4 pr-11 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                    placeholder="Pilih tanggal"
-                  />
-                  <span
-                    class="absolute text-gray-500 -translate-y-1/2 pointer-events-none right-3 top-1/2 dark:text-gray-400"
-                  >
-                    <svg
-                      class="fill-current"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M10 18.3333C14.6024 18.3333 18.3333 14.6024 18.3333 9.99999C18.3333 5.39762 14.6024 1.66666 10 1.66666C5.39763 1.66666 1.66667 5.39762 1.66667 9.99999C1.66667 14.6024 5.39763 18.3333 10 18.3333Z"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                      <path
-                        d="M10 5V10L13.3333 11.6667"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </div>
-              </div>
-              <div class="flex-1">
-                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Keterangan
-                </label>
-                <input
-                  type="text"
-                  v-model="filterManagementKeterangan"
-                  placeholder="Cari keterangan..."
-                  class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
-              </div>
-              <div class="flex-1">
-                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Masuk Min
-                </label>
-                <input
-                  type="number"
-                  v-model="filterManagementMasukMin"
-                  placeholder="Masuk minimum..."
-                  class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
-              </div>
-              <div class="flex-1">
-                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-                  Keluar Min
-                </label>
-                <input
-                  type="number"
-                  v-model="filterManagementKeluarMin"
-                  placeholder="Keluar minimum..."
-                  class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                />
-              </div>
-            </div>
-            <div class="mt-4 flex justify-end">
-              <button
-                @click="resetFilterManagement"
-                class="h-11 rounded-lg border border-gray-300 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
-              >
-                Reset Filter
-              </button>
-            </div>
-          </div>
-
-          <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%;">
-            <ag-grid-vue
-              class="ag-theme-alpine"
-              style="width: 100%;"
-              :columnDefs="managementColumnDefs"
-              :rowData="filteredManagementData"
-              :defaultColDef="defaultColDef"
-              :pagination="true"
-              :paginationPageSize="20"
-              theme="legacy"
-              :animateRows="true"
-              :suppressHorizontalScroll="true"
-              :domLayout="'autoHeight'"
-            />
-          </div>
-        </div>
-
         <!-- Tab: Mitra -->
         <div
           v-if="activeTab === 'mitra'"
@@ -395,7 +260,7 @@
 
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div
-              v-for="mitra in paginatedMitraData"
+              v-for="mitra in mitraList"
               :key="mitra.id"
               class="group cursor-pointer rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all duration-300 hover:border-brand-300 hover:shadow-lg dark:border-gray-700 dark:bg-white/[0.03] dark:hover:border-brand-500"
             >
@@ -416,7 +281,7 @@
                   </svg>
                 </div>
                 <button
-                  @click="handleMitraDetail(mitra.id)"
+                  @click="openMitraDetail(mitra.id)"
                   class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/[0.03] dark:hover:text-brand-400"
                 >
                   <svg
@@ -461,9 +326,62 @@
             </div>
           </div>
 
+          <!-- Mitra Detail Modal -->
+          <div v-if="showMitraModal" class="fixed inset-0 z-50 flex items-start justify-center p-6">
+            <div class="absolute inset-0 bg-black/40" @click="closeMitraModal"></div>
+            <div class="relative z-60 w-full max-w-4xl rounded-lg bg-white p-6 shadow-lg dark:bg-gray-900">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Detail Mitra - {{ mitraDetail.nama }}</h3>
+                  <p class="text-sm text-gray-500">Total transaksi: {{ mitraDetail.transaksi_count }} — Total nilai: {{ formatCurrency(mitraDetail.transaksi_total) }}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button @click="handleExportMitraTransactions" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Export Excel</button>
+                  <button @click="closeMitraModal" class="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">Tutup</button>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                  <thead>
+                    <tr class="text-sm font-semibold text-left text-gray-600">
+                      <th class="px-4 py-2">Tanggal</th>
+                      <th class="px-4 py-2">Keterangan</th>
+                      <th class="px-4 py-2">Donatur</th>
+                      <th class="px-4 py-2">Program</th>
+                      <th class="px-4 py-2 text-right">Nominal</th>
+                      <th class="px-4 py-2">Kantor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-if="mitraTxLoading">
+                      <td colspan="6" class="px-4 py-6 text-center">Loading...</td>
+                    </tr>
+                    <tr v-for="tx in mitraTransactions" :key="tx.id" class="border-t">
+                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.donatur }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.program }}</td>
+                      <td class="px-4 py-3 text-sm text-right">{{ formatCurrency(tx.nominal) }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.kantor }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between">
+                <div class="text-sm text-gray-600">Halaman {{ mitraTxPagination.current_page }} dari {{ mitraTxPagination.last_page }} — total {{ mitraTxPagination.total }} transaksi</div>
+                <div class="flex gap-2">
+                  <button :disabled="mitraTxPagination.current_page <= 1" @click="( () => { mitraTxPagination.current_page = Math.max(1, mitraTxPagination.current_page - 1); openMitraDetail(mitraDetail.id, mitraTxPagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Sebelumnya</button>
+                  <button :disabled="mitraTxPagination.current_page >= mitraTxPagination.last_page" @click="( () => { mitraTxPagination.current_page = Math.min(mitraTxPagination.last_page, mitraTxPagination.current_page + 1); openMitraDetail(mitraDetail.id, mitraTxPagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Selanjutnya</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Empty State -->
           <div
-            v-if="filteredMitraData.length === 0"
+            v-if="mitraList.length === 0"
             class="flex flex-col items-center justify-center py-12 text-center"
           >
             <svg
@@ -493,12 +411,12 @@
             class="mt-6 flex items-center justify-between"
           >
             <div class="text-sm text-gray-600 dark:text-gray-400">
-              Menampilkan {{ startIndex + 1 }} - {{ endIndex }} dari {{ filteredMitraData.length }} mitra
+              Menampilkan {{ startIndex + 1 }} - {{ endIndex }} dari {{ mitraPagination.total }} mitra
             </div>
             <div class="flex gap-2">
               <button
-                @click="currentMitraPage = Math.max(1, currentMitraPage - 1)"
-                :disabled="currentMitraPage === 1"
+                @click="( () => { mitraPagination.current_page = Math.max(1, mitraPagination.current_page - 1); fetchMitraList(mitraPagination.current_page); } )()"
+                :disabled="mitraPagination.current_page === 1"
                 class="flex h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
               >
                 Sebelumnya
@@ -507,10 +425,10 @@
                 <button
                   v-for="page in totalMitraPages"
                   :key="page"
-                  @click="currentMitraPage = page"
+                  @click="( () => { mitraPagination.current_page = page; fetchMitraList(page); } )()"
                   class="flex h-10 w-10 items-center justify-center rounded-lg border text-sm font-medium transition-colors"
                   :class="
-                    currentMitraPage === page
+                    mitraPagination.current_page === page
                       ? 'border-brand-500 bg-brand-500 text-white'
                       : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]'
                   "
@@ -585,11 +503,6 @@ const tabs = [
     icon: BalanceIcon,
   },
   {
-    id: 'management',
-    label: 'Management',
-    icon: ManagementIcon,
-  },
-  {
     id: 'mitra',
     label: 'Mitra',
     icon: MitraIcon,
@@ -597,7 +510,7 @@ const tabs = [
 ]
 
 // Active tab - check query param for tab
-const validTabs = ['balance', 'management', 'mitra']
+const validTabs = ['balance', 'mitra']
 const initialTab = route.query.tab as string
 const activeTab = ref(validTabs.includes(initialTab) ? initialTab : 'balance')
 
@@ -1157,158 +1070,102 @@ const managementRowData = [
 ]
 
 // Mitra Data - Filtered
-const filteredMitraData = computed(() => {
-  if (!searchMitra.value) {
-    return mitraData.value
+// Server-backed Mitra data & pagination
+const mitraList = ref([])
+const mitraPagination = ref({ current_page: 1, last_page: 1, per_page: 12, total: 0 })
+const mitraLoading = ref(false)
+
+// Detail modal state
+const showMitraModal = ref(false)
+const mitraDetail = ref({ id: '', nama: '', transaksi_count: 0, transaksi_total: 0 })
+const mitraTransactions = ref([])
+const mitraTxPagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
+const mitraTxLoading = ref(false)
+
+// Fetch mitra list from API
+const fetchMitraList = async (page = 1) => {
+  try {
+    mitraLoading.value = true
+    const params = new URLSearchParams()
+    params.append('page', String(page))
+    params.append('per_page', String(mitraPagination.value.per_page || 12))
+    if (searchMitra.value) params.append('search', searchMitra.value)
+
+    const res = await fetch(`/admin/api/laporan/mitra?${params.toString()}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    })
+    if (!res.ok) return
+    const json = await res.json()
+    if (!json.success) return
+
+    mitraList.value = json.data || []
+    mitraPagination.value = { ...(json.pagination || {}), per_page: mitraPagination.value.per_page }
+  } catch (err) {
+    console.error('Error fetching mitra list', err)
+  } finally {
+    mitraLoading.value = false
   }
-  const searchTerm = searchMitra.value.toLowerCase()
-  return mitraData.value.filter((mitra) =>
-    mitra.nama.toLowerCase().includes(searchTerm) ||
-    mitra.program.toLowerCase().includes(searchTerm)
-  )
-})
+}
 
-// Mitra Pagination
-const totalMitraPages = computed(() => {
-  return Math.ceil(filteredMitraData.value.length / mitraPerPage)
-})
-
-const startIndex = computed(() => {
-  return (currentMitraPage.value - 1) * mitraPerPage
-})
-
-const endIndex = computed(() => {
-  return Math.min(startIndex.value + mitraPerPage, filteredMitraData.value.length)
-})
-
-const paginatedMitraData = computed(() => {
-  return filteredMitraData.value.slice(startIndex.value, endIndex.value)
-})
-
-// Watch search to reset page
+// Debounce search
+let mitraSearchTimeout: any = null
 watch(searchMitra, () => {
-  currentMitraPage.value = 1
+  if (mitraSearchTimeout) clearTimeout(mitraSearchTimeout)
+  mitraSearchTimeout = setTimeout(() => fetchMitraList(1), 400)
 })
 
-// Fetch balance data when balance tab is active
-watch(activeTab, (v) => {
-  if (v === 'balance') {
-    fetchBalanceData(1)
+// Open mitra detail modal and fetch transactions
+const openMitraDetail = async (id: string, page = 1) => {
+  try {
+    mitraTxLoading.value = true
+    mitraDetail.value = { id, nama: '', transaksi_count: 0, transaksi_total: 0 }
+    // try get name from current list
+    const found = mitraList.value.find((m: any) => String(m.id) === String(id))
+    if (found) mitraDetail.value.nama = found.nama
+
+    mitraTxPagination.value.current_page = page
+    const res = await fetch(`/admin/api/laporan/mitra/${id}/transaksi?page=${page}&per_page=${mitraTxPagination.value.per_page}`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    })
+    if (!res.ok) return
+    const json = await res.json()
+    if (!json.success) return
+
+    mitraTransactions.value = json.data || []
+    mitraTxPagination.value = { ...(json.pagination || {}), per_page: mitraTxPagination.value.per_page }
+    if (json.totals) {
+      mitraDetail.value.transaksi_count = json.totals.count || 0
+      mitraDetail.value.transaksi_total = json.totals.nominal || 0
+    }
+
+    showMitraModal.value = true
+  } catch (err) {
+    console.error('Error fetching mitra transactions', err)
+  } finally {
+    mitraTxLoading.value = false
   }
+}
+
+const closeMitraModal = () => {
+  showMitraModal.value = false
+  mitraTransactions.value = []
+}
+
+// Replace client-side pagination with server values
+const totalMitraPages = computed(() => Math.ceil(mitraPagination.value.total / mitraPagination.value.per_page))
+const startIndex = computed(() => (mitraPagination.value.current_page - 1) * mitraPagination.value.per_page)
+const endIndex = computed(() => Math.min(startIndex.value + mitraPagination.value.per_page, mitraPagination.value.total))
+
+// Fetch mitra list when tab active
+watch(activeTab, (v) => {
+  if (v === 'mitra') fetchMitraList(1)
 })
 
 onMounted(() => {
-  if (activeTab.value === 'balance') fetchBalanceData(1)
+  if (activeTab.value === 'mitra') fetchMitraList(1)
 })
-
-// Mitra Data
-const mitraData = ref([
-  {
-    id: '1',
-    nama: 'PT ABC Foundation',
-    program: 'Program Pendidikan Anak',
-    nominal: 50000000,
-    status: 'Aktif',
-  },
-  {
-    id: '2',
-    nama: 'Yayasan XYZ',
-    program: 'Program Pemberdayaan Masyarakat',
-    nominal: 75000000,
-    status: 'Aktif',
-  },
-  {
-    id: '3',
-    nama: 'CV Sejahtera',
-    program: 'Program Kesehatan',
-    nominal: 30000000,
-    status: 'Aktif',
-  },
-  {
-    id: '4',
-    nama: 'PT Harmoni',
-    program: 'Program Bantuan Sosial',
-    nominal: 100000000,
-    status: 'Aktif',
-  },
-  {
-    id: '5',
-    nama: 'Yayasan Peduli',
-    program: 'Program Lingkungan',
-    nominal: 25000000,
-    status: 'Aktif',
-  },
-  {
-    id: '6',
-    nama: 'PT Berkah',
-    program: 'Program Kemanusiaan',
-    nominal: 60000000,
-    status: 'Aktif',
-  },
-  {
-    id: '7',
-    nama: 'PT Cinta Indonesia',
-    program: 'Program Beasiswa',
-    nominal: 80000000,
-    status: 'Aktif',
-  },
-  {
-    id: '8',
-    nama: 'Yayasan Kasih Ibu',
-    program: 'Program Kesehatan Ibu dan Anak',
-    nominal: 45000000,
-    status: 'Aktif',
-  },
-  {
-    id: '9',
-    nama: 'CV Maju Bersama',
-    program: 'Program Pemberdayaan Ekonomi',
-    nominal: 55000000,
-    status: 'Aktif',
-  },
-  {
-    id: '10',
-    nama: 'PT Harapan Bangsa',
-    program: 'Program Infrastruktur',
-    nominal: 120000000,
-    status: 'Aktif',
-  },
-  {
-    id: '11',
-    nama: 'Yayasan Bantu Sesama',
-    program: 'Program Bantuan Pangan',
-    nominal: 35000000,
-    status: 'Aktif',
-  },
-  {
-    id: '12',
-    nama: 'PT Gotong Royong',
-    program: 'Program Air Bersih',
-    nominal: 70000000,
-    status: 'Aktif',
-  },
-  {
-    id: '13',
-    nama: 'CV Jaya Abadi',
-    program: 'Program Teknologi',
-    nominal: 90000000,
-    status: 'Aktif',
-  },
-  {
-    id: '14',
-    nama: 'Yayasan Damai Sentosa',
-    program: 'Program Perdamaian',
-    nominal: 40000000,
-    status: 'Aktif',
-  },
-  {
-    id: '15',
-    nama: 'PT Harmoni Sejahtera',
-    program: 'Program Sosial Budaya',
-    nominal: 65000000,
-    status: 'Aktif',
-  },
-])
 
 // Handlers
 const handleDetail = (id: string) => {
@@ -1320,7 +1177,8 @@ const handleDownload = (id: string) => {
 }
 
 const handleMitraDetail = (id: string) => {
-  router.push(`/laporan/detail-mitra/${id}`)
+  // backward-compatible handler - open modal
+  openMitraDetail(id)
 }
 
 // Management Tab - Reset Filter

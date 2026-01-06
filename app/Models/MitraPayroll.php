@@ -21,6 +21,7 @@ class MitraPayroll extends Model
         'jumlah',
         'persentase',
         'total',
+        'payroll_date',
         'created_by',
         'updated_by',
         'deleted_by',

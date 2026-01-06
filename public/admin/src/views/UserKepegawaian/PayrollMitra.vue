@@ -100,6 +100,17 @@ const columnDefs = [
     valueGetter: (p: any) => p.data?.program?.nama_program || '-', 
     flex: 1 
   },
+  {
+    headerName: 'Tanggal Payroll',
+    field: 'payroll_date',
+    width: 150,
+    valueFormatter: (p: any) => {
+      if (p.node && p.node.rowPinned === 'bottom') return ''
+      if (!p.value) return '-'
+      const date = new Date(p.value)
+      return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('id-ID')
+    }
+  },
   { 
     headerName: 'Jumlah', 
     field: 'jumlah', 

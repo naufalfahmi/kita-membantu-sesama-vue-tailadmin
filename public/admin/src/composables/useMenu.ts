@@ -244,8 +244,13 @@ export function useMenu() {
                 pro: false,
               },
               {
-                name: "Remunerasi",
-                path: "/operasional/remunerasi",
+                name: "Payroll",
+                path: "/operasional/payroll",
+                pro: false,
+              },
+              {
+                name: "Payroll Mitra",
+                path: "/user-kepegawaian/payroll-mitra",
                 pro: false,
               },
             ],

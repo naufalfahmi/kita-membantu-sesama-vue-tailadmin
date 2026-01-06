@@ -98,47 +98,7 @@
               </div>
             </div>
 
-            <!-- Accordion (placed immediately under filters and matches width) -->
-            <div v-if="accordionOpen" class="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
-              <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Transaksi ({{ accordionFilterLabel }})</h3>
-                <div class="flex items-center gap-2">
-                  <button @click="handleExportDisplayed" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Export Excel</button>
-                  <button @click="accordionOpen = false" class="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">Tutup</button>
-                </div>
-              </div>
 
-              <div class="overflow-x-auto">
-                <table class="w-full table-auto">
-                  <thead>
-                    <tr class="text-sm font-semibold text-left text-gray-600">
-                      <th class="px-4 py-2">Tanggal</th>
-                      <th class="px-4 py-2">Keterangan</th>
-                      <th class="px-4 py-2 text-right">Masuk</th>
-                      <th class="px-4 py-2 text-right">Keluar</th>
-                      <th class="px-4 py-2 text-right">Saldo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="tx in displayedTransactions" :key="tx.id" class="border-t">
-                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
-                      <td class="px-4 py-3 text-sm text-right text-green-600">{{ tx.masuk > 0 ? formatCurrency(tx.masuk) : '-' }}</td>
-                      <td class="px-4 py-3 text-sm text-right text-red-600">{{ tx.keluar > 0 ? formatCurrency(tx.keluar) : '-' }}</td>
-                      <td class="px-4 py-3 text-sm text-right">{{ formatCurrency(tx.saldo) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="mt-4 flex items-center justify-between">
-                <div class="text-sm text-gray-600">Menampilkan halaman {{ balancePagination.current_page }} dari {{ balancePagination.last_page }} — total {{ balancePagination.total }} transaksi</div>
-                <div class="flex gap-2">
-                  <button :disabled="balancePagination.current_page <= 1" @click="( () => { balancePagination.current_page = Math.max(1, balancePagination.current_page - 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Sebelumnya</button>
-                  <button :disabled="balancePagination.current_page >= balancePagination.last_page" @click="( () => { balancePagination.current_page = Math.min(balancePagination.last_page, balancePagination.current_page + 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Selanjutnya</button>
-                </div>
-              </div>
-            </div>
           </div>
 
 
@@ -151,6 +111,48 @@
                 {{ formatCurrency(balanceTotals.saldo_akhir || 0) }}
               </h2>
               <p class="mt-2 text-sm text-white/80">Saldo awal: {{ formatCurrency(balanceTotals.saldo_awal || 0) }}</p>
+            </div>
+          </div>
+
+          <!-- Accordion (moved to appear ABOVE the stats) -->
+          <div v-if="accordionOpen" ref="accordionRef" class="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Transaksi ({{ accordionFilterLabel }})</h3>
+              <div class="flex items-center gap-2">
+                <button @click="handleExportDisplayed" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Export Excel</button>
+                <button @click="accordionOpen = false" class="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">Tutup</button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full table-auto">
+                <thead>
+                  <tr class="text-sm font-semibold text-left text-gray-600">
+                    <th class="px-4 py-2">Tanggal</th>
+                    <th class="px-4 py-2">Keterangan</th>
+                    <th class="px-4 py-2 text-right">Masuk</th>
+                    <th class="px-4 py-2 text-right">Keluar</th>
+                    <th class="px-4 py-2 text-right">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="tx in displayedTransactions" :key="tx.id" class="border-t">
+                    <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
+                    <td class="px-4 py-3 text-sm text-right text-green-600">{{ tx.masuk > 0 ? formatCurrency(tx.masuk) : '-' }}</td>
+                    <td class="px-4 py-3 text-sm text-right text-red-600">{{ tx.keluar > 0 ? formatCurrency(tx.keluar) : '-' }}</td>
+                    <td class="px-4 py-3 text-sm text-right">{{ formatCurrency(tx.saldo) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+              <div class="text-sm text-gray-600">Menampilkan halaman {{ balancePagination.current_page }} dari {{ balancePagination.last_page }} — total {{ balancePagination.total }} transaksi</div>
+              <div class="flex gap-2">
+                <button :disabled="balancePagination.current_page <= 1" @click="( () => { balancePagination.current_page = Math.max(1, balancePagination.current_page - 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Sebelumnya</button>
+                <button :disabled="balancePagination.current_page >= balancePagination.last_page" @click="( () => { balancePagination.current_page = Math.min(balancePagination.last_page, balancePagination.current_page + 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Selanjutnya</button>
+              </div>
             </div>
           </div>
 
@@ -532,7 +534,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import VueApexCharts from 'vue3-apexcharts'
@@ -718,6 +720,8 @@ const displayedTransactions = computed(() => {
   return balanceTransactions.value
 })
 
+const accordionRef = ref<HTMLElement | null>(null)
+
 const toggleAccordion = async (filter = 'all') => {
   console.log('toggleAccordion called', { filter, accordionOpen: accordionOpen.value, accordionFilter: accordionFilter.value })
   if (accordionOpen.value && accordionFilter.value === filter) {
@@ -729,6 +733,13 @@ const toggleAccordion = async (filter = 'all') => {
     balancePagination.value.current_page = 1
     await fetchBalanceData(1)
     console.log('toggleAccordion: fetched transactions count', balanceTransactions.value.length)
+    // Wait DOM update then scroll accordion into view so it's above the clicked stat
+    await nextTick()
+    try {
+      accordionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } catch (err) {
+      // ignore
+    }
   }
 }
 

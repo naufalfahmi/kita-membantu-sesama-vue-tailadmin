@@ -47,29 +47,34 @@
           id="tabpanel-balance"
           aria-labelledby="tab-balance"
         >
-          <!-- Filter Tanggal (Range Picker) -->
-          <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-4">
-            <div>
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal</label>
-              <flat-pickr
-                v-model="balanceRange"
-                :config="rangePickrConfig"
-                class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300"
-                placeholder="Pilih rentang tanggal"
-              />
-            </div>
-            <div>
-              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
-              <SearchableSelect
-                v-model="selectedProgram"
-                :options="programs.map(p => ({ value: String(p.id), label: p.nama_program || p.name || p.nama }))"
-                placeholder="Semua Program"
-                :search-input="programSearchInput"
-                @update:search-input="programSearchInput = $event"
-              />
-            </div>
-            <div class="flex items-end justify-end gap-2">
-              <div class="mr-2 w-full">
+          <!-- Filter Tanggal (Rentang) - cleaner responsive layout -->
+          <div class="mb-6">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-6">
+              <!-- Range picker spans larger area on md+ -->
+              <div class="md:col-span-3">
+                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal</label>
+                <flat-pickr
+                  v-model="balanceRange"
+                  :config="rangePickrConfig"
+                  class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300"
+                  placeholder="Pilih rentang tanggal"
+                />
+              </div>
+
+              <!-- Program select -->
+              <div class="md:col-span-1">
+                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
+                <SearchableSelect
+                  v-model="selectedProgram"
+                  :options="programs.map(p => ({ value: String(p.id), label: p.nama_program || p.name || p.nama }))"
+                  placeholder="Semua Program"
+                  :search-input="programSearchInput"
+                  @update:search-input="programSearchInput = $event"
+                />
+              </div>
+
+              <!-- Kantor Cabang select -->
+              <div class="md:col-span-1">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
                 <SearchableSelect
                   v-model="selectedKantor"
@@ -79,42 +84,29 @@
                   @update:search-input="kantorSearchInput = $event"
                 />
               </div>
-              <div class="flex gap-2">
-                <button
-                  @click="applyBalanceFilter"
-                  class="h-11 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
-                >
-                  Terapkan
-                </button>
-                <button
-                  @click="resetBalanceFilter"
-                  class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Reset
-                </button>
+
+              <!-- Buttons aligned to right and bottom -->
+              <div class="md:col-span-1 flex items-end justify-end">
+                <div class="flex gap-2">
+                  <button
+                    @click="applyBalanceFilter"
+                    :disabled="!isRangeComplete"
+                    :class="['h-11 rounded-lg px-4 py-2.5 text-sm font-medium', isRangeComplete ? 'bg-brand-500 text-white hover:bg-brand-600' : 'bg-gray-100 text-gray-400 cursor-not-allowed']"
+                  >
+                    Terapkan
+                  </button>
+                  <button
+                    @click="resetBalanceFilter"
+                    class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="mb-4 flex items-center justify-between">
-            <div></div>
-            <div class="flex items-center gap-2">
-              <button
-                v-if="!showBalanceTransactions"
-                @click="showBalanceTransactions = true"
-                class="h-10 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Tampilkan Cash Flow
-              </button>
-              <button
-                v-else
-                @click="showBalanceTransactions = false"
-                class="h-10 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Sembunyikan Cash Flow
-              </button>
-            </div>
-          </div>
+
 
           <!-- Saldo Card -->
           <div class="mb-6 rounded-lg border border-gray-200 bg-gradient-to-br from-brand-500 to-brand-600 p-6 shadow-lg dark:border-gray-700 dark:from-brand-600 dark:to-brand-700">
@@ -129,63 +121,45 @@
 
           <!-- Stats Grid -->
           <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <!-- Total Saldo Masuk -->
-            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <!-- Total Saldo Masuk (clickable to expand transactions) -->
+            <button @click.prevent="toggleAccordion('masuk')" class="w-full text-left rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-white/[0.03]">
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Total Saldo Masuk
-                  </p>
-                  <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {{ formatCurrency(balanceTotals.totalMasuk || 0) }}
-                  </p>
+                  <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">Total Saldo Masuk</p>
+                  <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ formatCurrency(balanceTotals.totalMasuk || 0) }}</p>
                 </div>
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/10">
-                  <svg
-                    class="h-6 w-6 text-green-600 dark:text-green-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 4v16m8-8H4"
-                    />
+                <div class="flex items-center gap-3">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/10">
+                    <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                  </div>
+                  <svg :class="['h-5 w-5 transition-transform', accordionOpen && accordionFilter === 'masuk' ? 'rotate-180' : 'rotate-0']" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
               </div>
-            </div>
+            </button>
 
-            <!-- Total Saldo Keluar -->
-            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <!-- Total Saldo Keluar (clickable) -->
+            <button @click.prevent="toggleAccordion('keluar')" class="w-full text-left rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-white/[0.03]">
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Total Saldo Keluar
-                  </p>
-                  <p class="text-2xl font-bold text-red-600 dark:text-red-400">
-                    {{ formatCurrency(balanceTotals.totalKeluar || 0) }}
-                  </p>
+                  <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">Total Saldo Keluar</p>
+                  <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ formatCurrency(balanceTotals.totalKeluar || 0) }}</p>
                 </div>
-                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/10">
-                  <svg
-                    class="h-6 w-6 text-red-600 dark:text-red-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M20 12H4"
-                    />
+                <div class="flex items-center gap-3">
+                  <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/10">
+                    <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                    </svg>
+                  </div>
+                  <svg :class="['h-5 w-5 transition-transform', accordionOpen && accordionFilter === 'keluar' ? 'rotate-180' : 'rotate-0']" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
               </div>
-            </div>
+            </button>
           </div>
 
           <!-- Progress Ring -->
@@ -219,14 +193,13 @@
             </div>
           </div>
 
-          <!-- Transactions list (toggleable) -->
-          <div v-if="showBalanceTransactions" class="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+          <!-- Accordion for transactions (expands when a stat card is clicked) -->
+          <div v-if="accordionOpen" class="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
             <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Transaksi</h3>
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Transaksi ({{ accordionFilterLabel }})</h3>
               <div class="flex items-center gap-2">
-                <button @click="handleExportBalance" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
-                  Export Excel
-                </button>
+                <button @click="handleExportDisplayed" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Export Excel</button>
+                <button @click="accordionOpen = false" class="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">Tutup</button>
               </div>
             </div>
 
@@ -242,7 +215,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="tx in balanceTransactions" :key="tx.id" class="border-t">
+                  <tr v-for="tx in displayedTransactions" :key="tx.id" class="border-t">
                     <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
                     <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
                     <td class="px-4 py-3 text-sm text-right text-green-600">{{ tx.masuk > 0 ? formatCurrency(tx.masuk) : '-' }}</td>
@@ -686,6 +659,16 @@ const rangePickrConfig = {
 
 const balanceRange = ref([balanceStart.value, balanceEnd.value])
 
+// Debounced auto-apply on filter changes
+let balanceFilterTimeout: any = null
+const scheduleFetch = (delay = 400) => {
+  if (balanceFilterTimeout) clearTimeout(balanceFilterTimeout)
+  balanceFilterTimeout = setTimeout(() => {
+    balancePagination.value.current_page = 1
+    fetchBalanceData(1)
+  }, delay)
+}
+
 watch(balanceRange, (v) => {
   if (Array.isArray(v)) {
     balanceStart.value = v[0] || balanceStart.value
@@ -695,6 +678,11 @@ watch(balanceRange, (v) => {
     balanceStart.value = parts[0] || balanceStart.value
     balanceEnd.value = parts[1] || balanceEnd.value
   }
+  scheduleFetch()
+})
+
+watch([selectedProgram, selectedKantor], () => {
+  scheduleFetch()
 })
 
 const programs = ref([])
@@ -704,6 +692,46 @@ const selectedKantor = ref('')
 
 const programSearchInput = ref('')
 const kantorSearchInput = ref('')
+
+// Accordion state
+const accordionOpen = ref(false)
+const accordionFilter = ref('all')
+const accordionFilterLabel = computed(() => {
+  if (accordionFilter.value === 'masuk') return 'Pemasukan'
+  if (accordionFilter.value === 'keluar') return 'Pengeluaran'
+  return 'Semua'
+})
+
+const displayedTransactions = computed(() => {
+  if (!balanceTransactions.value) return []
+  if (accordionFilter.value === 'masuk') return balanceTransactions.value.filter(t => t.masuk > 0)
+  if (accordionFilter.value === 'keluar') return balanceTransactions.value.filter(t => t.keluar > 0)
+  return balanceTransactions.value
+})
+
+const toggleAccordion = (filter = 'all') => {
+  if (accordionOpen.value && accordionFilter.value === filter) {
+    accordionOpen.value = false
+  } else {
+    accordionFilter.value = filter
+    accordionOpen.value = true
+  }
+}
+
+const handleExportDisplayed = () => {
+  const r = displayedTransactions.value.map((b) => ({
+    Tanggal: b.tanggal,
+    Keterangan: b.keterangan,
+    Masuk: b.masuk > 0 ? formatCurrency(b.masuk) : '-',
+    Keluar: b.keluar > 0 ? formatCurrency(b.keluar) : '-',
+    Saldo: formatCurrency(b.saldo),
+  }))
+  const ws = XLSX.utils.json_to_sheet(r)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan')
+  const filename = `Laporan_Keuangan_${balanceStart.value}_${balanceEnd.value}.xlsx`
+  XLSX.writeFile(wb, filename)
+}
 
 
 // Progress Chart Options (same as before)
@@ -814,7 +842,9 @@ const resetBalanceFilter = () => {
   balanceRange.value = [start, end]
   selectedProgram.value = ''
   selectedKantor.value = ''
-  applyBalanceFilter()
+  // immediately fetch since filters changed
+  balancePagination.value.current_page = 1
+  fetchBalanceData(1)
 }
 
 const fetchPrograms = async () => {

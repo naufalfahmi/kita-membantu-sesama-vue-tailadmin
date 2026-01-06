@@ -47,13 +47,60 @@
           id="tabpanel-balance"
           aria-labelledby="tab-balance"
         >
-          <!-- Filter Tanggal (Hidden Input) -->
-          <div class="mb-6 hidden">
-            <input
-              type="date"
-              v-model="filterTanggal"
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-            />
+          <!-- Filter Tanggal (Range Picker) -->
+          <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Mulai</label>
+              <flat-pickr
+                v-model="balanceStart"
+                :config="flatpickrDateConfig"
+                class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300"
+                placeholder="Pilih tanggal mulai"
+              />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Akhir</label>
+              <flat-pickr
+                v-model="balanceEnd"
+                :config="flatpickrDateConfig"
+                class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300"
+                placeholder="Pilih tanggal akhir"
+              />
+            </div>
+            <div class="flex items-end justify-end gap-2">
+              <button
+                @click="applyBalanceFilter"
+                class="h-11 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
+              >
+                Terapkan
+              </button>
+              <button
+                @click="resetBalanceFilter"
+                class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-4 flex items-center justify-between">
+            <div></div>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="!showBalanceTransactions"
+                @click="showBalanceTransactions = true"
+                class="h-10 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Tampilkan Transaksi
+              </button>
+              <button
+                v-else
+                @click="showBalanceTransactions = false"
+                class="h-10 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Sembunyikan Transaksi
+              </button>
+            </div>
           </div>
 
           <!-- Saldo Card -->
@@ -61,8 +108,9 @@
             <div class="text-center">
               <p class="mb-2 text-sm font-medium text-white/80">Total Saldo</p>
               <h2 class="text-4xl font-bold text-white sm:text-5xl">
-                {{ formatCurrency(balanceData.saldo) }}
+                {{ formatCurrency(balanceTotals.saldo_akhir || 0) }}
               </h2>
+              <p class="mt-2 text-sm text-white/80">Saldo awal: {{ formatCurrency(balanceTotals.saldo_awal || 0) }}</p>
             </div>
           </div>
 
@@ -76,7 +124,7 @@
                     Total Saldo Masuk
                   </p>
                   <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {{ formatCurrency(balanceData.totalMasuk) }}
+                    {{ formatCurrency(balanceTotals.totalMasuk || 0) }}
                   </p>
                 </div>
                 <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/10">
@@ -105,7 +153,7 @@
                     Total Saldo Keluar
                   </p>
                   <p class="text-2xl font-bold text-red-600 dark:text-red-400">
-                    {{ formatCurrency(balanceData.totalKeluar) }}
+                    {{ formatCurrency(balanceTotals.totalKeluar || 0) }}
                   </p>
                 </div>
                 <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/10">
@@ -145,18 +193,62 @@
                 <div>
                   <p class="text-sm text-gray-600 dark:text-gray-400">Pemasukan</p>
                   <p class="text-lg font-semibold text-green-600 dark:text-green-400">
-                    {{ balanceData.persentaseMasuk }}%
+                    {{ persentaseMasukFormatted }}%
                   </p>
                 </div>
                 <div>
                   <p class="text-sm text-gray-600 dark:text-gray-400">Pengeluaran</p>
                   <p class="text-lg font-semibold text-red-600 dark:text-red-400">
-                    {{ balanceData.persentaseKeluar }}%
+                    {{ persentaseKeluarFormatted }}%
                   </p>
                 </div>
               </div>
             </div>
           </div>
+
+          <!-- Transactions list (toggleable) -->
+          <div v-if="showBalanceTransactions" class="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Transaksi</h3>
+              <div class="flex items-center gap-2">
+                <button @click="handleExportBalance" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">
+                  Export Excel
+                </button>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full table-auto">
+                <thead>
+                  <tr class="text-sm font-semibold text-left text-gray-600">
+                    <th class="px-4 py-2">Tanggal</th>
+                    <th class="px-4 py-2">Keterangan</th>
+                    <th class="px-4 py-2 text-right">Masuk</th>
+                    <th class="px-4 py-2 text-right">Keluar</th>
+                    <th class="px-4 py-2 text-right">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="tx in balanceTransactions" :key="tx.id" class="border-t">
+                    <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
+                    <td class="px-4 py-3 text-sm text-right text-green-600">{{ tx.masuk > 0 ? formatCurrency(tx.masuk) : '-' }}</td>
+                    <td class="px-4 py-3 text-sm text-right text-red-600">{{ tx.keluar > 0 ? formatCurrency(tx.keluar) : '-' }}</td>
+                    <td class="px-4 py-3 text-sm text-right">{{ formatCurrency(tx.saldo) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+              <div class="text-sm text-gray-600">Menampilkan halaman {{ balancePagination.current_page }} dari {{ balancePagination.last_page }} — total {{ balancePagination.total }} transaksi</div>
+              <div class="flex gap-2">
+                <button :disabled="balancePagination.current_page <= 1" @click="( () => { balancePagination.current_page = Math.max(1, balancePagination.current_page - 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Sebelumnya</button>
+                <button :disabled="balancePagination.current_page >= balancePagination.last_page" @click="( () => { balancePagination.current_page = Math.min(balancePagination.last_page, balancePagination.current_page + 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Selanjutnya</button>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Tab: Management -->
@@ -459,7 +551,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import VueApexCharts from 'vue3-apexcharts'
@@ -554,16 +646,22 @@ const searchMitra = ref('')
 const currentMitraPage = ref(1)
 const mitraPerPage = 6
 
-// Balance Data
-const balanceData = ref({
-  saldo: 250000000,
-  totalMasuk: 500000000,
-  totalKeluar: 250000000,
-  persentaseMasuk: 66.67,
-  persentaseKeluar: 33.33,
+// Balance filters & state
+const balanceStart = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+const balanceEnd = ref(new Date().toISOString().split('T')[0])
+const showBalanceTransactions = ref(false)
+
+const balanceTotals = ref({
+  saldo_awal: 0,
+  totalMasuk: 0,
+  totalKeluar: 0,
+  saldo_akhir: 0,
 })
 
-// Progress Chart Options
+const balanceTransactions = ref([])
+const balancePagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
+
+// Progress Chart Options (same as before)
 const progressChartOptions = computed(() => ({
   chart: {
     fontFamily: 'Outfit, sans-serif',
@@ -607,7 +705,80 @@ const progressChartOptions = computed(() => ({
   labels: ['Pemasukan'],
 }))
 
-const progressChartSeries = computed(() => [balanceData.value.persentaseMasuk])
+const persentaseMasuk = computed(() => {
+  const masuk = balanceTotals.value.totalMasuk || 0
+  const keluar = balanceTotals.value.totalKeluar || 0
+  const denom = masuk + keluar
+  return denom === 0 ? 0 : (masuk / denom) * 100
+})
+
+const persentaseMasukFormatted = computed(() => persentaseMasuk.value.toFixed(2))
+const persentaseKeluarFormatted = computed(() => (100 - persentaseMasuk.value).toFixed(2))
+
+const progressChartSeries = computed(() => [persentaseMasuk.value])
+
+const fetchBalanceData = async (page = 1) => {
+  try {
+    balancePagination.value.current_page = page
+    const params = new URLSearchParams()
+    params.append('start', balanceStart.value)
+    params.append('end', balanceEnd.value)
+    params.append('page', String(page))
+    params.append('per_page', String(balancePagination.value.per_page || 20))
+
+    const res = await fetch(`/admin/api/laporan/keuangan?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+    })
+
+    if (!res.ok) {
+      console.error('Error fetching laporan keuangan', res.status)
+      return
+    }
+
+    const json = await res.json()
+    if (!json.success) {
+      console.error('API returned error', json.message)
+      return
+    }
+
+    const data = json.data
+    balanceTotals.value = data.totals || { saldo_awal: 0, totalMasuk: 0, totalKeluar: 0, saldo_akhir: 0 }
+    balanceTransactions.value = data.transactions || []
+    balancePagination.value = { ...(data.pagination || {}), per_page: (data.pagination && data.pagination.per_page) || 20 }
+  } catch (err) {
+    console.error('Exception fetching laporan keuangan', err)
+  }
+}
+
+const applyBalanceFilter = () => {
+  balancePagination.value.current_page = 1
+  fetchBalanceData(1)
+}
+
+const resetBalanceFilter = () => {
+  balanceStart.value = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
+  balanceEnd.value = new Date().toISOString().split('T')[0]
+  applyBalanceFilter()
+}
+
+const handleExportBalance = () => {
+  const r = balanceTransactions.value.map((b) => ({
+    Tanggal: b.tanggal,
+    Keterangan: b.keterangan,
+    Masuk: b.masuk > 0 ? formatCurrency(b.masuk) : '-',
+    Keluar: b.keluar > 0 ? formatCurrency(b.keluar) : '-',
+    Saldo: formatCurrency(b.saldo),
+  }))
+  const ws = XLSX.utils.json_to_sheet(r)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan')
+  const filename = `Laporan_Keuangan_${balanceStart.value}_${balanceEnd.value}.xlsx`
+  XLSX.writeFile(wb, filename)
+}
 
 // Format currency helper
 const formatCurrency = (value: number) => {
@@ -871,6 +1042,17 @@ const paginatedMitraData = computed(() => {
 // Watch search to reset page
 watch(searchMitra, () => {
   currentMitraPage.value = 1
+})
+
+// Fetch balance data when balance tab is active
+watch(activeTab, (v) => {
+  if (v === 'balance') {
+    fetchBalanceData(1)
+  }
+})
+
+onMounted(() => {
+  if (activeTab.value === 'balance') fetchBalanceData(1)
 })
 
 // Mitra Data

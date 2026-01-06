@@ -247,6 +247,9 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Custom export endpoint for program-focused CSV export
     Route::get('transaksi/export-program', [TransaksiController::class, 'exportProgram']);
     Route::apiResource('transaksi', TransaksiController::class);
+
+    // Laporan Keuangan API (aggregated totals + transactions)
+    Route::get('laporan/keuangan', [\App\Http\Controllers\LaporanKeuanganController::class, 'index']);
     
     // Pengajuan Dana API
     Route::get('pengajuan-dana/options', [PengajuanDanaController::class, 'options']);

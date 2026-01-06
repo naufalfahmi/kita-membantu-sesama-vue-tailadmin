@@ -49,9 +49,9 @@
         >
           <!-- Filter Tanggal (Rentang) - cleaner responsive layout -->
           <div class="mb-6">
-            <div class="grid grid-cols-1 gap-3 md:grid-cols-6">
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
               <!-- Range picker spans larger area on md+ -->
-              <div class="md:col-span-2">
+              <div class="md:col-span-4">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal</label>
                 <flat-pickr
                   v-model="balanceRange"
@@ -61,24 +61,24 @@
                 />
               </div>
 
-              <!-- Program select -->
-              <div class="md:col-span-1">
+              <!-- Program select (wider) -->
+              <div class="md:col-span-3">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
                 <SearchableSelect
                   v-model="selectedProgram"
-                  :options="programs.map(p => ({ value: String(p.id), label: p.nama_program || p.name || p.nama }))"
+                  :options="programOptions"
                   placeholder="Semua Program"
                   :search-input="programSearchInput"
                   @update:search-input="programSearchInput = $event"
                 />
               </div>
 
-              <!-- Kantor Cabang select -->
-              <div class="md:col-span-1">
+              <!-- Kantor Cabang select (wider) -->
+              <div class="md:col-span-3">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
                 <SearchableSelect
                   v-model="selectedKantor"
-                  :options="kantorCabangs.map(k => ({ value: String(k.id), label: k.nama || k.name }))"
+                  :options="kantorOptions"
                   placeholder="Semua Kantor Cabang"
                   :search-input="kantorSearchInput"
                   @update:search-input="kantorSearchInput = $event"
@@ -86,7 +86,7 @@
               </div>
 
               <!-- Buttons aligned to right and bottom -->
-              <div class="md:col-span-1 flex items-end justify-end">
+              <div class="md:col-span-2 flex items-end justify-end">
                 <div class="flex gap-2">
                   <button
                     @click="resetBalanceFilter"
@@ -94,6 +94,48 @@
                   >
                     Reset
                   </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Accordion (placed immediately under filters and matches width) -->
+            <div v-if="accordionOpen" class="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+              <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Transaksi ({{ accordionFilterLabel }})</h3>
+                <div class="flex items-center gap-2">
+                  <button @click="handleExportDisplayed" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Export Excel</button>
+                  <button @click="accordionOpen = false" class="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">Tutup</button>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full table-auto">
+                  <thead>
+                    <tr class="text-sm font-semibold text-left text-gray-600">
+                      <th class="px-4 py-2">Tanggal</th>
+                      <th class="px-4 py-2">Keterangan</th>
+                      <th class="px-4 py-2 text-right">Masuk</th>
+                      <th class="px-4 py-2 text-right">Keluar</th>
+                      <th class="px-4 py-2 text-right">Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="tx in displayedTransactions" :key="tx.id" class="border-t">
+                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
+                      <td class="px-4 py-3 text-sm text-right text-green-600">{{ tx.masuk > 0 ? formatCurrency(tx.masuk) : '-' }}</td>
+                      <td class="px-4 py-3 text-sm text-right text-red-600">{{ tx.keluar > 0 ? formatCurrency(tx.keluar) : '-' }}</td>
+                      <td class="px-4 py-3 text-sm text-right">{{ formatCurrency(tx.saldo) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between">
+                <div class="text-sm text-gray-600">Menampilkan halaman {{ balancePagination.current_page }} dari {{ balancePagination.last_page }} — total {{ balancePagination.total }} transaksi</div>
+                <div class="flex gap-2">
+                  <button :disabled="balancePagination.current_page <= 1" @click="( () => { balancePagination.current_page = Math.max(1, balancePagination.current_page - 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Sebelumnya</button>
+                  <button :disabled="balancePagination.current_page >= balancePagination.last_page" @click="( () => { balancePagination.current_page = Math.min(balancePagination.last_page, balancePagination.current_page + 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Selanjutnya</button>
                 </div>
               </div>
             </div>
@@ -186,47 +228,7 @@
             </div>
           </div>
 
-          <!-- Accordion for transactions (expands when a stat card is clicked) -->
-          <div v-if="accordionOpen" class="mt-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
-            <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Transaksi ({{ accordionFilterLabel }})</h3>
-              <div class="flex items-center gap-2">
-                <button @click="handleExportDisplayed" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Export Excel</button>
-                <button @click="accordionOpen = false" class="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">Tutup</button>
-              </div>
-            </div>
 
-            <div class="overflow-x-auto">
-              <table class="w-full table-auto">
-                <thead>
-                  <tr class="text-sm font-semibold text-left text-gray-600">
-                    <th class="px-4 py-2">Tanggal</th>
-                    <th class="px-4 py-2">Keterangan</th>
-                    <th class="px-4 py-2 text-right">Masuk</th>
-                    <th class="px-4 py-2 text-right">Keluar</th>
-                    <th class="px-4 py-2 text-right">Saldo</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="tx in displayedTransactions" :key="tx.id" class="border-t">
-                    <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
-                    <td class="px-4 py-3 text-sm text-right text-green-600">{{ tx.masuk > 0 ? formatCurrency(tx.masuk) : '-' }}</td>
-                    <td class="px-4 py-3 text-sm text-right text-red-600">{{ tx.keluar > 0 ? formatCurrency(tx.keluar) : '-' }}</td>
-                    <td class="px-4 py-3 text-sm text-right">{{ formatCurrency(tx.saldo) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div class="mt-4 flex items-center justify-between">
-              <div class="text-sm text-gray-600">Menampilkan halaman {{ balancePagination.current_page }} dari {{ balancePagination.last_page }} — total {{ balancePagination.total }} transaksi</div>
-              <div class="flex gap-2">
-                <button :disabled="balancePagination.current_page <= 1" @click="( () => { balancePagination.current_page = Math.max(1, balancePagination.current_page - 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Sebelumnya</button>
-                <button :disabled="balancePagination.current_page >= balancePagination.last_page" @click="( () => { balancePagination.current_page = Math.min(balancePagination.last_page, balancePagination.current_page + 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Selanjutnya</button>
-              </div>
-            </div>
-          </div>
 
         </div>
 
@@ -683,6 +685,17 @@ const selectedKantor = ref('')
 
 const programSearchInput = ref('')
 const kantorSearchInput = ref('')
+
+// Options with explicit "Semua" entries
+const programOptions = computed(() => {
+  const base = programs.value.map(p => ({ value: String(p.id), label: p.nama_program || p.name || p.nama }))
+  return [{ value: '', label: 'Semua Program' }, ...base]
+})
+
+const kantorOptions = computed(() => {
+  const base = kantorCabangs.value.map(k => ({ value: String(k.id), label: k.nama || k.name }))
+  return [{ value: '', label: 'Semua Kantor Cabang' }, ...base]
+})
 
 // Apply fetch when program/kantor filters change
 watch([selectedProgram, selectedKantor], () => {

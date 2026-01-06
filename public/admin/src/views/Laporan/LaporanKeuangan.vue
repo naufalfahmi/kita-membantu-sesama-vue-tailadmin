@@ -303,25 +303,21 @@
                 {{ mitra.nama }}
               </h3>
               <p class="mb-3 text-sm text-gray-600 dark:text-gray-400">
-                {{ mitra.program }}
+                {{ mitra.transaksi_count || 0 }} transaksi • {{ formatCurrency(mitra.transaksi_total || 0) }}
               </p>
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-500">Nominal</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-500">Jumlah Transaksi</p>
                   <p class="text-base font-semibold text-gray-800 dark:text-white/90">
-                    {{ formatCurrency(mitra.nominal) }}
+                    {{ mitra.transaksi_count || 0 }}
                   </p>
                 </div>
-                <span
-                  class="rounded-full px-3 py-1 text-xs font-medium"
-                  :class="
-                    mitra.status === 'Aktif'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                  "
-                >
-                  {{ mitra.status }}
-                </span>
+                <div>
+                  <p class="text-xs text-gray-500 dark:text-gray-500">Total Nilai</p>
+                  <p class="text-base font-semibold text-gray-800 dark:text-white/90">
+                    {{ formatCurrency(mitra.transaksi_total || 0) }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -836,6 +832,22 @@ const handleExportBalance = () => {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan')
   const filename = `Laporan_Keuangan_${balanceStart.value}_${balanceEnd.value}.xlsx`
+  XLSX.writeFile(wb, filename)
+}
+
+const handleExportMitraTransactions = () => {
+  const r = mitraTransactions.value.map((t) => ({
+    Tanggal: t.tanggal,
+    Keterangan: t.keterangan,
+    Donatur: t.donatur || '-',
+    Program: t.program || '-',
+    Nominal: t.nominal ? formatCurrency(t.nominal) : '-',
+    Kantor: t.kantor || '-',
+  }))
+  const ws = XLSX.utils.json_to_sheet(r)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, `Mitra_${mitraDetail.value.nama || mitraDetail.value.id}`)
+  const filename = `Mitra_Transaksi_${mitraDetail.value.nama || mitraDetail.value.id}_${new Date().toISOString().split('T')[0]}.xlsx`
   XLSX.writeFile(wb, filename)
 }
 

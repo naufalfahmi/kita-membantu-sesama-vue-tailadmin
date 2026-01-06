@@ -48,7 +48,7 @@
           aria-labelledby="tab-balance"
         >
           <!-- Filter Tanggal (Range Picker) -->
-          <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-4">
             <div>
               <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Mulai</label>
               <flat-pickr
@@ -67,19 +67,35 @@
                 placeholder="Pilih tanggal akhir"
               />
             </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
+              <select v-model="selectedProgram" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
+                <option value="">Semua Program</option>
+                <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.nama_program || p.name || p.nama }}</option>
+              </select>
+            </div>
             <div class="flex items-end justify-end gap-2">
-              <button
-                @click="applyBalanceFilter"
-                class="h-11 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
-              >
-                Terapkan
-              </button>
-              <button
-                @click="resetBalanceFilter"
-                class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Reset
-              </button>
+              <div class="mr-2 w-full">
+                <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
+                <select v-model="selectedKantor" class="h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm">
+                  <option value="">Semua Kantor Cabang</option>
+                  <option v-for="k in kantorCabangs" :key="k.id" :value="k.id">{{ k.nama || k.name }}</option>
+                </select>
+              </div>
+              <div class="flex gap-2">
+                <button
+                  @click="applyBalanceFilter"
+                  class="h-11 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
+                >
+                  Terapkan
+                </button>
+                <button
+                  @click="resetBalanceFilter"
+                  class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
 
@@ -660,6 +676,11 @@ const balanceTotals = ref({
 
 const balanceTransactions = ref([])
 const balancePagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
+const programs = ref([])
+const kantorCabangs = ref([])
+const selectedProgram = ref('')
+const selectedKantor = ref('')
+
 
 // Progress Chart Options (same as before)
 const progressChartOptions = computed(() => ({
@@ -725,6 +746,8 @@ const fetchBalanceData = async (page = 1) => {
     params.append('end', balanceEnd.value)
     params.append('page', String(page))
     params.append('per_page', String(balancePagination.value.per_page || 20))
+    if (selectedProgram.value) params.append('program_id', selectedProgram.value)
+    if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
 
     const res = await fetch(`/admin/api/laporan/keuangan?${params.toString()}`, {
       headers: {
@@ -762,8 +785,48 @@ const applyBalanceFilter = () => {
 const resetBalanceFilter = () => {
   balanceStart.value = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
   balanceEnd.value = new Date().toISOString().split('T')[0]
+  selectedProgram.value = ''
+  selectedKantor.value = ''
   applyBalanceFilter()
 }
+
+const fetchPrograms = async () => {
+  try {
+    const res = await fetch('/admin/api/program?per_page=200', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) programs.value = json.data || json.data?.data || json.data?.items || []
+  } catch (err) {
+    console.error('Error fetching programs', err)
+  }
+}
+
+const fetchKantorCabangs = async () => {
+  try {
+    const res = await fetch('/admin/api/kantor-cabang?per_page=200', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) kantorCabangs.value = json.data || json.data?.data || json.data?.items || []
+  } catch (err) {
+    console.error('Error fetching kantor cabang', err)
+  }
+}
+
+watch(activeTab, (v) => {
+  if (v === 'balance') {
+    fetchBalanceData(1)
+    fetchPrograms()
+    fetchKantorCabangs()
+  }
+})
+
+onMounted(() => {
+  if (activeTab.value === 'balance') {
+    fetchBalanceData(1)
+    fetchPrograms()
+    fetchKantorCabangs()
+  }
+})
 
 const handleExportBalance = () => {
   const r = balanceTransactions.value.map((b) => ({

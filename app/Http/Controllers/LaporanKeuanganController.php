@@ -29,6 +29,8 @@ class LaporanKeuanganController extends Controller
 
         $start = $request->query('start');
         $end = $request->query('end');
+        $programId = $request->query('program_id');
+        $kantorCabangId = $request->query('kantor_cabang_id');
 
         try {
             $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
@@ -38,43 +40,106 @@ class LaporanKeuanganController extends Controller
         }
 
         // Totals in range
-        $incomingInRange = Transaksi::whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
-            ->sum('nominal');
+        $incomingInRangeQuery = Transaksi::whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()]);
+        if ($programId) {
+            $incomingInRangeQuery->where('program_id', $programId);
+        }
+        if ($kantorCabangId) {
+            $incomingInRangeQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+        $incomingInRange = $incomingInRangeQuery->sum('nominal');
 
-        $disbursementsInRange = PengajuanDanaDisbursement::whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
-            ->sum('amount');
+        $disbursementsInRangeQuery = PengajuanDanaDisbursement::whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()]);
+        if ($programId) {
+            $disbursementsInRangeQuery->where('program_id', $programId);
+        }
+        if ($kantorCabangId) {
+            $disbursementsInRangeQuery->whereHas('pengajuan', function ($q) use ($kantorCabangId) {
+                $q->where('kantor_cabang_id', $kantorCabangId);
+            });
+        }
+        $disbursementsInRange = $disbursementsInRangeQuery->sum('amount');
 
-        $penyaluranInRange = Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
-            ->sum('amount');
+        $penyaluranInRangeQuery = Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()]);
+        if ($programId) {
+            $penyaluranInRangeQuery->whereHas('pengajuan', function ($q) use ($programId) {
+                $q->where('program_id', $programId);
+            });
+        }
+        if ($kantorCabangId) {
+            $penyaluranInRangeQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+        $penyaluranInRange = $penyaluranInRangeQuery->sum('amount');
 
         $outgoingInRange = $disbursementsInRange + $penyaluranInRange;
 
         // Totals before start (for opening balance)
-        $incomingBefore = Transaksi::where('tanggal_transaksi', '<', $startDate->toDateString())->sum('nominal');
-        $disbursementsBefore = PengajuanDanaDisbursement::where('tanggal_disburse', '<', $startDate->toDateString())->sum('amount');
-        $penyaluranBefore = Penyaluran::where(DB::raw('DATE(created_at)'), '<', $startDate->toDateString())->sum('amount');
+        $incomingBeforeQuery = Transaksi::where('tanggal_transaksi', '<', $startDate->toDateString());
+        if ($programId) {
+            $incomingBeforeQuery->where('program_id', $programId);
+        }
+        if ($kantorCabangId) {
+            $incomingBeforeQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+        $incomingBefore = $incomingBeforeQuery->sum('nominal');
+
+        $disbursementsBeforeQuery = PengajuanDanaDisbursement::where('tanggal_disburse', '<', $startDate->toDateString());
+        if ($programId) {
+            $disbursementsBeforeQuery->where('program_id', $programId);
+        }
+        if ($kantorCabangId) {
+            $disbursementsBeforeQuery->whereHas('pengajuan', function ($q) use ($kantorCabangId) {
+                $q->where('kantor_cabang_id', $kantorCabangId);
+            });
+        }
+        $disbursementsBefore = $disbursementsBeforeQuery->sum('amount');
+
+        $penyaluranBeforeQuery = Penyaluran::where(DB::raw('DATE(created_at)'), '<', $startDate->toDateString());
+        if ($programId) {
+            $penyaluranBeforeQuery->whereHas('pengajuan', function ($q) use ($programId) {
+                $q->where('program_id', $programId);
+            });
+        }
+        if ($kantorCabangId) {
+            $penyaluranBeforeQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+        $penyaluranBefore = $penyaluranBeforeQuery->sum('amount');
         $outgoingBefore = $disbursementsBefore + $penyaluranBefore;
 
         $saldoAwal = (float)$incomingBefore - (float)$outgoingBefore;
         $saldoAkhir = $saldoAwal + (float)$incomingInRange - (float)$outgoingInRange;
 
         // Build transactions list (incoming and outgoing unified)
-        $incomingRows = Transaksi::whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
-            ->orderBy('tanggal_transaksi', 'asc')
+        $incomingRowsQuery = Transaksi::whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])->orderBy('tanggal_transaksi', 'asc');
+        if ($programId) {
+            $incomingRowsQuery->where('program_id', $programId);
+        }
+        if ($kantorCabangId) {
+            $incomingRowsQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+        $incomingRows = $incomingRowsQuery
             ->get(['id', 'tanggal_transaksi', 'keterangan', 'nominal'])
             ->map(function ($t) {
                 return [
                     'id' => $t->id,
                     'tanggal' => $t->tanggal_transaksi ? $t->tanggal_transaksi->format('Y-m-d') : null,
-                    'keterangan' => $t->keterangan ?: ('Transaksi ' . ($t->id ?? '')), 
+                    'keterangan' => $t->keterangan ?: ('Transaksi ' . ($t->id ?? '')),
                     'masuk' => (float)$t->nominal,
                     'keluar' => 0.0,
                     'source' => 'transaksi',
                 ];
             })->toArray();
 
-        $disbursementRows = PengajuanDanaDisbursement::whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
-            ->orderBy('tanggal_disburse', 'asc')
+        $disbursementRowsQuery = PengajuanDanaDisbursement::whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])->orderBy('tanggal_disburse', 'asc');
+        if ($programId) {
+            $disbursementRowsQuery->where('program_id', $programId);
+        }
+        if ($kantorCabangId) {
+            $disbursementRowsQuery->whereHas('pengajuan', function ($q) use ($kantorCabangId) {
+                $q->where('kantor_cabang_id', $kantorCabangId);
+            });
+        }
+        $disbursementRows = $disbursementRowsQuery
             ->get(['id', 'tanggal_disburse', 'amount', 'pengajuan_dana_id'])
             ->map(function ($d) {
                 return [
@@ -87,8 +152,16 @@ class LaporanKeuanganController extends Controller
                 ];
             })->toArray();
 
-        $penyaluranRows = Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
-            ->orderBy('created_at', 'asc')
+        $penyaluranRowsQuery = Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])->orderBy('created_at', 'asc');
+        if ($programId) {
+            $penyaluranRowsQuery->whereHas('pengajuan', function ($q) use ($programId) {
+                $q->where('program_id', $programId);
+            });
+        }
+        if ($kantorCabangId) {
+            $penyaluranRowsQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+        $penyaluranRows = $penyaluranRowsQuery
             ->get(['id', 'amount', 'program_name', 'created_at'])
             ->map(function ($p) {
                 return [

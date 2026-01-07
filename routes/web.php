@@ -250,6 +250,10 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
 
     // Laporan Keuangan API (aggregated totals + transactions)
     Route::get('laporan/keuangan', [\App\Http\Controllers\LaporanKeuanganController::class, 'index']);
+    Route::get('laporan/mitra', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraList']);
+    // Detail must come before the 'transaksi' sub-route to avoid catching it
+    Route::get('laporan/mitra/{mitra}', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraDetail']);
+    Route::get('laporan/mitra/{mitra}/transaksi', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraTransactions']);
     
     // Pengajuan Dana API
     Route::get('pengajuan-dana/options', [PengajuanDanaController::class, 'options']);

@@ -219,4 +219,146 @@ class LaporanKeuanganController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Return list of mitra that have transactions (count + total nominal).
+     * Supports optional search query `search` and pagination.
+     */
+    public function mitraList(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->can('view laporan keuangan')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $query = \App\Models\Transaksi::query()->whereNotNull('mitra_id')->with('mitra');
+
+        if ($request->filled('search')) {
+            $s = $request->query('search');
+            $query->whereHas('mitra', function ($q) use ($s) {
+                $q->where('nama', 'like', "%{$s}%");
+            });
+        }
+
+        // Aggregate per mitra
+        $items = $query
+            ->selectRaw('mitra_id, COUNT(*) as transaksi_count, SUM(nominal) as transaksi_total')
+            ->groupBy('mitra_id')
+            ->orderByDesc('transaksi_total')
+            ->get()
+            ->map(function ($row) {
+                $mitra = \App\Models\Mitra::find($row->mitra_id);
+                return [
+                    'id' => $row->mitra_id,
+                    'nama' => $mitra ? $mitra->nama : null,
+                    'transaksi_count' => (int)$row->transaksi_count,
+                    'transaksi_total' => (float)$row->transaksi_total,
+                ];
+            })->toArray();
+
+        // simple pagination in memory
+        $page = max(1, (int)$request->query('page', 1));
+        $perPage = max(1, min(200, (int)$request->query('per_page', 20)));
+        $total = count($items);
+        $slice = array_slice($items, ($page - 1) * $perPage, $perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => $slice,
+            'pagination' => [
+                'current_page' => $page,
+                'last_page' => (int)ceil($total / $perPage),
+                'per_page' => $perPage,
+                'total' => $total,
+            ],
+        ]);
+    }
+
+    /**
+     * Return transactions for a specific mitra with totals and pagination.
+     */
+    public function mitraTransactions(Request $request, $mitraId)
+    {
+        $user = $request->user();
+        if (!$user || !$user->can('view laporan keuangan')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $query = \App\Models\Transaksi::with(['donatur:id,nama', 'program:id,nama_program', 'kantorCabang:id,nama', 'fundraiser:id,name'])
+            ->where('mitra_id', $mitraId);
+
+        if ($request->filled('tanggal_from') && $request->filled('tanggal_to')) {
+            $query->whereDate('tanggal_transaksi', '>=', $request->tanggal_from)
+                ->whereDate('tanggal_transaksi', '<=', $request->tanggal_to);
+        }
+
+        $totalCount = (int)$query->count();
+        $totalNominal = (float)$query->sum('nominal');
+
+        $page = max(1, (int)$request->query('page', 1));
+        $perPage = max(1, min(200, (int)$request->query('per_page', 20)));
+        $txs = $query->orderByDesc('tanggal_transaksi')->paginate($perPage, ['*'], 'page', $page);
+
+        $txs->getCollection()->transform(function ($t) {
+            return [
+                'id' => $t->id,
+                'tanggal' => $t->tanggal_transaksi ? $t->tanggal_transaksi->toDateString() : null,
+                'keterangan' => $t->keterangan ?: $t->kode,
+                'nominal' => (float)$t->nominal,
+                'donatur' => $t->donatur ? $t->donatur->nama : null,
+                'program' => $t->program ? $t->program->nama_program : null,
+                'kantor' => $t->kantorCabang ? $t->kantorCabang->nama : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $txs->items(),
+            'pagination' => [
+                'current_page' => $txs->currentPage(),
+                'last_page' => $txs->lastPage(),
+                'per_page' => $txs->perPage(),
+                'total' => $txs->total(),
+            ],
+            'totals' => [
+                'count' => $totalCount,
+                'nominal' => $totalNominal,
+            ],
+        ]);
+    }
+
+    /**
+     * Return basic mitra info and aggregates for a specific mitra.
+     */
+    public function mitraDetail(Request $request, $mitraId)
+    {
+        $user = $request->user();
+        if (!$user || !$user->can('view laporan keuangan')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $mitra = \App\Models\Mitra::find($mitraId);
+        if (! $mitra) {
+            return response()->json(['success' => false, 'message' => 'Mitra not found'], 404);
+        }
+
+        $query = \App\Models\Transaksi::where('mitra_id', $mitraId);
+        if ($request->filled('tanggal_from') && $request->filled('tanggal_to')) {
+            $query->whereDate('tanggal_transaksi', '>=', $request->tanggal_from)
+                  ->whereDate('tanggal_transaksi', '<=', $request->tanggal_to);
+        }
+
+        $count = (int)$query->count();
+        $total = (float)$query->sum('nominal');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $mitra->id,
+                'nama' => $mitra->nama,
+                'transaksi_count' => $count,
+                'transaksi_total' => $total,
+            ],
+        ]);
+    }
 }

@@ -281,7 +281,7 @@
                   </svg>
                 </div>
                 <button
-                  @click="openMitraDetail(mitra.id)"
+                  @click="handleMitraDetail(mitra.id)"
                   class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/[0.03] dark:hover:text-brand-400"
                 >
                   <svg
@@ -322,58 +322,7 @@
             </div>
           </div>
 
-          <!-- Mitra Detail Modal -->
-          <div v-if="showMitraModal" class="fixed inset-0 z-50 flex items-start justify-center p-6">
-            <div class="absolute inset-0 bg-black/40" @click="closeMitraModal"></div>
-            <div class="relative z-60 w-full max-w-4xl rounded-lg bg-white p-6 shadow-lg dark:bg-gray-900">
-              <div class="flex items-center justify-between mb-4">
-                <div>
-                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Detail Mitra - {{ mitraDetail.nama }}</h3>
-                  <p class="text-sm text-gray-500">Total transaksi: {{ mitraDetail.transaksi_count }} — Total nilai: {{ formatCurrency(mitraDetail.transaksi_total) }}</p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <button @click="handleExportMitraTransactions" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Export Excel</button>
-                  <button @click="closeMitraModal" class="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">Tutup</button>
-                </div>
-              </div>
 
-              <div class="overflow-x-auto">
-                <table class="w-full table-auto">
-                  <thead>
-                    <tr class="text-sm font-semibold text-left text-gray-600">
-                      <th class="px-4 py-2">Tanggal</th>
-                      <th class="px-4 py-2">Keterangan</th>
-                      <th class="px-4 py-2">Donatur</th>
-                      <th class="px-4 py-2">Program</th>
-                      <th class="px-4 py-2 text-right">Nominal</th>
-                      <th class="px-4 py-2">Kantor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-if="mitraTxLoading">
-                      <td colspan="6" class="px-4 py-6 text-center">Loading...</td>
-                    </tr>
-                    <tr v-for="tx in mitraTransactions" :key="tx.id" class="border-t">
-                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.donatur }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.program }}</td>
-                      <td class="px-4 py-3 text-sm text-right">{{ formatCurrency(tx.nominal) }}</td>
-                      <td class="px-4 py-3 text-sm text-gray-700">{{ tx.kantor }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div class="mt-4 flex items-center justify-between">
-                <div class="text-sm text-gray-600">Halaman {{ mitraTxPagination.current_page }} dari {{ mitraTxPagination.last_page }} — total {{ mitraTxPagination.total }} transaksi</div>
-                <div class="flex gap-2">
-                  <button :disabled="mitraTxPagination.current_page <= 1" @click="( () => { mitraTxPagination.current_page = Math.max(1, mitraTxPagination.current_page - 1); openMitraDetail(mitraDetail.id, mitraTxPagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Sebelumnya</button>
-                  <button :disabled="mitraTxPagination.current_page >= mitraTxPagination.last_page" @click="( () => { mitraTxPagination.current_page = Math.min(mitraTxPagination.last_page, mitraTxPagination.current_page + 1); openMitraDetail(mitraDetail.id, mitraTxPagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Selanjutnya</button>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- Empty State -->
           <div
@@ -835,21 +784,7 @@ const handleExportBalance = () => {
   XLSX.writeFile(wb, filename)
 }
 
-const handleExportMitraTransactions = () => {
-  const r = mitraTransactions.value.map((t) => ({
-    Tanggal: t.tanggal,
-    Keterangan: t.keterangan,
-    Donatur: t.donatur || '-',
-    Program: t.program || '-',
-    Nominal: t.nominal ? formatCurrency(t.nominal) : '-',
-    Kantor: t.kantor || '-',
-  }))
-  const ws = XLSX.utils.json_to_sheet(r)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, `Mitra_${mitraDetail.value.nama || mitraDetail.value.id}`)
-  const filename = `Mitra_Transaksi_${mitraDetail.value.nama || mitraDetail.value.id}_${new Date().toISOString().split('T')[0]}.xlsx`
-  XLSX.writeFile(wb, filename)
-}
+
 
 // Format currency helper
 const formatCurrency = (value: number) => {
@@ -1087,13 +1022,6 @@ const mitraList = ref([])
 const mitraPagination = ref({ current_page: 1, last_page: 1, per_page: 12, total: 0 })
 const mitraLoading = ref(false)
 
-// Detail modal state
-const showMitraModal = ref(false)
-const mitraDetail = ref({ id: '', nama: '', transaksi_count: 0, transaksi_total: 0 })
-const mitraTransactions = ref([])
-const mitraTxPagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
-const mitraTxLoading = ref(false)
-
 // Fetch mitra list from API
 const fetchMitraList = async (page = 1) => {
   try {
@@ -1127,43 +1055,6 @@ watch(searchMitra, () => {
   mitraSearchTimeout = setTimeout(() => fetchMitraList(1), 400)
 })
 
-// Open mitra detail modal and fetch transactions
-const openMitraDetail = async (id: string, page = 1) => {
-  try {
-    mitraTxLoading.value = true
-    mitraDetail.value = { id, nama: '', transaksi_count: 0, transaksi_total: 0 }
-    // try get name from current list
-    const found = mitraList.value.find((m: any) => String(m.id) === String(id))
-    if (found) mitraDetail.value.nama = found.nama
-
-    mitraTxPagination.value.current_page = page
-    const res = await fetch(`/admin/api/laporan/mitra/${id}/transaksi?page=${page}&per_page=${mitraTxPagination.value.per_page}`, {
-      headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      credentials: 'same-origin',
-    })
-    if (!res.ok) return
-    const json = await res.json()
-    if (!json.success) return
-
-    mitraTransactions.value = json.data || []
-    mitraTxPagination.value = { ...(json.pagination || {}), per_page: mitraTxPagination.value.per_page }
-    if (json.totals) {
-      mitraDetail.value.transaksi_count = json.totals.count || 0
-      mitraDetail.value.transaksi_total = json.totals.nominal || 0
-    }
-
-    showMitraModal.value = true
-  } catch (err) {
-    console.error('Error fetching mitra transactions', err)
-  } finally {
-    mitraTxLoading.value = false
-  }
-}
-
-const closeMitraModal = () => {
-  showMitraModal.value = false
-  mitraTransactions.value = []
-}
 
 // Replace client-side pagination with server values
 const totalMitraPages = computed(() => Math.ceil(mitraPagination.value.total / mitraPagination.value.per_page))
@@ -1189,8 +1080,7 @@ const handleDownload = (id: string) => {
 }
 
 const handleMitraDetail = (id: string) => {
-  // backward-compatible handler - open modal
-  openMitraDetail(id)
+  router.push(`/laporan/detail-mitra/${id}`)
 }
 
 // Management Tab - Reset Filter

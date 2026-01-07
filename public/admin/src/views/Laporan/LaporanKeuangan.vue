@@ -403,7 +403,7 @@
 
           <!-- Pagination -->
           <div
-            v-if="filteredMitraData.length > 0"
+            v-if="mitraList.length > 0"
             class="mt-6 flex items-center justify-between"
           >
             <div class="text-sm text-gray-600 dark:text-gray-400">

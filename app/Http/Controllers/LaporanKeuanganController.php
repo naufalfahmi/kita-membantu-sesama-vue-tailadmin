@@ -308,6 +308,7 @@ class LaporanKeuanganController extends Controller
                 'donatur' => $t->donatur ? $t->donatur->nama : null,
                 'program' => $t->program ? $t->program->nama_program : null,
                 'kantor' => $t->kantorCabang ? $t->kantorCabang->nama : null,
+                'status' => $t->status ?? null,
             ];
         });
 
@@ -351,11 +352,19 @@ class LaporanKeuanganController extends Controller
         $count = (int)$query->count();
         $total = (float)$query->sum('nominal');
 
+        // Compute fee (nominal) from mitra payroll totals if available
+        $feeTotal = (float)\App\Models\MitraPayroll::where('mitra_id', $mitraId)->sum('total');
+
+        // Derive status from soft delete flag (no explicit status column in migration)
+        $status = $mitra->deleted_at ? 'Nonaktif' : 'Aktif';
+
         return response()->json([
             'success' => true,
             'data' => [
                 'id' => $mitra->id,
                 'nama' => $mitra->nama,
+                'status' => $status,
+                'nominal' => $feeTotal,
                 'transaksi_count' => $count,
                 'transaksi_total' => $total,
             ],

@@ -89,10 +89,10 @@
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
               <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">
-                Nominal Kontrak
+                Fee Mitra
               </p>
               <p class="text-xl font-bold text-gray-800 dark:text-white/90">
-                {{ formatCurrency(mitraData.nominal) }}
+                {{ formatCurrency(mitraData.nominal || 0) }}
               </p>
             </div>
             <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
@@ -221,6 +221,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
+import * as XLSX from 'xlsx'
 
 const route = useRoute()
 const router = useRouter()
@@ -340,7 +341,15 @@ const mitraList = [
 // Server-backed transactions and pagination
 const transactions = ref<Array<any>>([])
 const pagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
-const range = ref([new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], new Date().toISOString().split('T')[0]])
+// default range: last 12 months to include historical transactions
+const range = ref([new Date(new Date().getFullYear() - (new Date().getMonth() < new Date().getMonth() ? 0 : 0), new Date().getMonth(), new Date().getDate()).toISOString().split('T')[0]]);
+// compute start date as 12 months ago
+const startDate = new Date()
+startDate.setFullYear(startDate.getFullYear() - 1)
+range.value = [startDate.toISOString().split('T')[0], new Date().toISOString().split('T')[0]]
+
+// fallback guard: try once without date filters when totals suggest transactions exist
+const rangeFallbackTried = ref(false)
 
 const totalTransactionValue = computed(() => {
   return transactions.value.reduce((sum, t) => sum + (t.nominal || 0), 0)
@@ -429,6 +438,30 @@ const fetchTransactions = async (page = 1) => {
     if (json.totals) {
       mitraData.value.transaksi_count = json.totals.count || mitraData.value.transaksi_count
       mitraData.value.transaksi_total = json.totals.nominal || mitraData.value.transaksi_total
+    }
+
+    // If we received no rows for the current date filter but mitra has transactions overall, retry once without date filters
+    if ((!transactions.value || transactions.value.length === 0) && mitraData.value && (mitraData.value.transaksi_count || 0) > 0 && !rangeFallbackTried.value) {
+      rangeFallbackTried.value = true
+      try {
+        const params2 = new URLSearchParams()
+        params2.append('page', String(page))
+        params2.append('per_page', String(pagination.value.per_page || 20))
+        const res2 = await fetch(`/admin/api/laporan/mitra/${id}/transaksi?${params2.toString()}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+        if (res2.ok) {
+          const json2 = await res2.json()
+          if (json2.success) {
+            transactions.value = json2.data || []
+            pagination.value = { ...(json2.pagination || {}), per_page: pagination.value.per_page }
+            if (json2.totals) {
+              mitraData.value.transaksi_count = json2.totals.count || mitraData.value.transaksi_count
+              mitraData.value.transaksi_total = json2.totals.nominal || mitraData.value.transaksi_total
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Fallback fetch failed', e)
+      }
     }
   } catch (err) {
     console.error('Error fetching mitra transactions', err)

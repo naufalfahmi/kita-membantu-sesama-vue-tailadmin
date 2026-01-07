@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PengajuanDana extends Model
 {
@@ -66,5 +68,15 @@ class PengajuanDana extends Model
     public function disbursements()
     {
         return $this->hasMany(PengajuanDanaDisbursement::class, 'pengajuan_dana_id');
+    }
+
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(PengajuanDanaApproval::class, 'pengajuan_dana_id');
+    }
+
+    public function latestApproval(): HasOne
+    {
+        return $this->hasOne(PengajuanDanaApproval::class, 'pengajuan_dana_id')->latestOfMany();
     }
 }

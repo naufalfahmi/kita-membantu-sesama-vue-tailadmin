@@ -18,7 +18,12 @@ class PengajuanDanaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = PengajuanDana::with(['fundraiser:id,name', 'kantorCabang:id,nama', 'program:id,nama_program']);
+        $query = PengajuanDana::with([
+            'fundraiser:id,name',
+            'kantorCabang:id,nama',
+            'program:id,nama_program',
+            'latestApproval.approver:id,name',
+        ]);
 
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
@@ -52,6 +57,12 @@ class PengajuanDanaController extends Controller
         $pengajuans = $query->orderByDesc('created_at')->paginate($perPage, ['*'], 'page', $page);
 
         $pengajuans->getCollection()->transform(function (PengajuanDana $p) {
+            $latestApproval = $p->latestApproval;
+            $approver = $latestApproval && $latestApproval->relationLoaded('approver') ? $latestApproval->getRelationValue('approver') : null;
+            $latestDecision = $latestApproval ? (string) $latestApproval->decision : null;
+            $approverName = $approver ? $approver->name : null;
+            $latestDecisionLower = $latestDecision ? strtolower($latestDecision) : null;
+
             return [
                 'id' => $p->id,
                 'fundraiser' => $p->fundraiser ? ['id' => $p->fundraiser->id, 'name' => $p->fundraiser->name] : null,
@@ -63,6 +74,15 @@ class PengajuanDanaController extends Controller
                 'program' => $p->program ? ['id' => $p->program->id, 'nama' => $p->program->nama_program] : null,
                 'status' => $p->status,
                 'created_at' => $p->created_at ? $p->created_at->toDateTimeString() : null,
+                'latest_approval' => $latestApproval ? [
+                    'id' => $latestApproval->id,
+                    'decision' => $latestApproval->decision,
+                    'comment' => $latestApproval->comment,
+                    'approver' => $approver ? ['id' => $approver->id, 'name' => $approver->name] : null,
+                    'created_at' => $latestApproval->created_at ? $latestApproval->created_at->toDateTimeString() : null,
+                ] : null,
+                'approved_by_name' => ($latestDecisionLower === 'approved') ? ($approverName ?? null) : null,
+                'rejected_by_name' => ($latestDecisionLower === 'rejected') ? ($approverName ?? null) : null,
             ];
         });
 

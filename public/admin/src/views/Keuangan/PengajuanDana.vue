@@ -229,6 +229,35 @@ const statusFilterOptions = [
 ]
 const statusFilterSearchInput = ref('')
 
+const resolveApprovalLabel = (record: any): string => {
+  if (!record) return '-'
+  const latest = record.latest_approval ?? record.latestApproval ?? null
+  const statusRaw = record.status ?? latest?.decision ?? ''
+  const statusLowerRaw = typeof statusRaw === 'string' ? statusRaw.toLowerCase() : ''
+  const statusLower = statusLowerRaw === 'disetujui'
+    ? 'approved'
+    : statusLowerRaw === 'ditolak'
+      ? 'rejected'
+      : statusLowerRaw
+  const approvedName = record.approved_by_name ?? record.approvedByName ?? (statusLower === 'approved' ? latest?.approver?.name : null)
+  const rejectedName = record.rejected_by_name ?? record.rejectedByName ?? (statusLower === 'rejected' ? latest?.approver?.name : null)
+
+  if (statusLower === 'approved' && approvedName) {
+    return `Disetujui oleh ${approvedName}`
+  }
+
+  if (statusLower === 'rejected' && rejectedName) {
+    return `Ditolak oleh ${rejectedName}`
+  }
+
+  if (latest && latest.approver && latest.approver.name) {
+    const decision = latest.decision || statusRaw || ''
+    return decision ? `${decision} oleh ${latest.approver.name}` : latest.approver.name
+  }
+
+  return '-'
+}
+
 interface PengajuanDanaRow {
   id: string
   namaPengaju: string
@@ -237,6 +266,7 @@ interface PengajuanDanaRow {
   status: string
   tanggal: string
   persetujuan: string
+  latestApproval?: any
 }
 
 
@@ -570,7 +600,7 @@ const handleExportExcel = () => {
         'Jumlah Dana': item.amount ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.amount) : '',
         'Status': item.status || '',
         'Tanggal': item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
-        'Persetujuan': item.status === 'Disetujui' ? '-' : '-',
+        'Persetujuan': resolveApprovalLabel(item),
       }))
 
       const worksheet = XLSX.utils.json_to_sheet(dataToExport)
@@ -678,7 +708,8 @@ const createDataSource = (): IDatasource => {
             jumlahDana: r.amount || 0,
             status: r.status || 'Draft',
             tanggal: r.created_at ? r.created_at.split(' ')[0] : '',
-            persetujuan: r.status === 'Disetujui' ? '-' : '-',
+            persetujuan: resolveApprovalLabel(r),
+            latestApproval: r.latest_approval || null,
           }))
 
           let lastRow: number | undefined = undefined

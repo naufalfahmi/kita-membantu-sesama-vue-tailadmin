@@ -100,7 +100,7 @@
                 Total Transaksi
               </p>
               <p class="text-xl font-bold text-gray-800 dark:text-white/90">
-                {{ transactionHistory.length }}
+                {{ mitraData.transaksi_count || 0 }}
               </p>
             </div>
             <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
@@ -108,7 +108,7 @@
                 Total Nilai Transaksi
               </p>
               <p class="text-xl font-bold text-gray-800 dark:text-white/90">
-                {{ formatCurrency(totalTransactionValue) }}
+                {{ formatCurrency(mitraData.transaksi_total || totalTransactionValue) }}
               </p>
             </div>
           </div>
@@ -122,7 +122,7 @@
             </h3>
           </div>
           <div class="p-6">
-            <div v-if="transactionHistory.length > 0" class="overflow-x-auto">
+            <div v-if="transactions.length > 0" class="overflow-x-auto">
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-gray-200 dark:border-gray-700">
@@ -136,14 +136,14 @@
                       Nominal
                     </th>
                     <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Status
+                      Kantor
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr
-                    v-for="(transaction, index) in transactionHistory"
-                    :key="index"
+                    v-for="(transaction, index) in transactions"
+                    :key="transaction.id || index"
                     class="border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.03]"
                   >
                     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
@@ -155,19 +155,8 @@
                     <td class="px-4 py-3 text-right text-sm font-semibold text-gray-800 dark:text-white/90">
                       {{ formatCurrency(transaction.nominal) }}
                     </td>
-                    <td class="px-4 py-3 text-center">
-                      <span
-                        class="inline-block rounded-full px-3 py-1 text-xs font-medium"
-                        :class="
-                          transaction.status === 'Selesai'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : transaction.status === 'Pending'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                        "
-                      >
-                        {{ transaction.status }}
-                      </span>
+                    <td class="px-4 py-3 text-center text-sm text-gray-700 dark:text-gray-300">
+                      {{ transaction.kantor || '-' }}
                     </td>
                   </tr>
                 </tbody>
@@ -348,38 +337,13 @@ const mitraList = [
   },
 ]
 
-// Sample transaction history data - in production, fetch from API
-const generateTransactionHistory = (mitraId: string) => {
-  const histories: Array<{ tanggal: string; keterangan: string; nominal: number; status: string }> = []
-  const startDate = new Date('2024-01-01')
-  const statuses = ['Selesai', 'Pending', 'Selesai', 'Selesai', 'Pending']
-  
-  // Generate 5-10 transactions per mitra
-  const numTransactions = Math.floor(Math.random() * 6) + 5
-  
-  for (let i = 0; i < numTransactions; i++) {
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + i * 15) // Every 15 days
-    
-    const statusIndex = i % statuses.length
-    const nominal = Math.floor(Math.random() * 50000000) + 10000000
-    
-    histories.push({
-      tanggal: date.toISOString().split('T')[0],
-      keterangan: `Pembayaran angsuran ke-${i + 1} untuk ${mitraList.find(m => m.id === mitraId)?.program || 'Program'}`,
-      nominal: nominal,
-      status: statuses[statusIndex],
-    })
-  }
-  
-  return histories
-}
+// Server-backed transactions and pagination
+const transactions = ref<Array<any>>([])
+const pagination = ref({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
+const range = ref([new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], new Date().toISOString().split('T')[0]])
 
-const transactionHistory = ref<Array<{ tanggal: string; keterangan: string; nominal: number; status: string }>>([])
-
-// Computed total transaction value
 const totalTransactionValue = computed(() => {
-  return transactionHistory.value.reduce((sum, transaction) => sum + transaction.nominal, 0)
+  return transactions.value.reduce((sum, t) => sum + (t.nominal || 0), 0)
 })
 
 // Format currency helper
@@ -393,6 +357,7 @@ const formatCurrency = (value: number) => {
 
 // Format date helper
 const formatDate = (dateString: string) => {
+  if (!dateString) return '-'
   const date = new Date(dateString)
   return date.toLocaleDateString('id-ID', {
     year: 'numeric',
@@ -401,27 +366,72 @@ const formatDate = (dateString: string) => {
   })
 }
 
-// Load data
-const loadData = async () => {
+// Export transactions
+const handleExport = () => {
+  const r = transactions.value.map((t: any) => ({
+    Tanggal: t.tanggal,
+    Keterangan: t.keterangan,
+    Donatur: t.donatur || '-',
+    Program: t.program || '-',
+    Nominal: t.nominal ? formatCurrency(t.nominal) : '-',
+    Kantor: t.kantor || '-',
+  }))
+  const ws = XLSX.utils.json_to_sheet(r)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, `Mitra_${mitraData.value?.nama || route.params.id}`)
+  const filename = `Mitra_Transaksi_${mitraData.value?.nama || route.params.id}_${new Date().toISOString().split('T')[0]}.xlsx`
+  XLSX.writeFile(wb, filename)
+}
+
+// Fetch mitra detail and transactions
+const fetchMitraDetail = async () => {
   loading.value = true
-  
   try {
     const id = route.params.id as string
-    
-    // TODO: Fetch from API
-    // const response = await fetch(`/api/laporan/mitra/${id}`)
-    // const data = await response.json()
-    // mitraData.value = data.mitra
-    // transactionHistory.value = data.transactions
-    
-    // For now, use sample data
-    const mitra = mitraList.find((m) => m.id === id)
-    if (mitra) {
-      mitraData.value = mitra
-      transactionHistory.value = generateTransactionHistory(id)
+    const res = await fetch(`/admin/api/laporan/mitra/${id}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+    if (!res.ok) {
+      mitraData.value = null
+      return
     }
-  } catch (error) {
-    console.error('Error loading data:', error)
+    const json = await res.json()
+    if (!json.success) {
+      mitraData.value = null
+      return
+    }
+    mitraData.value = json.data || null
+  } catch (err) {
+    console.error('Error fetching mitra detail', err)
+    mitraData.value = null
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchTransactions = async (page = 1) => {
+  try {
+    loading.value = true
+    pagination.value.current_page = page
+    const id = route.params.id as string
+    const params = new URLSearchParams()
+    params.append('page', String(page))
+    params.append('per_page', String(pagination.value.per_page || 20))
+    if (Array.isArray(range.value) && range.value[0]) {
+      params.append('tanggal_from', range.value[0])
+      if (range.value[1]) params.append('tanggal_to', range.value[1])
+    }
+
+    const res = await fetch(`/admin/api/laporan/mitra/${id}/transaksi?${params.toString()}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+    if (!res.ok) return
+    const json = await res.json()
+    if (!json.success) return
+    transactions.value = json.data || []
+    pagination.value = { ...(json.pagination || {}), per_page: pagination.value.per_page }
+    if (json.totals) {
+      mitraData.value.transaksi_count = json.totals.count || mitraData.value.transaksi_count
+      mitraData.value.transaksi_total = json.totals.nominal || mitraData.value.transaksi_total
+    }
+  } catch (err) {
+    console.error('Error fetching mitra transactions', err)
   } finally {
     loading.value = false
   }
@@ -432,8 +442,9 @@ const handleBack = () => {
   router.push('/laporan/laporan-keuangan?tab=mitra')
 }
 
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  await fetchMitraDetail()
+  await fetchTransactions(1)
 })
 </script>
 

@@ -263,6 +263,13 @@
       </tbody>
     </table>
 
+    {{-- Footer: show link to transfer proof only when available --}}
+    @if(!empty($record->transfer_proof))
+      <div style="margin-top:18px; font-size:13px; color:#333">
+        Anda dapat melihat bukti transfer gaji Anda di sini: <a href="{{ url('/storage/' . ltrim($record->transfer_proof, '/')) }}" target="_blank">Lihat Bukti</a>.
+      </div>
+    @endif
+
   </div>
 </body>
 </html>

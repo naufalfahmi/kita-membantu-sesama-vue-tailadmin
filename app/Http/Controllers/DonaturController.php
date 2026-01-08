@@ -71,9 +71,19 @@ class DonaturController extends Controller
         }
 
         $isAdmin = $this->userIsAdmin($user);
+        [$mitraContext, $isMitraUser] = $this->resolveMitraContext($user);
 
-            // Track whether we've applied an explicit visibility filter
-            $skipVisibility = false;
+        // Track whether we've applied an explicit visibility filter
+        $skipVisibility = false;
+
+        if ($isMitraUser) {
+            if ($mitraContext) {
+                $query->where('donaturs.mitra_id', $mitraContext->id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+            $skipVisibility = true;
+        }
 
             // Debug logging to help trace visibility/filtering issues
             if ($request->boolean('only_assigned') || $request->filled('kantor_cabang_id')) {
@@ -91,7 +101,7 @@ class DonaturController extends Controller
 
         // If caller requested only assigned kantor cabang, restrict to user's
         // assigned branches (via pivot) or their primary kantor_cabang_id.
-        if ($request->boolean('only_assigned') && auth()->check()) {
+        if (! $isMitraUser && $request->boolean('only_assigned') && auth()->check()) {
             try {
                 $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
             } catch (\Exception $e) {
@@ -122,7 +132,7 @@ class DonaturController extends Controller
         // when their primary kantor_cabang_id matches). When this param is
         // present and allowed, skip the usual per-user visibility widening
         // logic to avoid contradictory filters.
-        if ($request->filled('kantor_cabang_id')) {
+        if (! $isMitraUser && $request->filled('kantor_cabang_id')) {
             $requestedBranch = $request->input('kantor_cabang_id');
             if ($isAdmin) {
                 $query->where('kantor_cabang_id', $requestedBranch);
@@ -298,8 +308,12 @@ class DonaturController extends Controller
             }
         }
 
-        if ($request->filled('kantor_cabang_id')) {
+        if (! $isMitraUser && $request->filled('kantor_cabang_id')) {
             $query->where('kantor_cabang_id', $request->input('kantor_cabang_id'));
+        }
+
+        if (! $isMitraUser && $request->filled('mitra_id')) {
+            $query->where('mitra_id', $request->input('mitra_id'));
         }
 
         // Filter by PIC (expects user id)
@@ -442,7 +456,16 @@ class DonaturController extends Controller
             return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-        if (! $this->userIsAdmin($user)) {
+        $isAdmin = $this->userIsAdmin($user);
+        [$mitraContext, $isMitraUser] = $this->resolveMitraContext($user);
+
+        if ($isMitraUser) {
+            if ($mitraContext) {
+                $query->where('donaturs.mitra_id', $mitraContext->id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        } elseif (! $isAdmin) {
             // Allow visibility when user is assigned to the donor's kantor cabang
                 try {
                     $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
@@ -568,7 +591,16 @@ class DonaturController extends Controller
             return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-        if (! $this->userIsAdmin($user)) {
+        $isAdmin = $this->userIsAdmin($user);
+        [$mitraContext, $isMitraUser] = $this->resolveMitraContext($user);
+
+        if ($isMitraUser) {
+            if ($mitraContext) {
+                $query->where('mitra_id', $mitraContext->id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        } elseif (! $isAdmin) {
             // If the user has no subordinates, restrict updates to donaturs
             // where they are PIC. If they do have subordinates (e.g. leader
             // or director), allow updates for descendants.
@@ -654,7 +686,16 @@ class DonaturController extends Controller
             return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-        if (! $this->userIsAdmin($user)) {
+        $isAdmin = $this->userIsAdmin($user);
+        [$mitraContext, $isMitraUser] = $this->resolveMitraContext($user);
+
+        if ($isMitraUser) {
+            if ($mitraContext) {
+                $query->where('mitra_id', $mitraContext->id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        } elseif (! $isAdmin) {
             // If the user has no subordinates, restrict deletes to donaturs
             // where they are PIC. Leaders with subordinates may delete
             // donaturs owned by descendants.

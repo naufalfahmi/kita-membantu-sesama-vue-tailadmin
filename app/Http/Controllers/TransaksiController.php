@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Mitra;
 use App\Models\Transaksi;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -812,58 +811,6 @@ class TransaksiController extends Controller
         }
 
         return $prefix . $date . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-    }
-
-    /**
-     * Resolve the mitra record linked to the current user (if any).
-     *
-     * @return array{0: Mitra|null, 1: bool} Tuple of (mitra record, is mitra user)
-     */
-    protected function resolveMitraContext($user): array
-    {
-        if (! $user) {
-            return [null, false];
-        }
-
-        $tipeUser = strtolower((string) ($user->tipe_user ?? ''));
-        $isMitraUser = $tipeUser === 'mitra';
-
-        if (! $isMitraUser && method_exists($user, 'hasRole')) {
-            try {
-                $isMitraUser = $user->hasRole('mitra');
-            } catch (\Throwable $e) {
-                $isMitraUser = false;
-            }
-        }
-
-        if (! $isMitraUser) {
-            return [null, false];
-        }
-
-        $hasIdentifier = ! empty($user->id) || ! empty($user->email);
-        if (! $hasIdentifier) {
-            return [null, true];
-        }
-
-        $mitraQuery = Mitra::query();
-        $mitraQuery->where(function ($q) use ($user) {
-            $added = false;
-
-            if (! empty($user->id)) {
-                $q->where('user_id', $user->id);
-                $added = true;
-            }
-
-            if (! empty($user->email)) {
-                if ($added) {
-                    $q->orWhere('email', $user->email);
-                } else {
-                    $q->where('email', $user->email);
-                }
-            }
-        });
-
-        return [$mitraQuery->first(), true];
     }
 
     /**

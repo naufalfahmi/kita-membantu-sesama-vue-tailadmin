@@ -245,13 +245,18 @@ const uploadAvatar = async () => {
 
 const kantorDisplay = computed(() => {
   if (userData.value?.is_admin) return 'Semua Kantor Cabang'
-  // prefer multiple kantor_cabangs relationship
+
+  const mitraCabang = userData.value?.mitra_profile?.kantor_cabang?.nama
+  if (mitraCabang) {
+    return mitraCabang
+  }
+
   const list = userData.value?.kantor_cabangs || userData.value?.kantor_cabangs_raw || []
   if (Array.isArray(list) && list.length) {
     if (list.length <= 3) return list.map((k: any) => k.nama).join(', ')
     return list.slice(0, 2).map((k: any) => k.nama).join(', ') + ` +${list.length - 2}`
   }
-  // fallback to single kantor_cabang
+
   return userData.value?.kantor_cabang?.nama || 'Kantor Pusat'
 })
 

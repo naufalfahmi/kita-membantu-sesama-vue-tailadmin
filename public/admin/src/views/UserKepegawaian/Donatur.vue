@@ -160,6 +160,15 @@ const isFundraiser = computed(() => {
   const n = String(name || '').trim().toLowerCase()
   return n === 'fundrising' || n === 'fundraising' || n === 'fundraiser'
 })
+const isMitraUser = computed(() => {
+  if (user.value && typeof (user.value as any).is_mitra !== 'undefined') {
+    return Boolean((user.value as any).is_mitra)
+  }
+  const tipe = String((user.value as any)?.tipe_user || '').toLowerCase()
+  if (tipe === 'mitra') return true
+  const roleName = String((user.value as any)?.role?.name || '').toLowerCase()
+  return roleName === 'mitra'
+})
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Donatur')
 const canCreate = computed(() => isAdmin() || hasPermission('create donatur'))
 const canUpdate = computed(() => isAdmin() || hasPermission('update donatur'))
@@ -250,13 +259,6 @@ const columnDefs = computed(() => {
       flex: 1,
     },
     {
-      headerName: 'Fundraiser',
-      field: 'pic',
-      sortable: true,
-      flex: 1,
-      valueFormatter: (params: any) => params.data?.pic_user?.nama || params.value || '-',
-    },
-    {
       headerName: 'Jenis Donatur',
       field: 'jenis_donatur',
       sortable: true,
@@ -267,6 +269,7 @@ const columnDefs = computed(() => {
         return jenis.map((j: string) => j.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')
       },
     },
+
     {
       headerName: 'Kantor Cabang',
       field: 'kantor_cabang',
@@ -319,6 +322,16 @@ const columnDefs = computed(() => {
       },
     },
   ]
+
+  if (!isMitraUser.value) {
+    cols.splice(3, 0, {
+      headerName: 'Fundraiser',
+      field: 'pic',
+      sortable: true,
+      flex: 1,
+      valueFormatter: (params: any) => params.data?.pic_user?.nama || params.value || '-',
+    })
+  }
 
   if (canUpdate.value || canDelete.value) {
     cols.push({

@@ -115,18 +115,12 @@ class MitraController extends Controller
         // Additional business rule: Mitra email must not collide with existing karyawan (users)
         if ($request->filled('email')) {
             $email = trim((string) $request->input('email'));
-            $currentEmail = trim((string) ($mitra->email ?? ''));
-
-            // Only enforce karyawan email conflict when the email actually changes.
-            if (strcasecmp($email, $currentEmail) !== 0) {
-                $existingUser = User::where('email', $email)->first();
-                if ($existingUser && ($mitra->user_id === null || $existingUser->id !== $mitra->user_id)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Validation failed',
-                        'errors' => ['email' => ['Email sudah digunakan oleh karyawan']],
-                    ], 422);
-                }
+            if (User::where('email', $email)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['email' => ['Email sudah digunakan oleh karyawan']],
+                ], 422);
             }
         }
 
@@ -303,12 +297,17 @@ class MitraController extends Controller
         // Additional business rule: Mitra email must not collide with existing karyawan (users)
         if ($request->filled('email')) {
             $email = trim((string) $request->input('email'));
-            if (User::where('email', $email)->exists()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => ['email' => ['Email sudah digunakan oleh karyawan']],
-                ], 422);
+            $currentEmail = trim((string) ($mitra->email ?? ''));
+
+            if (strcasecmp($email, $currentEmail) !== 0) {
+                $existingUser = User::where('email', $email)->first();
+                if ($existingUser && ($mitra->user_id === null || $existingUser->id !== $mitra->user_id)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Validation failed',
+                        'errors' => ['email' => ['Email sudah digunakan oleh karyawan']],
+                    ], 422);
+                }
             }
         }
 

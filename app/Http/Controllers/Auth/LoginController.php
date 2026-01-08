@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Mitra;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -51,6 +53,69 @@ class LoginController extends Controller
                 if ($user && \Illuminate\Support\Facades\Hash::check($password, $user->password)) {
                     Auth::login($user, $remember);
                     $authenticated = true;
+                }
+            }
+
+            // Fallback: authenticate via mitra table when user record is missing
+            if (! $authenticated && filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+                $mitra = Mitra::where('email', $identifier)->first();
+
+                if ($mitra && ! empty($mitra->password) && Hash::check($password, $mitra->password)) {
+                    $user = null;
+
+                    if ($mitra->user_id) {
+                        $user = User::find($mitra->user_id);
+                    }
+
+                    if (! $user) {
+                        $user = User::where('email', $identifier)->first();
+                    }
+
+                    $createdUser = false;
+
+                    if (! $user) {
+                        $user = User::create([
+                            'name' => $mitra->nama ?? $identifier,
+                            'email' => $identifier,
+                            'password' => Hash::make($password),
+                            'tipe_user' => 'mitra',
+                            'is_active' => true,
+                            'created_by' => null,
+                        ]);
+                        $createdUser = true;
+                    } elseif (! Hash::check($password, $user->password)) {
+                        $user->password = Hash::make($password);
+                        $user->save();
+                    }
+
+                    if ($user) {
+                        // Ensure mitra record links back to the user we are authenticating
+                        if (! $mitra->user_id || $mitra->user_id !== $user->id) {
+                            $mitra->user_id = $user->id;
+                            $mitra->save();
+                        }
+
+                        if ($createdUser) {
+                            $role = null;
+                            if (! empty($mitra->jabatan_id)) {
+                                $role = \Spatie\Permission\Models\Role::find($mitra->jabatan_id);
+                            }
+                            if (! $role) {
+                                $role = \Spatie\Permission\Models\Role::where('name', 'mitra')->first();
+                            }
+                            if ($role) {
+                                $user->assignRole($role->name);
+                            }
+                        }
+
+                        Auth::login($user, $remember);
+                        $authenticated = true;
+
+                        \Log::info('Login successful via mitra fallback', [
+                            'user_id' => $user->id,
+                            'mitra_id' => $mitra->id,
+                        ]);
+                    }
                 }
             }
 

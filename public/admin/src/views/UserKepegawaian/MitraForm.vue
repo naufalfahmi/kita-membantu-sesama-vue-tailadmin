@@ -190,11 +190,13 @@
             </label>
             <SearchableSelect
               v-model="formData.jabatan_id"
-              :options="jabatanOptions.map((j: any) => ({ value: String(j.id), label: j.name }))"
+              :options="jabatanOptions.map((j: any) => ({ value: String(j.id), label: j.name || j.nama || '-' }))"
               placeholder="Jabatan"
               :search-input="jabatanSearchInput"
               @update:search-input="jabatanSearchInput = $event"
+              :disabled="true"
             />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Jabatan ditetapkan otomatis sebagai Mitra.</p>
           </div>
         </div>
 
@@ -258,6 +260,8 @@ const kantorCabangSearchInput = ref('')
 const isSubmitting = ref(false)
 const jabatanOptions = ref<any[]>([])
 const jabatanSearchInput = ref('')
+const mitraRoleId = ref('')
+const MITRA_ROLE_KEY = 'mitra'
 
 const kantorCabangSelectOptions = computed(() =>
   kantorCabangOptions.value.map((item: any) => ({
@@ -283,6 +287,22 @@ const showPassword = ref(false)
 
 const togglePasswordVisibility = () => {
   showPassword.value = !showPassword.value
+}
+
+const resolveMitraRoleId = () => {
+  if (!jabatanOptions.value.length) return ''
+  const match = jabatanOptions.value.find((role: any) => {
+    const identifiers = [role.slug, role.name, role.nama]
+    return identifiers.some((value: any) => value && String(value).toLowerCase() === MITRA_ROLE_KEY)
+  })
+  return match ? String(match.id) : ''
+}
+
+const lockJabatanToMitra = () => {
+  const resolvedId = resolveMitraRoleId()
+  if (!resolvedId) return
+  mitraRoleId.value = resolvedId
+  formData.jabatan_id = resolvedId
 }
 
 const emailError = ref('')
@@ -346,6 +366,7 @@ const fetchReferenceData = async () => {
       const jjson = await res2.json()
       if (jjson.success) {
         jabatanOptions.value = jjson.data || []
+        lockJabatanToMitra()
       }
     }
   } catch (e) {
@@ -370,6 +391,7 @@ const loadData = async (id: string) => {
       formData.pendidikan = data.pendidikan || ''
       formData.kantor_cabang_id = data.kantor_cabang_id ? String(data.kantor_cabang_id) : ''
       formData.jabatan_id = data.jabatan_id ? String(data.jabatan_id) : (data.jabatan && data.jabatan.id ? String(data.jabatan.id) : '')
+      lockJabatanToMitra()
     } else {
       toast.error(json.message || 'Mitra tidak ditemukan')
       router.push('/user-kepegawaian/mitra')
@@ -398,6 +420,7 @@ const handleSave = async () => {
   isSubmitting.value = true
 
   try {
+    lockJabatanToMitra()
     const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
     if (!tokenRes.ok) throw new Error('Failed to fetch CSRF token')
     const tokenJson = await tokenRes.json()

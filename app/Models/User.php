@@ -140,6 +140,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Linked mitra profile when this user represents a mitra account.
+     */
+    public function mitra()
+    {
+        return $this->hasOne(Mitra::class, 'user_id');
+    }
+
+    /**
      * Return an array of user ids consisting of the given user's id
      * plus all descendant subordinate ids (recursive, multi-level).
      * Suitable for small-to-medium org trees.

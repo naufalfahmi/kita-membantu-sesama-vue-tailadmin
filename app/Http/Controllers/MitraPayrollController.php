@@ -12,28 +12,25 @@ class MitraPayrollController extends Controller
     {
         $query = MitraPayroll::with(['mitra:id,nama', 'program:id,nama_program', 'creator:id,name']);
 
-        // Restrict mitra users to their own payroll records
         $user = auth()->user();
-        if ($user) {
-            $isAdmin = method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['admin', 'superadmin', 'super-admin']);
-            $isMitraUser = (method_exists($user, 'hasRole') && $user->hasRole('mitra')) || (property_exists($user, 'tipe_user') && $user->tipe_user === 'mitra');
-            if (! $isAdmin && $isMitraUser) {
-                try {
-                    $mitra = \App\Models\Mitra::where('user_id', $user->id)->first();
-                } catch (\Throwable $e) {
-                    $mitra = null;
-                }
+        $mitraFilterApplied = false;
 
+        if ($user && ! $this->userIsAdmin($user)) {
+            [$mitra, $isMitraUser] = $this->resolveMitraContext($user);
+
+            if ($isMitraUser) {
                 if ($mitra) {
                     $query->where('mitra_id', $mitra->id);
                 } else {
-                    // fallback: limit by nama_mitra matching user's name
-                    $query->where('nama_mitra', $user->name ?? '');
+                    // User identified as mitra but has no linked record; hide data entirely
+                    $query->whereRaw('1 = 0');
                 }
+
+                $mitraFilterApplied = true;
             }
         }
 
-        if ($request->filled('mitra_id')) {
+        if ($request->filled('mitra_id') && ! $mitraFilterApplied) {
             $query->where('mitra_id', $request->mitra_id);
         }
 

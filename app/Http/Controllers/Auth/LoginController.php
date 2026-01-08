@@ -205,10 +205,41 @@ class LoginController extends Controller
         }
 
         // Load relationships (include pivot list for determining primary)
-        $user->load(['pangkat', 'tipeAbsensi', 'kantorCabangs', 'roles']);
+        $user->load([
+            'pangkat',
+            'tipeAbsensi',
+            'kantorCabangs',
+            'roles',
+            'mitra.kantorCabang',
+            'mitra.jabatan',
+        ]);
 
         // For backward compatibility, pick a primary kantor cabang (first pivot or legacy single column)
         $primaryKantor = $user->kantorCabangs->first() ?? $user->kantorCabang;
+
+        $mitraProfile = null;
+        if ($user->mitra) {
+            $mitra = $user->mitra;
+            $mitraProfile = [
+                'id' => $mitra->id,
+                'nama' => $mitra->nama,
+                'email' => $mitra->email,
+                'no_handphone' => $mitra->no_handphone,
+                'nama_bank' => $mitra->nama_bank,
+                'no_rekening' => $mitra->no_rekening,
+                'tanggal_lahir' => optional($mitra->tanggal_lahir)->toDateString(),
+                'pendidikan' => $mitra->pendidikan,
+                'tanggal_dibuat' => optional($mitra->created_at)->toDateString(),
+                'kantor_cabang' => $mitra->kantorCabang ? [
+                    'id' => $mitra->kantorCabang->id,
+                    'nama' => $mitra->kantorCabang->nama,
+                ] : null,
+                'jabatan' => $mitra->jabatan ? [
+                    'id' => $mitra->jabatan->id,
+                    'name' => $mitra->jabatan->name,
+                ] : null,
+            ];
+        }
 
         return response()->json([
             'success' => true,
@@ -224,6 +255,7 @@ class LoginController extends Controller
                 'no_rekening' => $user->no_rekening,
                 'tanggal_lahir' => $user->tanggal_lahir,
                 'tanggal_masuk' => $user->tanggal_masuk,
+                'tipe_user' => $user->tipe_user,
                 'role' => $user->roles->first(),
                 'kantor_cabang' => $primaryKantor,
                 // include full list of kantor cabangs for frontend that supports multiple branches
@@ -248,6 +280,8 @@ class LoginController extends Controller
                 'is_admin' => $user->hasRole('admin'),
                 // Include permission names for client-side checks
                 'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
+                'is_mitra' => (bool) $mitraProfile,
+                'mitra_profile' => $mitraProfile,
             ],
         ]);
     }

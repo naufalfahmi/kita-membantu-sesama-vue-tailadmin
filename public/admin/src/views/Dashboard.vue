@@ -22,6 +22,10 @@
 
       <!-- Dashboard Content -->
       <div v-else class="space-y-6">
+        <FundraisingDashboard v-if="userRole === 'fundraising'" :days="transDays"></FundraisingDashboard>
+        <AdminCabangDashboard v-else-if="userRole === 'admin_cabang'" />
+        <MitraDashboard v-else-if="userRole === 'mitra'" />
+        <div v-else>
         <!-- Transactions Overview (Admin Only) -->
         <div v-if="userRole === 'admin'" class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
           <div class="mb-4 flex items-center justify-between">
@@ -233,6 +237,7 @@
         </div>
       </div>
     </div>
+    </div>
   </AdminLayout>
 </template>
 
@@ -309,6 +314,9 @@ const chartSeries = ref([])
 const chartOptions = ref({})
 
 import ApexChart from 'vue3-apexcharts'
+import FundraisingDashboard from '@/views/dashboard_roles/FundraisingDashboard.vue'
+import AdminCabangDashboard from '@/views/dashboard_roles/AdminCabangDashboard.vue'
+import MitraDashboard from '@/views/dashboard_roles/MitraDashboard.vue'
 
 const loadStats = async () => {
   try {
@@ -366,7 +374,31 @@ const fetchUser = async () => {
     if (response.ok) {
       const data = await response.json()
       if (data.success && data.user) {
-        userRole.value = data.user.is_admin ? 'admin' : 'user'
+        // If dashboard stats already selected a role (non-default), don't overwrite it here.
+        if (userRole.value && userRole.value !== 'user') {
+          return
+        }
+
+        // prefer explicit admin flag, otherwise map known role names (e.g. fundraising)
+        if (data.user.is_admin) {
+          userRole.value = 'admin'
+        } else {
+          const roleName = (data.user.role && data.user.role.name) ? (data.user.role.name || '').toLowerCase().trim() : ''
+          // detect admin cabang variants
+          if (roleName.includes('admin cabang') || roleName.includes('admincabang') || roleName.includes('admin-cabang')) {
+            userRole.value = 'admin_cabang'
+          } else if (roleName.includes('fundr')) {
+            userRole.value = 'fundraising'
+          } else if (roleName.includes('mitra')) {
+            userRole.value = 'mitra'
+          } else if (Array.isArray(data.user.permissions) && data.user.permissions.includes('view transaksi')) {
+            userRole.value = 'user'
+          } else {
+            if (!userRole.value || userRole.value === 'user') {
+              userRole.value = 'user'
+            }
+          }
+        }
       }
     }
   } catch (error) {

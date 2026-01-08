@@ -754,7 +754,7 @@ router.beforeEach(async (to, from, next) => {
   if (!permission && to.meta?.title) {
     const rawTitle = String(to.meta.title).toLowerCase()
     // Skip deriving for known public pages
-    const publicTitles = ['signin', 'signup', 'welcome', 'support', 'calendar', 'blank', '404', 'halaman terbatas', 'account settings', 'profile']
+    const publicTitles = ['signin', 'signup', 'welcome', 'dashboard', 'support', 'calendar', 'blank', '404', 'halaman terbatas', 'account settings', 'profile']
     if (!publicTitles.includes(rawTitle)) {
       // Determine action
       const nameStr = String(to.name || '')

@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip destructive column drops on SQLite (test env) which does not support them
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         if (Schema::hasTable('program')) {
             $cols = [
                 'persentase_hak_program',

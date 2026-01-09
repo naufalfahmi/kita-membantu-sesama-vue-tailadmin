@@ -6,8 +6,11 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
+use App\Models\KaryawanDonaturVisibility;
+use App\Models\KaryawanTransaksiVisibility;
 
 class KaryawanController extends Controller
 {
@@ -22,6 +25,8 @@ class KaryawanController extends Controller
                 'kantorCabangs:id,nama',
                 'leader:id,name',
                 'roles:id,name',
+                'transaksiVisibilityEntries.visibleKaryawan:id,name',
+                'donaturVisibilityEntries.visibleKaryawan:id,name',
             ])
             ->karyawan();
 
@@ -221,6 +226,10 @@ class KaryawanController extends Controller
             'subordinate_ids.*' => 'string|exists:users,id',
             'is_active' => 'boolean',
             'role_id' => 'nullable|exists:roles,id',
+            'visible_transaksi_ids' => 'nullable|array',
+            'visible_transaksi_ids.*' => 'string|exists:users,id',
+            'visible_donatur_ids' => 'nullable|array',
+            'visible_donatur_ids.*' => 'string|exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -232,106 +241,62 @@ class KaryawanController extends Controller
         }
 
         try {
-            $data = $request->only([
-                'name',
-                'email',
-                'no_induk',
-                'posisi',
-                'pangkat_id',
-                'tipe_absensi_id',
-                'no_handphone',
-                'nama_bank',
-                'no_rekening',
-                'tanggal_lahir',
-                'pendidikan',
-                'tanggal_masuk',
-                'kantor_cabang_id',
-                'leader_id',
-                'kantor_cabang_ids',
-            ]);
+            $karyawan = DB::transaction(function () use ($request) {
+                $data = $request->only([
+                    'name',
+                    'email',
+                    'no_induk',
+                    'posisi',
+                    'pangkat_id',
+                    'tipe_absensi_id',
+                    'no_handphone',
+                    'nama_bank',
+                    'no_rekening',
+                    'tanggal_lahir',
+                    'pendidikan',
+                    'tanggal_masuk',
+                    'kantor_cabang_id',
+                    'leader_id',
+                    'kantor_cabang_ids',
+                ]);
 
-            $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
-            $data['tipe_user'] = 'karyawan';
-            $data['is_active'] = $request->boolean('is_active', true);
-            $data['created_by'] = auth()->id();
-            $data['password'] = Hash::make($request->password ?? 'password123');
+                $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
+                $data['tipe_user'] = 'karyawan';
+                $data['is_active'] = $request->boolean('is_active', true);
+                $data['created_by'] = auth()->id();
+                $data['password'] = Hash::make($request->password ?? 'password123');
 
-            $karyawan = User::create($this->sanitizePayload($data));
+                $karyawan = User::create($this->sanitizePayload($data));
 
-            // Sync many-to-many kantor cabang assignments if provided
-            if ($request->has('kantor_cabang_ids')) {
-                $ids = $request->input('kantor_cabang_ids', []);
-                if (!is_array($ids)) {
-                    if (is_string($ids)) {
-                        $ids = $ids === '' ? [] : array_filter(array_map('trim', explode(',', $ids)));
-                    } else {
-                        $ids = (array) $ids;
+                $this->syncKantorCabangAssignments($karyawan, $request);
+
+                if ($request->filled('role_id')) {
+                    $role = Role::find($request->role_id);
+                    if ($role) {
+                        $karyawan->syncRoles($role);
                     }
                 }
-                $karyawan->kantorCabangs()->sync($ids);
-                // If the legacy single `kantor_cabang_id` column is not in the new set, clear it
-                if ($karyawan->kantor_cabang_id && !in_array($karyawan->kantor_cabang_id, $ids)) {
-                    $karyawan->kantor_cabang_id = null;
-                    $karyawan->save();
-                }
-            }
-            // Also support syncing pivot when single `kantor_cabang_id` provided
-            if ($request->has('kantor_cabang_id') && !$request->has('kantor_cabang_ids')) {
-                $single = $request->input('kantor_cabang_id');
-                if ($single === null || $single === '') {
-                    $karyawan->kantorCabangs()->sync([]);
-                } else {
-                    $karyawan->kantorCabangs()->sync([$single]);
-                }
-            }
-            // If caller provided only the legacy single `kantor_cabang_id`, make sure pivot is in sync
-            if ($request->has('kantor_cabang_id') && !$request->has('kantor_cabang_ids')) {
-                $single = $request->input('kantor_cabang_id');
-                if ($single === null || $single === '') {
-                    $karyawan->kantorCabangs()->sync([]);
-                } else {
-                    $karyawan->kantorCabangs()->sync([$single]);
-                }
-            }
 
-            if ($request->filled('role_id')) {
-                $role = Role::find($request->role_id);
-                if ($role) {
-                    $karyawan->syncRoles($role);
-                }
-            }
+                $this->syncSubordinates($karyawan, $request);
 
-            // Sync subordinate relationship: set leader_id on selected users
-            if ($request->has('subordinate_ids')) {
-                $ids = $request->input('subordinate_ids', []);
-                if (!is_array($ids)) {
-                    if (is_string($ids)) {
-                        $ids = $ids === '' ? [] : array_filter(array_map('trim', explode(',', $ids)));
-                    } else {
-                        $ids = (array) $ids;
-                    }
-                }
-                // prevent self-assignment
-                $ids = array_values(array_filter($ids, function ($i) use ($karyawan) { return $i !== (string) $karyawan->id; }));
+                $this->syncVisibilityAssignments($karyawan, $request->input('visible_transaksi_ids', []), 'transaksi');
+                $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
 
-                // Clear existing subordinates that are not in the new list
-                User::where('leader_id', $karyawan->id)->whereNotIn('id', $ids)->update(['leader_id' => null]);
-
-                // Assign selected users to this leader
-                if (!empty($ids)) {
-                    User::whereIn('id', $ids)->update(['leader_id' => $karyawan->id]);
-                }
-            }
+                return $karyawan->fresh([
+                    'pangkat:id,nama',
+                    'tipeAbsensi:id,nama',
+                    'kantorCabang:id,nama',
+                    'kantorCabangs:id,nama',
+                    'roles:id,name',
+                    'transaksiVisibilityEntries.visibleKaryawan:id,name',
+                    'donaturVisibilityEntries.visibleKaryawan:id,name',
+                ]);
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Karyawan berhasil ditambahkan',
-                'data' => $this->transformKaryawan($karyawan->fresh([
-                    'pangkat:id,nama',
-                    'tipeAbsensi:id,nama',
-                    'kantorCabang:id,nama',
-                    'roles:id,name',
-                ])),
+                'data' => $this->transformKaryawan($karyawan),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -351,7 +316,10 @@ class KaryawanController extends Controller
                 'pangkat:id,nama',
                 'tipeAbsensi:id,nama',
                 'kantorCabang:id,nama',
+                'kantorCabangs:id,nama',
                 'roles:id,name',
+                'transaksiVisibilityEntries.visibleKaryawan:id,name',
+                'donaturVisibilityEntries.visibleKaryawan:id,name',
             ])
             ->karyawan()
             ->find($id);
@@ -405,6 +373,10 @@ class KaryawanController extends Controller
             'subordinate_ids.*' => 'string|exists:users,id',
             'is_active' => 'boolean',
             'role_id' => 'nullable|exists:roles,id',
+            'visible_transaksi_ids' => 'nullable|array',
+            'visible_transaksi_ids.*' => 'string|exists:users,id',
+            'visible_donatur_ids' => 'nullable|array',
+            'visible_donatur_ids.*' => 'string|exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -416,102 +388,73 @@ class KaryawanController extends Controller
         }
 
         try {
-            $data = $request->only([
-                'name',
-                'email',
-                'no_induk',
-                'posisi',
-                'pangkat_id',
-                'tipe_absensi_id',
-                'no_handphone',
-                'nama_bank',
-                'no_rekening',
-                'tanggal_lahir',
-                'pendidikan',
-                'tanggal_masuk',
-                'kantor_cabang_id',
-                'leader_id',
-                'kantor_cabang_ids',
-            ]);
+            $karyawan = DB::transaction(function () use ($request, $karyawan) {
+                $data = $request->only([
+                    'name',
+                    'email',
+                    'no_induk',
+                    'posisi',
+                    'pangkat_id',
+                    'tipe_absensi_id',
+                    'no_handphone',
+                    'nama_bank',
+                    'no_rekening',
+                    'tanggal_lahir',
+                    'pendidikan',
+                    'tanggal_masuk',
+                    'kantor_cabang_id',
+                    'leader_id',
+                    'kantor_cabang_ids',
+                ]);
 
-            $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
-            $data['is_active'] = $request->boolean('is_active', $karyawan->is_active);
-            $data['updated_by'] = auth()->id();
+                $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
+                $data['is_active'] = $request->boolean('is_active', $karyawan->is_active);
+                $data['updated_by'] = auth()->id();
 
-            if ($request->filled('password')) {
-                $data['password'] = Hash::make($request->password);
-            }
+                if ($request->filled('password')) {
+                    $data['password'] = Hash::make($request->password);
+                }
 
-            $karyawan->update($this->sanitizePayload($data));
+                $karyawan->update($this->sanitizePayload($data));
 
-            // Sync kantor cabang assignments (normalize input to array)
-            if ($request->has('kantor_cabang_ids')) {
-                $ids = $request->input('kantor_cabang_ids', []);
-                if (!is_array($ids)) {
-                    if (is_string($ids)) {
-                        $ids = $ids === '' ? [] : array_filter(array_map('trim', explode(',', $ids)));
+                $this->syncKantorCabangAssignments($karyawan, $request);
+
+                if ($request->has('role_id')) {
+                    if ($request->filled('role_id')) {
+                        $role = Role::find($request->role_id);
+                        if ($role) {
+                            $karyawan->syncRoles($role);
+                        }
                     } else {
-                        $ids = (array) $ids;
+                        $karyawan->syncRoles([]);
                     }
                 }
-                $karyawan->kantorCabangs()->sync($ids);
-                // If the legacy single `kantor_cabang_id` column is not in the new set, clear it
-                if ($karyawan->kantor_cabang_id && !in_array($karyawan->kantor_cabang_id, $ids)) {
-                    $karyawan->kantor_cabang_id = null;
-                    $karyawan->save();
-                }
-            }
-            // Also allow syncing via single `kantor_cabang_id` for backwards compatibility
-            if ($request->has('kantor_cabang_id') && !$request->has('kantor_cabang_ids')) {
-                $single = $request->input('kantor_cabang_id');
-                if ($single === null || $single === '') {
-                    $karyawan->kantorCabangs()->sync([]);
-                } else {
-                    $karyawan->kantorCabangs()->sync([$single]);
-                }
-            }
-            if ($request->has('role_id')) {
-                if ($request->filled('role_id')) {
-                    $role = Role::find($request->role_id);
-                    if ($role) {
-                        $karyawan->syncRoles($role);
-                    }
-                } else {
-                    $karyawan->syncRoles([]);
-                }
-            }
 
-            // Sync subordinate relationship: set leader_id on selected users
-            if ($request->has('subordinate_ids')) {
-                $ids = $request->input('subordinate_ids', []);
-                if (!is_array($ids)) {
-                    if (is_string($ids)) {
-                        $ids = $ids === '' ? [] : array_filter(array_map('trim', explode(',', $ids)));
-                    } else {
-                        $ids = (array) $ids;
-                    }
-                }
-                // prevent self-assignment
-                $ids = array_values(array_filter($ids, function ($i) use ($karyawan) { return $i !== (string) $karyawan->id; }));
+                $this->syncSubordinates($karyawan, $request);
 
-                // Clear existing subordinates that are not in the new list
-                User::where('leader_id', $karyawan->id)->whereNotIn('id', $ids)->update(['leader_id' => null]);
-
-                // Assign selected users to this leader
-                if (!empty($ids)) {
-                    User::whereIn('id', $ids)->update(['leader_id' => $karyawan->id]);
+                if ($request->has('visible_transaksi_ids')) {
+                    $this->syncVisibilityAssignments($karyawan, $request->input('visible_transaksi_ids', []), 'transaksi');
                 }
-            }
+
+                if ($request->has('visible_donatur_ids')) {
+                    $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
+                }
+
+                return $karyawan->fresh([
+                    'pangkat:id,nama',
+                    'tipeAbsensi:id,nama',
+                    'kantorCabang:id,nama',
+                    'kantorCabangs:id,nama',
+                    'roles:id,name',
+                    'transaksiVisibilityEntries.visibleKaryawan:id,name',
+                    'donaturVisibilityEntries.visibleKaryawan:id,name',
+                ]);
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Karyawan berhasil diupdate',
-                'data' => $this->transformKaryawan($karyawan->fresh([
-                    'pangkat:id,nama',
-                    'tipeAbsensi:id,nama',
-                    'kantorCabang:id,nama',
-                    'roles:id,name',
-                ])),
+                'data' => $this->transformKaryawan($karyawan),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -556,10 +499,137 @@ class KaryawanController extends Controller
     }
 
     /**
+     * Sync kantor cabang assignments from request payload.
+     */
+    protected function syncKantorCabangAssignments(User $karyawan, Request $request): void
+    {
+        if ($request->has('kantor_cabang_ids')) {
+            $ids = $this->normalizeIdArray($request->input('kantor_cabang_ids', []));
+            $karyawan->kantorCabangs()->sync($ids);
+
+            if ($karyawan->kantor_cabang_id && ! in_array($karyawan->kantor_cabang_id, $ids, true)) {
+                $karyawan->kantor_cabang_id = null;
+                $karyawan->save();
+            }
+
+            return;
+        }
+
+        if ($request->has('kantor_cabang_id')) {
+            $single = $request->input('kantor_cabang_id');
+            if ($single === null || $single === '') {
+                $karyawan->kantorCabangs()->sync([]);
+            } else {
+                $karyawan->kantorCabangs()->sync([$single]);
+                $karyawan->kantor_cabang_id = $single;
+                $karyawan->save();
+            }
+        }
+    }
+
+    /**
+     * Sync subordinate relationship assignments.
+     */
+    protected function syncSubordinates(User $karyawan, Request $request): void
+    {
+        if (! $request->has('subordinate_ids')) {
+            return;
+        }
+
+        $ids = $this->normalizeIdArray($request->input('subordinate_ids', []), $karyawan->id);
+
+        User::where('leader_id', $karyawan->id)
+            ->whereNotIn('id', $ids)
+            ->update(['leader_id' => null]);
+
+        if (! empty($ids)) {
+            User::whereIn('id', $ids)->update(['leader_id' => $karyawan->id]);
+        }
+    }
+
+    /**
+     * Sync explicit visibility assignments for transaksi/donatur context.
+     */
+    protected function syncVisibilityAssignments(User $karyawan, $rawIds, string $type): void
+    {
+        $modelClass = $type === 'donatur' ? KaryawanDonaturVisibility::class : KaryawanTransaksiVisibility::class;
+
+        $ids = $this->normalizeIdArray($rawIds, null);
+        $ids = array_map('intval', $ids);
+        $ids[] = (int) $karyawan->id;
+        $ids = array_values(array_unique($ids));
+
+        $now = now();
+        $actor = auth()->id();
+
+        $modelClass::where('karyawan_id', $karyawan->id)
+            ->whereNull('deleted_at')
+            ->whereNotIn('visible_karyawan_id', $ids)
+            ->update([
+                'deleted_at' => $now,
+                'deleted_by' => $actor,
+                'updated_by' => $actor,
+            ]);
+
+        foreach ($ids as $visibleId) {
+            $existing = $modelClass::withTrashed()
+                ->where('karyawan_id', $karyawan->id)
+                ->where('visible_karyawan_id', $visibleId)
+                ->first();
+
+            if ($existing) {
+                $existing->deleted_at = null;
+                $existing->deleted_by = null;
+                $existing->updated_by = $actor;
+                $existing->save();
+            } else {
+                $modelClass::create([
+                    'karyawan_id' => $karyawan->id,
+                    'visible_karyawan_id' => $visibleId,
+                    'created_by' => $actor,
+                    'updated_by' => $actor,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Normalize ID inputs (string|array|mixed) into an array of string IDs.
+     */
+    protected function normalizeIdArray($value, $selfId = null): array
+    {
+        if (is_array($value)) {
+            $ids = $value;
+        } elseif (is_string($value)) {
+            $ids = $value === '' ? [] : array_map('trim', explode(',', $value));
+        } elseif ($value === null) {
+            $ids = [];
+        } else {
+            $ids = (array) $value;
+        }
+
+        $ids = array_values(array_filter(array_map('strval', $ids), function ($v) {
+            return $v !== '' && $v !== null;
+        }));
+
+        if ($selfId !== null) {
+            $ids = array_values(array_filter($ids, function ($v) use ($selfId) {
+                return (string) $v !== (string) $selfId;
+            }));
+        }
+
+        return $ids;
+    }
+
+    /**
      * Transform user data to API response structure.
      */
     protected function transformKaryawan(User $user): array
     {
+        $user->loadMissing([
+            'transaksiVisibilityEntries.visibleKaryawan',
+            'donaturVisibilityEntries.visibleKaryawan',
+        ]);
         $role = $user->roles->first();
 
         return [
@@ -609,6 +679,20 @@ class KaryawanController extends Controller
             ] : null,
             'subordinates' => $user->subordinates->map(function ($u) {
                 return ['id' => $u->id, 'name' => $u->name];
+            })->values()->all(),
+            'visible_transaksi_ids' => $user->transaksiVisibilityEntries->pluck('visible_karyawan_id')->values()->all(),
+            'visible_transaksis' => $user->transaksiVisibilityEntries->map(function ($row) {
+                return [
+                    'id' => $row->visible_karyawan_id,
+                    'name' => optional($row->visibleKaryawan)->name,
+                ];
+            })->values()->all(),
+            'visible_donatur_ids' => $user->donaturVisibilityEntries->pluck('visible_karyawan_id')->values()->all(),
+            'visible_donaturs' => $user->donaturVisibilityEntries->map(function ($row) {
+                return [
+                    'id' => $row->visible_karyawan_id,
+                    'name' => optional($row->visibleKaryawan)->name,
+                ];
             })->values()->all(),
             'created_at' => optional($user->created_at)->toIso8601String(),
             'updated_at' => optional($user->updated_at)->toIso8601String(),

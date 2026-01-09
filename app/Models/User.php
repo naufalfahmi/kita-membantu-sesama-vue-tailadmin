@@ -9,6 +9,8 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\KaryawanDonaturVisibility;
+use App\Models\KaryawanTransaksiVisibility;
 
 class User extends Authenticatable
 {
@@ -140,6 +142,54 @@ class User extends Authenticatable
     }
 
     /**
+     * Explicit visibility list for transaksi (who this user may see).
+     */
+    public function transaksiVisibilityEntries()
+    {
+        return $this->hasMany(KaryawanTransaksiVisibility::class, 'karyawan_id')
+            ->whereNull('deleted_at');
+    }
+
+    /**
+     * Explicit visibility list for donatur (who this user may see).
+     */
+    public function donaturVisibilityEntries()
+    {
+        return $this->hasMany(KaryawanDonaturVisibility::class, 'karyawan_id')
+            ->whereNull('deleted_at');
+    }
+
+    /**
+     * Helper: return IDs this user may see in transaksi context.
+     */
+    public function visibleTransaksiKaryawanIds(): array
+    {
+        $ids = $this->transaksiVisibilityEntries()->pluck('visible_karyawan_id')->toArray();
+
+        if (! empty($ids)) {
+            $ids[] = $this->id;
+            return $this->normalizeVisibilityIds($ids);
+        }
+
+        return User::descendantIdsOf($this->id);
+    }
+
+    /**
+     * Helper: return IDs this user may see in donatur context.
+     */
+    public function visibleDonaturKaryawanIds(): array
+    {
+        $ids = $this->donaturVisibilityEntries()->pluck('visible_karyawan_id')->toArray();
+
+        if (! empty($ids)) {
+            $ids[] = $this->id;
+            return $this->normalizeVisibilityIds($ids);
+        }
+
+        return User::descendantIdsOf($this->id);
+    }
+
+    /**
      * Linked mitra profile when this user represents a mitra account.
      */
     public function mitra()
@@ -178,6 +228,17 @@ class User extends Authenticatable
         // unique and integer cast
         $collected = array_values(array_unique($collected));
         return array_map('intval', $collected);
+    }
+
+    /**
+     * Normalize visibility IDs to a unique int array.
+     */
+    protected function normalizeVisibilityIds(array $ids): array
+    {
+        $normalized = array_map(static fn ($id) => (int) $id, $ids);
+        $normalized = array_values(array_unique($normalized));
+
+        return $normalized;
     }
 
     /**

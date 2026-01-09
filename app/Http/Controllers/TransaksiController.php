@@ -48,6 +48,7 @@ class TransaksiController extends Controller
                 $query->whereRaw('0 = 1');
             }
         } elseif (! $isAdmin) {
+            $allowed = $this->resolveTransaksiVisibilityIds($user);
             // Restrict by kantor cabang assignments (pivot `kantor_cabang_user`) when available.
             try {
                 $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
@@ -83,7 +84,6 @@ class TransaksiController extends Controller
             } else {
                 // Direktur Fundrising should only see their own and their subordinates' transaksis.
                 if ($isDirekturFundrising) {
-                    $allowed = User::descendantIdsOf($user->id);
                     $query->where(function ($q) use ($allowed) {
                         $q->whereIn('transaksis.created_by', $allowed)
                             ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
@@ -94,8 +94,6 @@ class TransaksiController extends Controller
                     } elseif ($user->kantor_cabang_id) {
                         $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
                     }
-
-                    $allowed = User::descendantIdsOf($user->id);
 
                     // Allow users to see transaksis they created, their subordinates created,
                     // or any transaksi where the related donatur's PIC is the user or a subordinate.
@@ -320,6 +318,7 @@ class TransaksiController extends Controller
                 $query->whereRaw('0 = 1');
             }
         } elseif (! $isAdmin) {
+            $allowed = $this->resolveTransaksiVisibilityIds($user);
             try {
                 $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
             } catch (\Exception $e) {
@@ -346,8 +345,6 @@ class TransaksiController extends Controller
                 } elseif ($user->kantor_cabang_id) {
                     $query->where('transaksis.kantor_cabang_id', $user->kantor_cabang_id);
                 }
-
-                $allowed = User::descendantIdsOf($user->id);
 
                 $query->where(function ($q) use ($allowed, $user) {
                     $q->whereIn('transaksis.created_by', $allowed)
@@ -631,6 +628,7 @@ class TransaksiController extends Controller
                 $query->whereRaw('0 = 1');
             }
         } elseif (! $isAdmin) {
+            $allowed = $this->resolveTransaksiVisibilityIds($user);
             try {
                 $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
             } catch (\Exception $e) {
@@ -654,7 +652,6 @@ class TransaksiController extends Controller
                 // Admin Cabang: allow viewing by branch only
                 $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
             } else {
-                $allowed = User::descendantIdsOf($user->id);
                 $query->where(function ($q) use ($allowed, $user) {
                     // Qualify column to avoid ambiguity when query uses joins
                     $q->whereIn('transaksis.created_by', $allowed)
@@ -788,6 +785,19 @@ class TransaksiController extends Controller
                 'message' => 'Gagal menghapus transaksi',
                 'error' => config('app.debug') ? $th->getMessage() : 'Terjadi kesalahan',
             ], 500);
+        }
+    }
+
+    /**
+     * Resolve allowed user IDs for transaksi visibility for the given user.
+     */
+    protected function resolveTransaksiVisibilityIds(User $user): array
+    {
+        try {
+            $ids = $user->visibleTransaksiKaryawanIds();
+            return array_values(array_unique(array_map('intval', $ids)));
+        } catch (\Throwable $e) {
+            return User::descendantIdsOf($user->id);
         }
     }
 

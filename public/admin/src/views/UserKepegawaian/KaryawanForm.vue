@@ -308,6 +308,38 @@
             </div>
           </div>
 
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Akses Data Transaksi (karyawan yang bisa dilihat)
+            </label>
+            <div v-if="employeeSelectOptions.length">
+              <SearchableMultiSelect
+                v-model="formData.visible_transaksi_ids"
+                :options="employeeSelectOptions"
+                placeholder="Pilih karyawan untuk akses transaksi"
+                :search-input="jabatanSearchInput"
+                @update:search-input="jabatanSearchInput = $event"
+              />
+            </div>
+            <div v-else class="mt-2 text-sm text-gray-500">Belum ada karyawan untuk dipilih.</div>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Akses Data Donatur (karyawan yang bisa dilihat)
+            </label>
+            <div v-if="employeeSelectOptions.length">
+              <SearchableMultiSelect
+                v-model="formData.visible_donatur_ids"
+                :options="employeeSelectOptions"
+                placeholder="Pilih karyawan untuk akses donatur"
+                :search-input="jabatanSearchInput"
+                @update:search-input="jabatanSearchInput = $event"
+              />
+            </div>
+            <div v-else class="mt-2 text-sm text-gray-500">Belum ada karyawan untuk dipilih.</div>
+          </div>
+
           <div class="flex items-center gap-3">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-400">Status Akun</label>
             <label class="relative inline-flex cursor-pointer items-center">
@@ -449,6 +481,8 @@ const formData = reactive({
   kantor_cabang_ids: [] as string[],
   leader_id: '',
   subordinate_ids: [] as string[],
+  visible_transaksi_ids: [] as string[],
+  visible_donatur_ids: [] as string[],
   is_active: true,
 })
 
@@ -544,6 +578,8 @@ const loadData = async (id: string) => {
       formData.leader_id = data.leader ? String(data.leader.id) : ''
       // load subordinate ids (supports array of objects or plain ids)
       formData.subordinate_ids = (data.subordinates || []).map((s: any) => String(s.id ?? s))
+      formData.visible_transaksi_ids = (data.visible_transaksi_ids || []).map((id: string) => String(id))
+      formData.visible_donatur_ids = (data.visible_donatur_ids || []).map((id: string) => String(id))
       formData.is_active = Boolean(data.is_active)
       formData.password = ''
     } else {
@@ -613,6 +649,8 @@ const handleSave = async () => {
       kantor_cabang_ids: formData.kantor_cabang_ids,
       leader_id: toNullable(formData.leader_id),
       subordinate_ids: formData.subordinate_ids,
+      visible_transaksi_ids: formData.visible_transaksi_ids,
+      visible_donatur_ids: formData.visible_donatur_ids,
       is_active: formData.is_active,
     }
 

@@ -13,7 +13,7 @@
         />
       </span>
 
-      <span class="block mr-1 font-medium text-theme-sm">{{ user?.name || 'Loading...' }}</span>
+      <span class="block mr-1 font-medium text-theme-sm">{{ user?.name || '' }}</span>
 
       <ChevronDownIcon :class="{ 'rotate-180': dropdownOpen }" />
     </button>
@@ -25,10 +25,10 @@
     >
       <div>
         <span class="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-          {{ user?.name || 'Loading...' }}
+          {{ user?.name || '' }}
         </span>
         <span class="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-          {{ user?.email || 'Loading...' }}
+          {{ user?.email || '' }}
         </span>
       </div>
 
@@ -67,12 +67,16 @@ import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { resetAuthState } from '@/router'
 import { getCsrfTokenSafe } from '@/utils/getCsrfToken'
+import { useAuth } from '@/composables/useAuth'
 
 const router = useRouter()
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
-const user = ref<{ id: number; name: string; email: string; avatar?: string } | null>(null)
 const imageError = ref(false)
+
+// Use shared auth state instead of local user ref
+const { user: authUser, fetchUser } = useAuth()
+const user = authUser
 
 const menuItems = [
   { href: '/profile', icon: UserCircleIcon, text: 'Profile' },
@@ -89,29 +93,6 @@ const userAvatar = computed(() => {
   }
   return user.value.avatar
 })
-
-const fetchUser = async () => {
-  try {
-    const response = await fetch('/admin/api/user', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json',
-      },
-      credentials: 'same-origin',
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      if (data.success && data.user) {
-        user.value = data.user
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching user:', error)
-  }
-}
 
 const toggleDropdown = () => {
   dropdownOpen.value = !dropdownOpen.value
@@ -176,6 +157,7 @@ const handleClickOutside = (event: Event) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
+  // Fetch user data (uses cached data if available)
   fetchUser()
 
   // listen for global user updates (e.g., avatar changed elsewhere)
@@ -189,9 +171,11 @@ onMounted(() => {
         url = (window.location.origin || '') + (url.startsWith('/') ? url : '/' + url)
       }
       if (url) {
-        if (!user.value) user.value = { id: 0, name: '', email: '', avatar: url }
-        else user.value.avatar = url
-        imageError.value = false
+        // Update the avatar in the shared user state
+        if (user.value) {
+          (user.value as any).avatar = url
+          imageError.value = false
+        }
       }
     }
   }

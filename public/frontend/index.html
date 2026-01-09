@@ -52,30 +52,13 @@
       <div class="vd wo/4 sd qo f ho oo wf yf" :class="{ 'd hh rm sr td ud qg ug jc yh': navigationOpen }">
         <nav>
           <ul class="tc _o sf yo cg ep">
-            <li><a href="index.html" class="xl" :class="{ 'mk': page === 'home' }">Home</a></li>
-            <li><a href="index.html#features" class="xl">Features</a></li>
-            <li class="c i" x-data="{ dropdown: false }">
-              <a href="#!" class="xl tc wf yf bg" @click.prevent="dropdown = !dropdown"
-                :class="{ 'mk': page === 'blog-grid' || page === 'blog-single' || page === 'signin' || page === 'signup' || page === '404' }">
-                Pages
-
-                <svg :class="{ 'wh': dropdown }" class="th mm we fd pf" xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 512 512">
-                  <path
-                    d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z" />
-                </svg>
-              </a>
-
-              <!-- Dropdown Start -->
-              <ul class="a" :class="{ 'tc': dropdown }">
-                <li><a href="blog-grid.html" class="xl" :class="{ 'mk': page === 'blog-grid' }">Blog Grid</a></li>
-                <li><a href="blog-single.html" class="xl" :class="{ 'mk': page === 'blog-single' }">Blog Single</a></li>
-                <!-- Sign In / Sign Up pages removed -->
-                <li><a href="404.html" class="xl" :class="{ 'mk': page === '404' }">404</a></li>
-              </ul>
-              <!-- Dropdown End -->
-            </li>
-            <li><a href="index.html#support" class="xl">Support</a></li>
+            <li><a href="index.html" class="xl" :class="{ 'mk': page === 'home' }">Beranda</a></li>
+            <li><a href="index.html#tentang" class="xl">Tentang Kami</a></li>
+            <li><a href="index.html#program" class="xl">Program</a></li>
+            <li><a href="index.html#cara-donasi" class="xl">Cara Berdonasi</a></li>
+            <li><a href="index.html#galeri" class="xl">Galeri</a></li>
+            <li><a href="index.html#transparansi" class="xl">Transparansi</a></li>
+            <li><a href="index.html#kontak" class="xl">Kontak</a></li>
           </ul>
         </nav>
 
@@ -185,37 +168,45 @@
     <!-- ===== Small Features End ===== -->
 
     <!-- ===== About Start ===== -->
-    <section class="ji gp uq 2xl:ud-py-35 pg">
+    <section id="tentang" class="ji gp uq 2xl:ud-py-35 pg">
       <div class="bb ze ki xn wq">
         <div class="tc wf gg qq">
           <!-- About Images -->
           <div class="animate_left xc gn gg jn/2 i">
             <div>
               <img src="images/shape-05.svg" alt="Shape" class="h -ud-left-5 x" />
-              <img src="images/about-01.png" alt="About" class="ib" />
-              <img src="images/about-02.png" alt="About" />
+              <img src="images/about-01.png" alt="Tentang Kami" class="ib" />
+              <img src="images/about-02.png" alt="Tentang Kami" />
             </div>
             <div>
               <img src="images/shape-06.svg" alt="Shape" />
-              <img src="images/about-03.png" alt="About" class="ob gb" />
+              <img src="images/about-03.png" alt="Tentang Kami" class="ob gb" />
               <img src="images/shape-07.svg" alt="Shape" class="bb" />
             </div>
           </div>
 
           <!-- About Content -->
           <div class="animate_right jn/2">
-            <h4 class="ek yj mk gb">Why Choose Us</h4>
-            <h2 class="fk vj zp pr kk wm qb">We Make Our customers happy by giving Best services.</h2>
-            <p class="uo">It is a long established fact that a reader will be distracted by the readable content of a
-              page when looking at its layout. The point of using Lorem Ipsum.</p>
+            <h4 class="ek yj mk gb">Tentang Kita Membantu Sesama</h4>
+            <h2 class="fk vj zp pr kk wm qb">Menjadi Organisasi Sosial Kemanusiaan Internasional yang Unggul dan Profesional</h2>
+            <p class="uo mb-4">Kita Membantu Sesama (KMS) adalah organisasi sosial kemanusiaan yang berdedikasi untuk membantu masyarakat yang membutuhkan. Kami berkomitmen untuk memberikan bantuan kemanusiaan yang tepat sasaran dan berkelanjutan.</p>
+            
+            <div class="mb-6">
+              <h5 class="ek zj kk wm mb-3">Visi Kami</h5>
+              <p class="uo">Menjadi organisasi sosial kemanusiaan internasional yang unggul dan profesional untuk kehidupan kemanusiaan yang lebih baik.</p>
+            </div>
+            
+            <div class="mb-6">
+              <h5 class="ek zj kk wm mb-3">Misi Kami</h5>
+              <ul class="list-disc list-inside space-y-2">
+                <li>Memberikan bantuan kemanusiaan yang tepat sasaran</li>
+                <li>Memberdayakan masyarakat untuk hidup mandiri</li>
+                <li>Membangun kemitraan strategis dengan berbagai pihak</li>
+                <li>Mengelola organisasi secara profesional dan transparan</li>
+              </ul>
+            </div>
 
-            <a href="https://www.youtube.com/watch?v=xcJtL7QggTI" data-fslightbox class="vc wf hg mb">
-              <span class="tc wf xf be dd rg i gh ua">
-                <span class="nf h vc yc vd rg gh qk -ud-z-1"></span>
-                <img src="images/icon-play.svg" alt="Play" />
-              </span>
-              <span class="kk">SEE HOW WE WORK</span>
-            </a>
+            <a href="#kontak" class="vc ek rg lk gh sl ml il gi hi">Hubungi Kami</a>
           </div>
         </div>
       </div>
@@ -397,11 +388,11 @@
     </section>
     <!-- ===== Team End ===== -->
 
-    <!-- ===== Services Start ===== -->
-    <section class="lj tp kr">
+    <!-- ===== Program Start ===== -->
+    <section id="program" class="lj tp kr">
       <!-- Section Title Start -->
       <div
-        x-data="{ sectionTitle: `We Offer The Best Quality Service for You`, sectionTitleText: `Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor eros. Donec vitae tortor lacus. Phasellus aliquam ante in maximus.`}">
+        x-data="{ sectionTitle: `Program Kami`, sectionTitleText: `Berbagai program yang kami jalankan untuk membantu masyarakat yang membutuhkan di berbagai bidang.`}">
         <div class="animate_top bb ze rj ki xn vq">
           <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
           </h2>
@@ -414,54 +405,54 @@
 
       <div class="bb ze ki xn yq mb en">
         <div class="wc qf pn xo ng">
-          <!-- Service Item -->
+          <!-- Program Item -->
           <div class="animate_top sg oi pi zq ml il am cn _m">
             <img src="images/icon-04.svg" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">Crafted for Startups</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
+            <h4 class="ek zj kk wm nb _b">Pendidikan</h4>
+            <p>Program beasiswa dan bantuan pendidikan untuk anak-anak kurang mampu agar dapat melanjutkan sekolah.</p>
           </div>
 
-          <!-- Service Item -->
+          <!-- Program Item -->
           <div class="animate_top sg oi pi zq ml il am cn _m">
             <img src="images/icon-05.svg" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">High-quality Design</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
+            <h4 class="ek zj kk wm nb _b">Kesehatan</h4>
+            <p>Layanan kesehatan gratis dan bantuan pengobatan untuk masyarakat yang membutuhkan.</p>
           </div>
 
-          <!-- Service Item -->
+          <!-- Program Item -->
           <div class="animate_top sg oi pi zq ml il am cn _m">
             <img src="images/icon-06.svg" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">All Essential Sections</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
+            <h4 class="ek zj kk wm nb _b">Pangan</h4>
+            <p>Distribusi paket sembako dan bantuan pangan untuk keluarga yang membutuhkan.</p>
           </div>
 
-          <!-- Service Item -->
+          <!-- Program Item -->
           <div class="animate_top sg oi pi zq ml il am cn _m">
             <img src="images/icon-07.svg" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">Speed Optimized</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
+            <h4 class="ek zj kk wm nb _b">Bencana Alam</h4>
+            <p>Tanggap darurat dan pemulihan pasca bencana untuk korban bencana alam.</p>
           </div>
 
-          <!-- Service Item -->
+          <!-- Program Item -->
           <div class="animate_top sg oi pi zq ml il am cn _m">
             <img src="images/icon-05.svg" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">Fully Customizable</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
+            <h4 class="ek zj kk wm nb _b">Pemberdayaan Ekonomi</h4>
+            <p>Pelatihan keterampilan dan modal usaha untuk memberdayakan masyarakat.</p>
           </div>
 
-          <!-- Service Item -->
+          <!-- Program Item -->
           <div class="animate_top sg oi pi zq ml il am cn _m">
             <img src="images/icon-06.svg" alt="Icon" />
-            <h4 class="ek zj kk wm nb _b">Regular Updates</h4>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. In convallis tortor.</p>
+            <h4 class="ek zj kk wm nb _b">Infrastruktur Sosial</h4>
+            <p>Pembangunan fasilitas umum seperti air bersih, sanitasi, dan tempat ibadah.</p>
           </div>
         </div>
       </div>
     </section>
-    <!-- ===== Services End ===== -->
+    <!-- ===== Program End ===== -->
 
-    <!-- ===== Pricing Table Start ===== -->
-    <section x-data="setup()" class="i pg fh rm ji gp uq">
+    <!-- ===== Cara Berdonasi Start ===== -->
+    <section id="cara-donasi" class="i pg fh rm ji gp uq">
       <!-- Bg Shapes -->
       <img src="images/shape-06.svg" alt="Shape" class="h aa y" />
       <img src="images/shape-03.svg" alt="Shape" class="h ca u" />
@@ -471,70 +462,116 @@
 
       <!-- Section Title Start -->
       <div
-        x-data="{ sectionTitle: `We Offer Great Affordable Premium Prices.`, sectionTitleText: `It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using.`}">
+        x-data="{ sectionTitle: `Cara Berdonasi`, sectionTitleText: `Berbagai cara mudah untuk Anda berpartisipasi membantu sesama melalui donasi.`}">
         <div class="animate_top bb ze rj ki xn vq">
           <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
           </h2>
           <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>
         </div>
-
-
       </div>
       <!-- Section Title End -->
 
-      <!-- Pricing switcher -->
-      <div class="tc wf xf jb og">
-        <span class="ek kk wm">Bill Monthly</span>
-        <button class="i rg gm" x-cloak @click="billPlan == 'monthly' ? billPlan = 'annually' : billPlan = 'monthly'">
-          <div class="fe id bl gh rg xk outline-none"></div>
-          <div class="h vc wf xf ge jd cl jl ml mf hh rg yk ea fa"
-            :class="{ 'ff': billPlan == 'monthly', 'gf': billPlan == 'annually' }"></div>
-        </button>
-        <span class="ek kk wm">Bill Annually</span>
-      </div>
-
-      <!-- Pricing Table -->
-      <div class="bb ze i va ki xn yq bc">
-        <div class="wc qf pn xo jg">
-          <template x-for="(plan, i) in plans" x-key="i">
-            <!-- Pricing Item -->
-            <div class="animate_top rj sg hh sm vk xm hi nj oj">
-              <h4 x-text="plan.name" class="wj kk wm fb"></h4>
-
-              <div class="tc wf xf kg cc">
-                <h2 :class="plan.name == 'Basic' ? 'text-green-500' : ''"
-                  x-text="`$${billPlan == 'monthly' ? plan.price.monthly : plan.price.annually}`" class="fk _j kk wm">
-                </h2>
-                <span x-text="billPlan == 'monthly' ? '/per month' : '/per year'" class="sc ak kk wm"></span>
-              </div>
-
-              <p class="ur dc">No credit card required</p>
-
-              <!-- Button -->
-              <a href="#!" class="ek rg lk ml il gi ri" :class="plan.name == 'Growth Plan' ? 'gh sl' : 'mh tl'">
-                Try for free
-              </a>
-
-              <!-- Features -->
-              <ul class="tc sf bg ob fb">
-                <template x-for="(feature, i) in plan.features" x-key="i">
-                  <li x-text="feature"></li>
-                </template>
-              </ul>
-
-              <p class="kk wm">7-day free trial</p>
+      <div class="bb ze ki xn yq mb en">
+        <div class="wc qf pn xo ng">
+          <!-- Donation Method -->
+          <div class="animate_top sg oi pi zq ml il am cn _m">
+            <div class="tc wf xf ie ld rg ml il mb-4">
+              <svg class="th lm ml il" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 5C2 3.89543 2.89543 3 4 3H20C21.1046 3 22 3.89543 22 5V8H2V5Z" fill="currentColor"/>
+                <path d="M2 10H22V19C22 20.1046 21.1046 21 20 21H4C2.89543 21 2 20.1046 2 19V10Z" fill="currentColor"/>
+              </svg>
             </div>
-          </template>
+            <h4 class="ek zj kk wm nb _b">Transfer Bank</h4>
+            <p class="mb-3">Donasi melalui transfer ke rekening resmi kami:</p>
+            <div class="text-sm space-y-1">
+              <p class="font-semibold">Bank BCA: 1234567890</p>
+              <p class="font-semibold">Bank Mandiri: 0987654321</p>
+              <p>a.n. Yayasan Kita Membantu Sesama</p>
+            </div>
+          </div>
+
+          <!-- Donation Method -->
+          <div class="animate_top sg oi pi zq ml il am cn _m">
+            <div class="tc wf xf ie ld rg ml il mb-4">
+              <svg class="th lm ml il" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 18V19C21 20.1 20.1 21 19 21H5C3.89 21 3 20.1 3 19V5C3 3.9 3.89 3 5 3H19C20.1 3 21 3.9 21 5V6H12C10.89 6 10 6.9 10 8V16C10 17.1 10.89 18 12 18H21ZM12 16H22V8H12V16ZM16 13.5C15.17 13.5 14.5 12.83 14.5 12C14.5 11.17 15.17 10.5 16 10.5C16.83 10.5 17.5 11.17 17.5 12C17.5 12.83 16.83 13.5 16 13.5Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <h4 class="ek zj kk wm nb _b">E-Wallet</h4>
+            <p class="mb-3">Donasi praktis melalui dompet digital:</p>
+            <div class="text-sm space-y-1">
+              <p class="font-semibold">GoPay: 0895-6210-93500</p>
+              <p class="font-semibold">OVO: 0895-6210-93500</p>
+              <p class="font-semibold">DANA: 0895-6210-93500</p>
+            </div>
+          </div>
+
+          <!-- Donation Method -->
+          <div class="animate_top sg oi pi zq ml il am cn _m">
+            <div class="tc wf xf ie ld rg ml il mb-4">
+              <svg class="th lm ml il" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 4H4C2.89 4 2.01 4.89 2.01 6L2 18C2 19.11 2.89 20 4 20H20C21.11 20 22 19.11 22 18V6C22 4.89 21.11 4 20 4ZM20 18H4V12H20V18ZM20 8H4V6H20V8Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <h4 class="ek zj kk wm nb _b">QRIS</h4>
+            <p class="mb-3">Scan QRIS untuk donasi instan:</p>
+            <div class="text-sm">
+              <p>Scan kode QRIS di kantor kami atau hubungi admin untuk mendapatkan kode QRIS.</p>
+            </div>
+          </div>
+
+          <!-- Donation Method -->
+          <div class="animate_top sg oi pi zq ml il am cn _m">
+            <div class="tc wf xf ie ld rg ml il mb-4">
+              <svg class="th lm ml il" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7V12C2 16.55 5.84 20.74 12 22C18.16 20.74 22 16.55 22 12V7L12 2ZM10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <h4 class="ek zj kk wm nb _b">Donasi Langsung</h4>
+            <p class="mb-3">Kunjungi kantor kami:</p>
+            <div class="text-sm">
+              <p>Jl. Contoh No. 123, Jakarta Pusat</p>
+              <p class="mt-2">Senin - Jumat: 09.00 - 17.00 WIB</p>
+            </div>
+          </div>
+
+          <!-- Donation Method -->
+          <div class="animate_top sg oi pi zq ml il am cn _m">
+            <div class="tc wf xf ie ld rg ml il mb-4">
+              <svg class="th lm ml il" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19ZM7 10H9V17H7V10ZM11 7H13V17H11V7ZM15 13H17V17H15V13Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <h4 class="ek zj kk wm nb _b">Donasi Barang</h4>
+            <p class="mb-3">Sumbangan dalam bentuk:</p>
+            <div class="text-sm">
+              <p>Pakaian layak pakai, makanan, obat-obatan, alat tulis, dan kebutuhan lainnya.</p>
+            </div>
+          </div>
+
+          <!-- Donation Method -->
+          <div class="animate_top sg oi pi zq ml il am cn _m">
+            <div class="tc wf xf ie ld rg ml il mb-4">
+              <svg class="th lm ml il" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z" fill="currentColor"/>
+              </svg>
+            </div>
+            <h4 class="ek zj kk wm nb _b">Informasi Penting</h4>
+            <p class="mb-3">Setelah berdonasi:</p>
+            <div class="text-sm">
+              <p>Kirim bukti transfer ke WhatsApp +62 895-6210-93500 untuk mendapatkan konfirmasi resmi.</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
-    <!-- ===== Pricing Table End ===== -->
+    <!-- ===== Cara Berdonasi End ===== -->
 
-    <!-- ===== Projects Start ===== -->
-    <section class="pg pj vp mr oj wp nr">
+    <!-- ===== Gallery Start ===== -->
+    <section id="galeri" class="pg pj vp mr oj wp nr">
       <!-- Section Title Start -->
       <div
-        x-data="{ sectionTitle: `We Offer Great Affordable Premium Prices.`, sectionTitleText: `It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using.`}">
+        x-data="{ sectionTitle: `Galeri Kegiatan`, sectionTitleText: `Dokumentasi kegiatan dan program yang telah kami laksanakan untuk membantu sesama.`}">
         <div class="animate_top bb ze rj ki xn vq">
           <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
           </h2>
@@ -546,37 +583,37 @@
       <!-- Section Title End -->
 
       <div class="bb ze ki xn 2xl:ud-px-0 jb" x-data="{filterTab: 1}">
-        <!-- Porject Tab -->
+        <!-- Gallery Tab -->
         <div class="projects-tab _e bb tc uf wf xf cg rg hh rm vk xm si ti fc">
           <button data-filter="*" @click="filterTab = 1" :class="{ 'gh lk' : filterTab === 1 }"
             class="project-tab-btn ek rg ml il vi mi">
-            All
+            Semua
           </button>
-          <button data-filter=".branding" @click="filterTab = 2" :class="{ 'gh lk' : filterTab === 2 }"
+          <button data-filter=".pendidikan" @click="filterTab = 2" :class="{ 'gh lk' : filterTab === 2 }"
             class="project-tab-btn ek rg ml il vi mi">
-            Branding Strategy
+            Pendidikan
           </button>
-          <button data-filter=".digital" @click="filterTab = 3" :class="{ 'gh lk' : filterTab === 3 }"
+          <button data-filter=".kesehatan" @click="filterTab = 3" :class="{ 'gh lk' : filterTab === 3 }"
             class="project-tab-btn ek rg ml il vi mi">
-            Digital Experiences
+            Kesehatan
           </button>
-          <button data-filter=".ecommerce" @click="filterTab = 4" :class="{ 'gh lk' : filterTab === 4 }"
+          <button data-filter=".bencana" @click="filterTab = 4" :class="{ 'gh lk' : filterTab === 4 }"
             class="project-tab-btn ek rg ml il vi mi">
-            Ecommerce
+            Tanggap Bencana
           </button>
         </div>
 
-        <!-- Projects item wrapper -->
+        <!-- Gallery item wrapper -->
         <div class="projects-wrapper tc -ud-mx-5">
           <div class="project-sizer"></div>
-          <!-- Project Item -->
-          <div class="project-item wi fb vd jn/2 to/3 branding ecommerce">
+          <!-- Gallery Item -->
+          <div class="project-item wi fb vd jn/2 to/3 pendidikan">
             <div class="c i pg sg z-1">
-              <img src="images/project-01.png" alt="Project" />
+              <img src="images/project-01.png" alt="Program Pendidikan" />
 
               <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                <h4 class="ek tj kk hc">Photo Retouching</h4>
-                <p>Branded Ecommerce</p>
+                <h4 class="ek tj kk hc">Bantuan Beasiswa</h4>
+                <p>Program Pendidikan</p>
                 <a class="c tc wf xf ie ld rg _g dh ml il ph jm km jc" href="#!">
                   <svg class="th lm ml il" width="14" height="14" viewBox="0 0 14 14" fill="none"
                     xmlns="http://www.w3.org/2000/svg">
@@ -588,14 +625,14 @@
             </div>
           </div>
 
-          <!-- Project Item -->
-          <div class="project-item wi fb vd jn/2 to/3 digital">
+          <!-- Gallery Item -->
+          <div class="project-item wi fb vd jn/2 to/3 kesehatan">
             <div class="c i pg sg z-1">
-              <img src="images/project-02.png" alt="Project" />
+              <img src="images/project-02.png" alt="Program Kesehatan" />
 
               <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                <h4 class="ek tj kk hc">Photo Retouching</h4>
-                <p>Branded Ecommerce</p>
+                <h4 class="ek tj kk hc">Layanan Kesehatan</h4>
+                <p>Program Kesehatan</p>
                 <a class="c tc wf xf ie ld rg _g dh ml il ph jm km jc" href="#!">
                   <svg class="th lm ml il" width="14" height="14" viewBox="0 0 14 14" fill="none"
                     xmlns="http://www.w3.org/2000/svg">
@@ -607,14 +644,14 @@
             </div>
           </div>
 
-          <!-- Project Item -->
-          <div class="project-item wi fb vd jn/2 to/3 branding ecommerce">
+          <!-- Gallery Item -->
+          <div class="project-item wi fb vd jn/2 to/3 pendidikan">
             <div class="c i pg sg z-1">
-              <img src="images/project-04.png" alt="Project" />
+              <img src="images/project-04.png" alt="Program Pendidikan" />
 
               <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                <h4 class="ek tj kk hc">Photo Retouching</h4>
-                <p>Branded Ecommerce</p>
+                <h4 class="ek tj kk hc">Perpustakaan Desa</h4>
+                <p>Program Pendidikan</p>
                 <a class="c tc wf xf ie ld rg _g dh ml il ph jm km jc" href="#!">
                   <svg class="th lm ml il" width="14" height="14" viewBox="0 0 14 14" fill="none"
                     xmlns="http://www.w3.org/2000/svg">
@@ -626,14 +663,14 @@
             </div>
           </div>
 
-          <!-- Project Item -->
-          <div class="project-item wi fb vd vo/3 digital ecommerce">
+          <!-- Gallery Item -->
+          <div class="project-item wi fb vd vo/3 bencana">
             <div class="c i pg sg z-1">
-              <img src="images/project-03.png" alt="Project" />
+              <img src="images/project-03.png" alt="Tanggap Bencana" />
 
               <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                <h4 class="ek tj kk hc">Photo Retouching</h4>
-                <p>Branded Ecommerce</p>
+                <h4 class="ek tj kk hc">Bantuan Bencana</h4>
+                <p>Tanggap Darurat</p>
                 <a class="c tc wf xf ie ld rg _g dh ml il ph jm km jc" href="#!">
                   <svg class="th lm ml il" width="14" height="14" viewBox="0 0 14 14" fill="none"
                     xmlns="http://www.w3.org/2000/svg">
@@ -647,7 +684,7 @@
         </div>
       </div>
     </section>
-    <!-- ===== Projects End ===== -->
+    <!-- ===== Gallery End ===== -->
 
     <!-- ===== Testimonials Start ===== -->
     <section class="hj rp hr">

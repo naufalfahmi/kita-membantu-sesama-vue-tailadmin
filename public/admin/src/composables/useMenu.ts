@@ -30,12 +30,20 @@ const iconMap: Record<string, any> = {
   GridIcon: PageIcon,
 };
 
+// Shared state (singleton pattern) - menu data cached across all components
+const menuGroups = ref<any[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
+let isFetched = false; // Track if menu has been fetched
+
 export function useMenu() {
-  const menuGroups = ref<any[]>([]);
-  const loading = ref(false);
-  const error = ref<string | null>(null);
 
   const fetchMenu = async () => {
+    // Skip if already fetched
+    if (isFetched) {
+      return;
+    }
+
     loading.value = true;
     error.value = null;
 
@@ -81,6 +89,7 @@ export function useMenu() {
       menuGroups.value = getStaticMenu();
     } finally {
       loading.value = false;
+      isFetched = true; // Mark as fetched
     }
   };
 
@@ -307,8 +316,10 @@ export function useMenu() {
     ];
   };
 
-  // Fetch menu immediately when composable is called
-  fetchMenu();
+  // Fetch menu immediately when composable is called for the first time
+  if (!isFetched) {
+    fetchMenu();
+  }
 
   return {
     menuGroups,

@@ -81,15 +81,26 @@ Route::get('/blog-grid', function () {
     return view('frontend.blog-grid');
 })->name('frontend.blog-grid');
 
-Route::get('/blog-single/{id?}', function ($id = null) {
-    $kegiatan = null;
-    if ($id) {
-        $kegiatan = \App\Models\LandingKegiatan::find($id);
-        if (! $kegiatan) {
-            abort(404);
-        }
+Route::get('/kegiatan/{slug}', function ($slug) {
+    // Try to find by ID first (if slug is numeric), then by title (case-insensitive)
+    $kegiatan = \App\Models\LandingKegiatan::where(function($query) use ($slug) {
+        $query->where('id', $slug)
+              ->orWhereRaw('LOWER(REPLACE(title, " ", "-")) = ?', [strtolower($slug)])
+              ->orWhereRaw('LOWER(title) = ?', [strtolower(str_replace('-', ' ', $slug))]);
+    })->first();
+    
+    if (!$kegiatan) {
+        abort(404);
     }
-    return view('frontend.blog-single', compact('kegiatan'));
+    
+    // Get related kegiatans
+    $relatedKegiatans = \App\Models\LandingKegiatan::where('id', '!=', $kegiatan->id)
+        ->where('status', 'active')
+        ->orderBy('created_at', 'desc')
+        ->limit(5)
+        ->get();
+    
+    return view('frontend.blog-single', compact('kegiatan', 'relatedKegiatans'));
 })->name('frontend.blog-single');
 
 // Contact form endpoint (frontend)

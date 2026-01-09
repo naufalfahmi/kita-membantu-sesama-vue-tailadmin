@@ -13,30 +13,58 @@
                     $imgs = json_decode($kegiatan->images, true) ?: [];
                     if (!is_array($imgs)) $imgs = [];
                   }
-                  $mainImg = '/frontend/images/blog-big.png';
+                  $mainImg = asset('frontend/images/blog-big.png');
                   if (!empty($imgs) && !empty($imgs[0])) {
                     $mainImg = preg_match('/^https?:\/\//', $imgs[0]) ? $imgs[0] : asset('storage/' . $imgs[0]);
                   }
                   $date = $kegiatan->activity_date ? \Carbon\Carbon::parse($kegiatan->activity_date)->format('d M, Y') : '';
+                  $location = collect([
+                      $kegiatan->village,
+                      $kegiatan->district,
+                      $kegiatan->city,
+                      $kegiatan->province
+                  ])->filter()->join(', ');
                 @endphp
 
-                <img src="{{ $mainImg }}" alt="{{ $kegiatan->title }}" />
+                <img src="{{ $mainImg }}" alt="{{ $kegiatan->title }}" class="w-full h-auto rounded-lg mb-6" />
 
-                <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">{{ $kegiatan->title }}</h2>
+                <h1 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">{{ $kegiatan->title }}</h1>
 
-                <ul class="tc uf cg 2xl:ud-gap-15 fb">
-                  <li><span class="rc kk wm">Author: </span> {{ $kegiatan->organizer ?? 'Team' }}</li>
-                  <li><span class="rc kk wm">Published On: </span> {{ $date }}</li>
-                  <li><span class="rc kk wm">Category: </span> {{ $kegiatan->city ?? 'Events' }}</li>
-                </ul>
+                <div class="rounded-md shadow-solid-12 bg-white dark:bg-blacksection border border-stroke dark:border-strokedark p-5 mb-6">
+                  <ul class="tc uf flex-wrap cg 2xl:ud-gap-15 fb gap-4 md:gap-8 md:flex-nowrap">
+                    <li class="flex items-center gap-2 md:flex-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M8 7V3M16 7V3M7 11H17M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span class="rc kk wm">Tanggal: </span> {{ $date }}
+                  </li>
+                  @if(!empty($location))
+                    <li class="flex items-center gap-2 md:flex-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="currentColor"/>
+                    </svg>
+                    <span class="rc kk wm">Lokasi: </span> {{ $location }}
+                  </li>
+                  @endif
+                  @if($kegiatan->number_of_recipients > 0)
+                    <li class="flex items-center gap-2 md:flex-1">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V19H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V19H23V16.5C23 14.17 18.33 13 16 13Z" fill="currentColor"/>
+                    </svg>
+                    <span class="rc kk wm">Penerima Manfaat: </span> {{ number_format($kegiatan->number_of_recipients) }} orang
+                  </li>
+                  @endif
+                  </ul>
+                </div>
 
-                <div>{!! $kegiatan->description ?? '' !!}</div>
+                <div class="prose max-w-none mb-6">{!! $kegiatan->description ?? '' !!}</div>
 
                 @if(count($imgs) > 1)
-                  <div class="wc qf pn dg cb">
-                    @foreach(array_slice($imgs, 1, 6) as $si)
+                  <h3 class="text-xl font-semibold mb-4">Galeri Kegiatan</h3>
+                  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                    @foreach(array_slice($imgs, 1) as $si)
                       @php $simg = preg_match('/^https?:\/\//', $si) ? $si : asset('storage/' . $si); @endphp
-                      <img src="{{ $simg }}" alt="{{ $kegiatan->title }}" />
+                      <img src="{{ $simg }}" alt="{{ $kegiatan->title }}" class="w-full h-48 object-cover rounded-lg" />
                     @endforeach
                   </div>
                 @endif
@@ -81,12 +109,12 @@
                 </p>
               @endif
 
-              <ul class="tc wf bg sb">
+              <ul class="tc wf bg sb mt-8">
                 <li>
-                  <p class="sj kk wm tb">Share On:</p>
+                  <p class="sj kk wm tb">Bagikan:</p>
                 </li>
                 <li>
-                  <a href="#!" class="tc wf xf yd ad rg ml il ih wk">
+                  <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(request()->url()) }}" target="_blank" class="tc wf xf yd ad rg ml il ih wk">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <g clip-path="url(#clip0_47_28)">
                         <path
@@ -102,7 +130,7 @@
                   </a>
                 </li>
                 <li>
-                  <a href="#!" class="tc wf xf yd ad rg ml il jh wk">
+                  <a href="https://twitter.com/intent/tweet?url={{ urlencode(request()->url()) }}&text={{ urlencode($kegiatan->title ?? '') }}" target="_blank" class="tc wf xf yd ad rg ml il jh wk">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <g clip-path="url(#clip0_47_47)">
                         <path
@@ -118,23 +146,14 @@
                   </a>
                 </li>
                 <li>
-                  <a href="#!" class="tc wf xf yd ad rg ml il kh wk">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <g clip-path="url(#clip0_47_50)">
-                        <path
-                          d="M11.1417 1.74502C9.14781 1.47074 7.12195 1.92715 5.43827 3.02999C3.75459 4.13283 2.52679 5.80761 1.98158 7.74508C1.43637 9.68255 1.61059 11.7519 2.47205 13.5709C3.33351 15.3899 4.82404 16.8359 6.66841 17.6417C6.61854 17.0015 6.66432 16.3575 6.80425 15.7309C6.95841 15.0317 7.88425 11.1784 7.88425 11.1784C7.69989 10.7651 7.60775 10.3167 7.61425 9.86419C7.61425 8.62669 8.32841 7.70336 9.21675 7.70336C9.37634 7.70103 9.53455 7.7331 9.68064 7.79738C9.82673 7.86166 9.95727 7.95665 10.0634 8.07588C10.1695 8.19511 10.2487 8.33578 10.2955 8.48835C10.3424 8.64091 10.3559 8.80178 10.3351 8.96002C10.3351 9.71002 9.85342 10.845 9.60175 11.91C9.55201 12.1053 9.54886 12.3096 9.59254 12.5064C9.63621 12.7031 9.72551 12.8869 9.85321 13.0428C9.98092 13.1987 10.1435 13.3225 10.3278 13.4041C10.5121 13.4857 10.713 13.5228 10.9142 13.5125C12.4959 13.5125 13.5559 11.4867 13.5559 9.09502C13.5559 7.26169 12.3417 5.88836 10.1034 5.88836C9.56789 5.86755 9.03373 5.95579 8.53336 6.14773C8.03298 6.33968 7.57684 6.63131 7.19262 7.00493C6.8084 7.37855 6.50413 7.82636 6.29827 8.32117C6.09241 8.81598 5.98926 9.34746 5.99508 9.88336C5.97122 10.4778 6.163 11.0608 6.53508 11.525C6.60461 11.5769 6.65538 11.65 6.67973 11.7333C6.70408 11.8166 6.70069 11.9055 6.67008 11.9867C6.63175 12.14 6.53508 12.5059 6.49675 12.64C6.48877 12.6855 6.47023 12.7285 6.4426 12.7655C6.41497 12.8026 6.37904 12.8326 6.33769 12.8532C6.29634 12.8738 6.25073 12.8844 6.20454 12.8841C6.15835 12.8838 6.11286 12.8727 6.07175 12.8517C4.91841 12.39 4.37508 11.1209 4.37508 9.67169C4.37508 7.29919 6.36175 4.45919 10.3367 4.45919C13.5001 4.45919 15.6034 6.77336 15.6034 9.24836C15.6034 12.5059 13.7892 14.955 11.1084 14.955C10.7077 14.9678 10.3103 14.8794 9.95286 14.6979C9.59541 14.5164 9.2895 14.2477 9.06342 13.9167C9.06342 13.9167 8.58175 15.8467 8.48675 16.2117C8.29282 16.8423 8.00667 17.4407 7.63758 17.9875C8.40675 18.2209 9.20591 18.3375 10.0092 18.3342C11.1039 18.3351 12.188 18.12 13.1994 17.7013C14.2108 17.2827 15.1297 16.6686 15.9035 15.8943C16.6772 15.12 17.2907 14.2007 17.7086 13.1889C18.1266 12.1772 18.3409 11.093 18.3393 9.99836C18.3382 7.98586 17.6091 6.04169 16.2864 4.52484C14.9638 3.00799 13.137 2.02091 11.1434 1.74586L11.1417 1.74502Z"
-                          fill="white" />
-                      </g>
-                      <defs>
-                        <clipPath id="clip0_47_50">
-                          <rect width="20" height="20" fill="white" />
-                        </clipPath>
-                      </defs>
+                  <a href="https://wa.me/?text={{ urlencode(($kegiatan->title ?? '') . ' - ' . request()->url()) }}" target="_blank" class="tc wf xf yd ad rg ml il lh wk">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M17.472 14.382C17.227 14.259 16.015 13.662 15.791 13.577C15.567 13.493 15.402 13.451 15.237 13.696C15.072 13.942 14.591 14.498 14.446 14.663C14.301 14.828 14.156 14.849 13.911 14.726C13.666 14.603 12.86 14.34 11.909 13.49C11.169 12.83 10.677 12.014 10.532 11.769C10.387 11.524 10.517 11.389 10.64 11.266C10.752 11.154 10.885 10.979 11.008 10.834C11.131 10.689 11.173 10.586 11.257 10.421C11.341 10.256 11.299 10.111 11.236 9.988C11.173 9.865 10.682 8.652 10.478 8.162C10.279 7.687 10.077 7.753 9.925 7.746C9.78 7.739 9.615 7.738 9.45 7.738C9.285 7.738 9.019 7.8 8.795 8.045C8.571 8.29 7.933 8.887 7.933 10.1C7.933 11.313 8.816 12.484 8.939 12.649C9.062 12.814 10.677 15.294 13.158 16.366C13.718 16.614 14.155 16.764 14.496 16.876C15.057 17.049 15.566 17.024 15.97 16.96C16.418 16.889 17.406 16.387 17.61 15.833C17.814 15.279 17.814 14.808 17.751 14.705C17.688 14.602 17.717 14.505 17.472 14.382ZM12.012 21.785H12.009C10.265 21.785 8.556 21.298 7.073 20.382L6.718 20.172L2.905 21.145L3.893 17.42L3.663 17.053C2.655 15.52 2.121 13.733 2.122 11.897C2.124 6.444 6.558 2.01 12.015 2.01C14.666 2.011 17.158 3.046 19.034 4.924C20.91 6.802 21.943 9.295 21.942 11.945C21.94 17.398 17.506 21.785 12.012 21.785ZM20.455 3.468C18.258 1.268 15.289 0.048 12.013 0.047C5.447 0.047 0.11 5.383 0.107 11.948C0.106 14.046 0.666 16.095 1.726 17.895L0 24L6.235 22.308C8.001 23.269 10.001 23.777 12.008 23.778H12.013C18.579 23.778 23.916 18.442 23.919 11.877C23.92 8.601 22.653 5.668 20.455 3.468Z" fill="white"/>
                     </svg>
                   </a>
                 </li>
                 <li>
-                  <a href="#!" class="tc wf xf yd ad rg ml il lh wk">
+                  <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ urlencode(request()->url()) }}&title={{ urlencode($kegiatan->title ?? '') }}" target="_blank" class="tc wf xf yd ad rg ml il kh wk">
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <g clip-path="url(#clip0_47_53)">
                         <path
@@ -155,67 +174,32 @@
           </div>
 
           <div class="jn/2 so">
-            <div class="animate_top fb">
-              <form action="#">
-                <div class="i">
-                  <input type="text" placeholder="Search Here..."
-                    class="vd sm _g ch pm vk xm rg gm dm/40 dn/40 li mi" />
-
-                  <button class="h r q _h">
-                    <svg class="th ul ml il" width="21" height="21" viewBox="0 0 21 21" fill="none"
-                      xmlns="http://www.w3.org/2000/svg">
-                      <path
-                        d="M16.031 14.617L20.314 18.899L18.899 20.314L14.617 16.031C13.0237 17.3082 11.042 18.0029 9 18C4.032 18 0 13.968 0 9C0 4.032 4.032 0 9 0C13.968 0 18 4.032 18 9C18.0029 11.042 17.3082 13.0237 16.031 14.617ZM14.025 13.875C15.2941 12.5699 16.0029 10.8204 16 9C16 5.132 12.867 2 9 2C5.132 2 2 5.132 2 9C2 12.867 5.132 16 9 16C10.8204 16.0029 12.5699 15.2941 13.875 14.025L14.025 13.875Z" />
-                    </svg>
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            <div class="animate_top fb">
-              <h4 class="tj kk wm qb">Categories</h4>
-
-              <ul>
-                <li class="ql vb du-ease-in-out il xl">
-                  <a href="#!">Blog</a>
-                </li>
-                <li class="ql vb du-ease-in-out il xl">
-                  <a href="#!">Events</a>
-                </li>
-                <li class="ql vb du-ease-in-out il xl">
-                  <a href="#!">Grids</a>
-                </li>
-                <li class="ql vb du-ease-in-out il xl">
-                  <a href="#!">News</a>
-                </li>
-                <li class="ql vb du-ease-in-out il xl">
-                  <a href="#!">Rounded</a>
-                </li>
-              </ul>
-            </div>
-
             <div class="animate_top">
-              <h4 class="tj kk wm qb">Related Posts</h4>
+              <h4 class="tj kk wm qb">Kegiatan Lainnya</h4>
 
               <div>
-                <div class="tc fg 2xl:ud-gap-6 qb">
-                  <img src="{{ asset("frontend/images/blog-small-01.png") }}" alt="Blog" />
-                  <h5 class="wj kk wm xl bn ml il">
-                    <a href="#!">Free advertising for your online business</a>
-                  </h5>
-                </div>
-                <div class="tc fg 2xl:ud-gap-6 qb">
-                  <img src="{{ asset("frontend/images/blog-small-02.png") }}" alt="Blog" />
-                  <h5 class="wj kk wm xl bn ml il">
-                    <a href="#!">9 simple ways to improve your design skills</a>
-                  </h5>
-                </div>
-                <div class="tc fg 2xl:ud-gap-6">
-                  <img src="{{ asset("frontend/images/blog-small-03.png") }}" alt="Blog" />
-                  <h5 class="wj kk wm xl bn ml il">
-                    <a href="#!">Tips to quickly improve your coding speed.</a>
-                  </h5>
-                </div>
+                @forelse($relatedKegiatans ?? [] as $related)
+                  @php
+                    $relatedSlug = \Illuminate\Support\Str::slug($related->title);
+                    $relatedExcerpt = strip_tags($related->description ?? '');
+                    if (strlen($relatedExcerpt) > 110) {
+                      $relatedExcerpt = substr($relatedExcerpt, 0, 107) . '...';
+                    }
+                  @endphp
+                  <div class="mb-5 pb-5 border-b border-stroke dark:border-strokedark last:border-0 last:pb-0 last:mb-0">
+                    <p class="text-xs uppercase tracking-wide text-brand-500 mb-1">{{ $related->activity_date ? \Carbon\Carbon::parse($related->activity_date)->format('d M, Y') : 'Kegiatan' }}</p>
+                    <h5 class="wj kk wm xl bn ml il mb-2">
+                      <a href="{{ route('frontend.blog-single', ['slug' => $relatedSlug]) }}" class="hover:text-brand-500">
+                        {{ $related->title }}
+                      </a>
+                    </h5>
+                    @if(!empty($relatedExcerpt))
+                      <p class="text-sm text-gray-500 dark:text-gray-400">{{ $relatedExcerpt }}</p>
+                    @endif
+                  </div>
+                @empty
+                  <p class="text-sm text-gray-500">Tidak ada kegiatan lainnya.</p>
+                @endforelse
               </div>
             </div>
           </div>
@@ -233,16 +217,15 @@
         <div class="tc uf sn tn un gg">
           <div class="animate_left to/2">
             <h2 class="fk vj zp pr lk ac">
-              Join with 5000+ Startups Growing with Base.
+              Bergabunglah Dengan Ribuan Donatur
             </h2>
             <p class="lk">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc quis nibh lorem. Duis sed odio lorem. In a
-              efficitur leo. Ut venenatis rhoncus.
+              Mari bersama-sama membantu sesama dan menciptakan perubahan positif untuk masyarakat yang membutuhkan.
             </p>
           </div>
           <div class="animate_right bf">
-            <a href="#!" class="vc ek kk hh rg ol il cm gi hi">
-              Lihat Program
+            <a href="/#cara-donasi" class="vc ek kk hh rg ol il cm gi hi">
+              Donasi Sekarang
             </a>
           </div>
         </div>

@@ -44,12 +44,13 @@
     <div class="vd wo/4 sd qo f ho oo wf yf" :class="{ 'd hh rm sr td ud qg ug jc yh': navigationOpen }">
       <nav>
         <ul class="tc _o sf yo cg ep">
-          <li><a href="{{ route('frontend.index') }}" class="xl" :class="{ 'mk': page === 'home' }">Tentang Kami</a></li>
-          <li><a href="{{ route('frontend.index') }}#visi-misi" class="xl">Visi & Misi Kami</a></li>
+          <li><a href="{{ route('frontend.index') }}" class="xl" :class="{ 'mk': page === 'home' }">Beranda</a></li>
+          <li><a href="{{ route('frontend.index') }}#tentang-kami" class="xl">Tentang Kami</a></li>
           <li><a href="{{ route('frontend.index') }}#program" class="xl">Program</a></li>
-          <li><a href="{{ route('frontend.index') }}#kegiatan" class="xl">Kegiatan</a></li>
-          <li><a href="{{ route('frontend.index') }}#support" class="xl">Kontak</a></li>
-        </ul>
+          <li><a href="{{ route('frontend.index') }}#cara-donasi" class="xl">Cara Berdonasi</a></li>
+          <li><a href="{{ route('frontend.index') }}#galeri" class="xl">Galeri</a></li>
+          <li><a href="{{ route('frontend.index') }}#transparansi" class="xl">Transparansi</a></li>
+          <li><a href="{{ route('frontend.index') }}#kontak" class="xl">Kontak</a></li>
         </ul>
       </nav>
 

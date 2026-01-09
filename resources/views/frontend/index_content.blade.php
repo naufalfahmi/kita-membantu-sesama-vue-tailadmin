@@ -1,6 +1,6 @@
 
     <!-- ===== Hero Start ===== -->
-    <section class="gj do ir hj sp jr i pg">
+    <section id="home" class="gj do ir hj sp jr i pg">
       <!-- Hero Images -->
       <div class="xc fn zd/2 2xl:ud-w-187.5 bd 2xl:ud-h-171.5 h q r">
         <img src="{{ asset("frontend/images/shape-01.svg") }}" alt="shape" class="xc 2xl:ud-block h t -ud-left-[10%] ua" />
@@ -52,33 +52,44 @@
           <!-- Small Features Item -->
           <div class="animate_top kn to/3 tc cg oq">
             <div class="tc wf xf cf ae cd rg mh">
-              <img src="{{ asset("frontend/images/icon-01.svg") }}" alt="Icon" />
+              <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="24" r="20" fill="#E8F5E9"/>
+                <path d="M24 12C17.4 12 12 17.4 12 24C12 30.6 17.4 36 24 36C30.6 36 36 30.6 36 24C36 17.4 30.6 12 24 12ZM24 33C19 33 15 29 15 24C15 19 19 15 24 15C29 15 33 19 33 24C33 29 29 33 24 33Z" fill="#4CAF50"/>
+                <path d="M22 28L18 24L19.4 22.6L22 25.2L28.6 18.6L30 20L22 28Z" fill="#4CAF50"/>
+              </svg>
             </div>
             <div>
-              <h4 class="ek yj go kk wm xb">24/7 Support</h4>
-              <p>Lorem ipsum dolor sit amet conse adipiscing elit.</p>
+              <h4 class="ek yj go kk wm xb">Transparansi</h4>
+              <p>Keterbukaan penuh dalam pengelolaan dana dan program untuk membangun kepercayaan publik.</p>
             </div>
           </div>
 
           <!-- Small Features Item -->
           <div class="animate_top kn to/3 tc cg oq">
             <div class="tc wf xf cf ae cd rg nh">
-              <img src="{{ asset("frontend/images/icon-02.svg") }}" alt="Icon" />
+              <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="24" r="20" fill="#FFF3E0"/>
+                <path d="M24 10L28 18H36L30 24L32 32L24 27L16 32L18 24L12 18H20L24 10Z" fill="#FF9800"/>
+              </svg>
             </div>
             <div>
-              <h4 class="ek yj go kk wm xb">Take Ownership</h4>
-              <p>Lorem ipsum dolor sit amet conse adipiscing elit.</p>
+              <h4 class="ek yj go kk wm xb">Amanah</h4>
+              <p>Menjalankan tanggung jawab dengan penuh integritas dan akuntabilitas kepada donatur.</p>
             </div>
           </div>
 
           <!-- Small Features Item -->
           <div class="animate_top kn to/3 tc cg oq">
             <div class="tc wf xf cf ae cd rg oh">
-              <img src="{{ asset("frontend/images/icon-03.svg") }}" alt="Icon" />
+              <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="24" cy="24" r="20" fill="#E3F2FD"/>
+                <path d="M20 14H28V18H32V22H28V26H32V30H28V34H20V30H16V26H20V22H16V18H20V14Z" fill="#2196F3"/>
+                <circle cx="24" cy="20" r="3" fill="#2196F3"/>
+              </svg>
             </div>
             <div>
-              <h4 class="ek yj go kk wm xb">Team Work</h4>
-              <p>Lorem ipsum dolor sit amet conse adipiscing elit.</p>
+              <h4 class="ek yj go kk wm xb">Profesional</h4>
+              <p>Dikelola oleh tim berpengalaman dengan standar tata kelola organisasi yang baik.</p>
             </div>
           </div>
         </div>
@@ -92,212 +103,68 @@
         <div class="tc wf gg qq">
           <!-- About Images -->
           <div class="animate_left xc gn gg jn/2 i">
-            <div>
+            <div class="relative">
               <img src="{{ asset("frontend/images/shape-05.svg") }}" alt="Shape" class="h -ud-left-5 x" />
-              <img src="{{ asset("frontend/images/about-01.png") }}" alt="About" class="ib" />
-              <img src="{{ asset("frontend/images/about-02.png") }}" alt="About" />
-            </div>
-            <div>
-              <img src="{{ asset("frontend/images/shape-06.svg") }}" alt="Shape" />
-              <img src="{{ asset("frontend/images/about-03.png") }}" alt="About" class="ob gb" />
-              <img src="{{ asset("frontend/images/shape-07.svg") }}" alt="Shape" class="bb" />
+              <!-- SVG Illustration -->
+              <svg class="w-full h-auto max-w-lg" viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
+                <!-- Background -->
+                <rect x="50" y="50" width="400" height="300" rx="20" fill="#E8F5E9"/>
+                
+                <!-- People helping illustration -->
+                <g>
+                  <!-- Person 1 -->
+                  <circle cx="150" cy="150" r="35" fill="#4CAF50"/>
+                  <rect x="130" y="185" width="40" height="80" rx="8" fill="#66BB6A"/>
+                  
+                  <!-- Person 2 -->
+                  <circle cx="250" cy="140" r="35" fill="#2E7D32"/>
+                  <rect x="230" y="175" width="40" height="90" rx="8" fill="#4CAF50"/>
+                  
+                  <!-- Person 3 -->
+                  <circle cx="350" cy="150" r="35" fill="#81C784"/>
+                  <rect x="330" y="185" width="40" height="80" rx="8" fill="#A5D6A7"/>
+                  
+                  <!-- Heart symbol in center -->
+                  <path d="M250 200 L260 190 Q270 180 270 170 Q270 155 260 150 Q250 145 250 150 Q250 145 240 150 Q230 155 230 170 Q230 180 240 190 Z" fill="#FF5252"/>
+                  
+                  <!-- Connecting hands -->
+                  <line x1="170" y1="220" x2="230" y2="220" stroke="#4CAF50" stroke-width="4" stroke-linecap="round"/>
+                  <line x1="270" y1="220" x2="330" y2="220" stroke="#4CAF50" stroke-width="4" stroke-linecap="round"/>
+                </g>
+                
+                <!-- Text -->
+                <text x="250" y="330" text-anchor="middle" fill="#2E7D32" font-size="22" font-weight="bold" font-family="Arial, sans-serif">Kita Membantu Sesama</text>
+              </svg>
             </div>
           </div>
 
           <!-- About Content -->
           <div class="animate_right jn/2">
-            <h4 class="ek yj mk gb">Visi</h4>
-            <li>
-              <p class="uo">Menjadi Organisasi Sosial Kemanusiaan Internasional yang unggul dan profesional untuk kehidupan Kemanusiaan yang lebih baik.</p>  
-            </li>
-            <br>
-            <h4 class="ek yj mk gb">Misi</h4>
-            <li>
-              <p class="uo">Mengembangkan organisasi sosial kemanusiaan yang humanis dan profesional.</p>  
-            </li>
-            <li>
-              <p class="uo">Mengembangkan potensi kebaikan masyarakat menjadi potensi perubahan yang lebih baik</p>
-            </li>
+            <h4 class="ek yj mk gb">Tentang Kita Membantu Sesama</h4>
+            <h2 class="fk vj zp pr kk wm qb">Menjadi Organisasi Sosial Kemanusiaan Internasional yang Unggul dan Profesional</h2>
+            <p class="uo mb-4">Kita Membantu Sesama (KMS) adalah organisasi sosial kemanusiaan yang berdedikasi untuk membantu masyarakat yang membutuhkan. Kami berkomitmen untuk memberikan bantuan kemanusiaan yang tepat sasaran dan berkelanjutan.</p>
+            
+            <div class="mb-6">
+              <h5 class="ek zj kk wm mb-3">Visi Kami</h5>
+              <p class="uo">Menjadi organisasi sosial kemanusiaan internasional yang unggul dan profesional untuk kehidupan kemanusiaan yang lebih baik.</p>
+            </div>
+            
+            <div class="mb-6">
+              <h5 class="ek zj kk wm mb-3">Misi Kami</h5>
+              <ul class="list-disc list-inside space-y-2">
+                <li>Memberikan bantuan kemanusiaan yang tepat sasaran</li>
+                <li>Memberdayakan masyarakat untuk hidup mandiri</li>
+                <li>Membangun kemitraan strategis dengan berbagai pihak</li>
+                <li>Mengelola organisasi secara profesional dan transparan</li>
+              </ul>
+            </div>
+
+            <a href="#kontak" class="vc ek rg lk gh sl ml il gi hi">Hubungi Kami</a>
           </div>
         </div>
       </div>
     </section>
     <!-- ===== About End ===== -->
-
-    <!-- ===== Team Start ===== -->
-    <section class="i pg ji gp uq">
-      <!-- Bg Shapes -->
-      <span class="rc h s r vd fd/5 fh rm"></span>
-      <img src="{{ asset("frontend/images/shape-08.svg") }}" alt="Shape Bg" class="h q r" />
-      <img src="{{ asset("frontend/images/shape-09.svg") }}" alt="Shape" class="of h y z/2" />
-      <img src="{{ asset("frontend/images/shape-10.svg") }}" alt="Shape" class="h _ aa" />
-      <img src="{{ asset("frontend/images/shape-11.svg") }}" alt="Shape" class="of h m ba" />
-
-      <!-- Section Title Start -->
-      <div
-        x-data="{ sectionTitle: `Pendiri Kita Membantu Sesama`, sectionTitleText: `Pendiri kami adalah individu yang berpengalaman dan berdedikasi, berkomitmen untuk membangun organisasi yang memberikan bantuan serta solusi berkelanjutan bagi masyarakat.` }">
-        <div class="animate_top bb ze rj ki xn vq">
-          <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
-          </h2>
-          <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>
-        </div>
-
-
-      </div>
-      <!-- Section Title End -->
-
-      <div class="bb ze i va ki xn xq jb jo">
-        <div class="wc qf pn xo gg cp">
-          <!-- Team Item -->
-          <div class="animate_top rj">
-            <div class="c i pg z-1">
-              <img class="vd" src="{{ asset("frontend/images/team-01.png") }}" alt="Team" />
-
-              <div class="ef im nl il">
-                <span class="h -ud-left-5 -ud-bottom-21 rc de gd gh if wa"></span>
-                <span class="h s p rc vd hd mh va"></span>
-                <div class="h s p vd ij jj xa">
-                  <ul class="tc xf wf gg">
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="10" height="18" viewBox="0 0 10 18" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M6.66634 10.25H8.74968L9.58301 6.91669H6.66634V5.25002C6.66634 4.39169 6.66634 3.58335 8.33301 3.58335H9.58301V0.783354C9.31134 0.74752 8.28551 0.666687 7.20218 0.666687C4.93968 0.666687 3.33301 2.04752 3.33301 4.58335V6.91669H0.833008V10.25H3.33301V17.3334H6.66634V10.25Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="18" height="14" viewBox="0 0 18 14" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M17.4683 1.71333C16.8321 1.99475 16.1574 2.17956 15.4666 2.26167C16.1947 1.82619 16.7397 1.14085 16.9999 0.333333C16.3166 0.74 15.5674 1.025 14.7866 1.17917C14.2621 0.617982 13.5669 0.245803 12.809 0.120487C12.0512 -0.00482822 11.2732 0.123742 10.596 0.486211C9.91875 0.848679 9.38024 1.42474 9.06418 2.12483C8.74812 2.82492 8.67221 3.60982 8.84825 4.3575C7.46251 4.28805 6.10686 3.92794 4.86933 3.30055C3.63179 2.67317 2.54003 1.79254 1.66492 0.715833C1.35516 1.24788 1.19238 1.85269 1.19326 2.46833C1.19326 3.67667 1.80826 4.74417 2.74326 5.36917C2.18993 5.35175 1.64878 5.20232 1.16492 4.93333V4.97667C1.16509 5.78142 1.44356 6.56135 1.95313 7.18422C2.46269 7.80709 3.17199 8.23456 3.96075 8.39417C3.4471 8.53337 2.90851 8.55388 2.38576 8.45417C2.60814 9.14686 3.04159 9.75267 3.62541 10.1868C4.20924 10.6209 4.9142 10.8615 5.64159 10.875C4.91866 11.4428 4.0909 11.8625 3.20566 12.1101C2.32041 12.3578 1.39503 12.4285 0.482422 12.3183C2.0755 13.3429 3.93 13.8868 5.82409 13.885C12.2349 13.885 15.7408 8.57417 15.7408 3.96833C15.7408 3.81833 15.7366 3.66667 15.7299 3.51833C16.4123 3.02514 17.0013 2.41418 17.4691 1.71417L17.4683 1.71333Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="17" height="16" viewBox="0 0 17 16" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M3.78353 2.16665C3.78331 2.60867 3.6075 3.03251 3.29478 3.34491C2.98207 3.65732 2.55806 3.8327 2.11603 3.83248C1.674 3.83226 1.25017 3.65645 0.937761 3.34373C0.625357 3.03102 0.449975 2.60701 0.450196 2.16498C0.450417 1.72295 0.626223 1.29912 0.93894 0.986712C1.25166 0.674307 1.67567 0.498925 2.1177 0.499146C2.55972 0.499367 2.98356 0.675173 3.29596 0.98789C3.60837 1.30061 3.78375 1.72462 3.78353 2.16665V2.16665ZM3.83353 5.06665H0.500195V15.5H3.83353V5.06665ZM9.1002 5.06665H5.78353V15.5H9.06686V10.025C9.06686 6.97498 13.0419 6.69165 13.0419 10.025V15.5H16.3335V8.89165C16.3335 3.74998 10.4502 3.94165 9.06686 6.46665L9.1002 5.06665V5.06665Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <h4 class="yj go kk wm ob zb">Olivia Andrium</h4>
-            <p>Product Manager</p>
-          </div>
-
-          <!-- Team Item -->
-          <div class="animate_top rj">
-            <div class="c i pg z-1">
-              <img class="vd" src="{{ asset("frontend/images/team-02.png") }}" alt="Team" />
-
-              <div class="ef im nl il">
-                <span class="h -ud-left-5 -ud-bottom-21 rc de gd gh if wa"></span>
-                <span class="h s p rc vd hd mh va"></span>
-                <div class="h s p vd ij jj xa">
-                  <ul class="tc xf wf gg">
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="10" height="18" viewBox="0 0 10 18" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M6.66634 10.25H8.74968L9.58301 6.91669H6.66634V5.25002C6.66634 4.39169 6.66634 3.58335 8.33301 3.58335H9.58301V0.783354C9.31134 0.74752 8.28551 0.666687 7.20218 0.666687C4.93968 0.666687 3.33301 2.04752 3.33301 4.58335V6.91669H0.833008V10.25H3.33301V17.3334H6.66634V10.25Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="18" height="14" viewBox="0 0 18 14" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M17.4683 1.71333C16.8321 1.99475 16.1574 2.17956 15.4666 2.26167C16.1947 1.82619 16.7397 1.14085 16.9999 0.333333C16.3166 0.74 15.5674 1.025 14.7866 1.17917C14.2621 0.617982 13.5669 0.245803 12.809 0.120487C12.0512 -0.00482822 11.2732 0.123742 10.596 0.486211C9.91875 0.848679 9.38024 1.42474 9.06418 2.12483C8.74812 2.82492 8.67221 3.60982 8.84825 4.3575C7.46251 4.28805 6.10686 3.92794 4.86933 3.30055C3.63179 2.67317 2.54003 1.79254 1.66492 0.715833C1.35516 1.24788 1.19238 1.85269 1.19326 2.46833C1.19326 3.67667 1.80826 4.74417 2.74326 5.36917C2.18993 5.35175 1.64878 5.20232 1.16492 4.93333V4.97667C1.16509 5.78142 1.44356 6.56135 1.95313 7.18422C2.46269 7.80709 3.17199 8.23456 3.96075 8.39417C3.4471 8.53337 2.90851 8.55388 2.38576 8.45417C2.60814 9.14686 3.04159 9.75267 3.62541 10.1868C4.20924 10.6209 4.9142 10.8615 5.64159 10.875C4.91866 11.4428 4.0909 11.8625 3.20566 12.1101C2.32041 12.3578 1.39503 12.4285 0.482422 12.3183C2.0755 13.3429 3.93 13.8868 5.82409 13.885C12.2349 13.885 15.7408 8.57417 15.7408 3.96833C15.7408 3.81833 15.7366 3.66667 15.7299 3.51833C16.4123 3.02514 17.0013 2.41418 17.4691 1.71417L17.4683 1.71333Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="17" height="16" viewBox="0 0 17 16" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M3.78353 2.16665C3.78331 2.60867 3.6075 3.03251 3.29478 3.34491C2.98207 3.65732 2.55806 3.8327 2.11603 3.83248C1.674 3.83226 1.25017 3.65645 0.937761 3.34373C0.625357 3.03102 0.449975 2.60701 0.450196 2.16498C0.450417 1.72295 0.626223 1.29912 0.93894 0.986712C1.25166 0.674307 1.67567 0.498925 2.1177 0.499146C2.55972 0.499367 2.98356 0.675173 3.29596 0.98789C3.60837 1.30061 3.78375 1.72462 3.78353 2.16665V2.16665ZM3.83353 5.06665H0.500195V15.5H3.83353V5.06665ZM9.1002 5.06665H5.78353V15.5H9.06686V10.025C9.06686 6.97498 13.0419 6.69165 13.0419 10.025V15.5H16.3335V8.89165C16.3335 3.74998 10.4502 3.94165 9.06686 6.46665L9.1002 5.06665V5.06665Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <h4 class="yj go kk wm ob zb">Jemse Kemorun</h4>
-            <p>Product Designer</p>
-          </div>
-
-          <!-- Team Item -->
-          <div class="animate_top rj">
-            <div class="c i pg z-1">
-              <img class="vd" src="{{ asset("frontend/images/team-03.png") }}" alt="Team" />
-
-              <div class="ef im nl il">
-                <span class="h -ud-left-5 -ud-bottom-21 rc de gd gh if wa"></span>
-                <span class="h s p rc vd hd mh va"></span>
-                <div class="h s p vd ij jj xa">
-                  <ul class="tc xf wf gg">
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="10" height="18" viewBox="0 0 10 18" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M6.66634 10.25H8.74968L9.58301 6.91669H6.66634V5.25002C6.66634 4.39169 6.66634 3.58335 8.33301 3.58335H9.58301V0.783354C9.31134 0.74752 8.28551 0.666687 7.20218 0.666687C4.93968 0.666687 3.33301 2.04752 3.33301 4.58335V6.91669H0.833008V10.25H3.33301V17.3334H6.66634V10.25Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="18" height="14" viewBox="0 0 18 14" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M17.4683 1.71333C16.8321 1.99475 16.1574 2.17956 15.4666 2.26167C16.1947 1.82619 16.7397 1.14085 16.9999 0.333333C16.3166 0.74 15.5674 1.025 14.7866 1.17917C14.2621 0.617982 13.5669 0.245803 12.809 0.120487C12.0512 -0.00482822 11.2732 0.123742 10.596 0.486211C9.91875 0.848679 9.38024 1.42474 9.06418 2.12483C8.74812 2.82492 8.67221 3.60982 8.84825 4.3575C7.46251 4.28805 6.10686 3.92794 4.86933 3.30055C3.63179 2.67317 2.54003 1.79254 1.66492 0.715833C1.35516 1.24788 1.19238 1.85269 1.19326 2.46833C1.19326 3.67667 1.80826 4.74417 2.74326 5.36917C2.18993 5.35175 1.64878 5.20232 1.16492 4.93333V4.97667C1.16509 5.78142 1.44356 6.56135 1.95313 7.18422C2.46269 7.80709 3.17199 8.23456 3.96075 8.39417C3.4471 8.53337 2.90851 8.55388 2.38576 8.45417C2.60814 9.14686 3.04159 9.75267 3.62541 10.1868C4.20924 10.6209 4.9142 10.8615 5.64159 10.875C4.91866 11.4428 4.0909 11.8625 3.20566 12.1101C2.32041 12.3578 1.39503 12.4285 0.482422 12.3183C2.0755 13.3429 3.93 13.8868 5.82409 13.885C12.2349 13.885 15.7408 8.57417 15.7408 3.96833C15.7408 3.81833 15.7366 3.66667 15.7299 3.51833C16.4123 3.02514 17.0013 2.41418 17.4691 1.71417L17.4683 1.71333Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#!">
-                        <svg class="uh vl ml il" width="17" height="16" viewBox="0 0 17 16" fill="none"
-                          xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M3.78353 2.16665C3.78331 2.60867 3.6075 3.03251 3.29478 3.34491C2.98207 3.65732 2.55806 3.8327 2.11603 3.83248C1.674 3.83226 1.25017 3.65645 0.937761 3.34373C0.625357 3.03102 0.449975 2.60701 0.450196 2.16498C0.450417 1.72295 0.626223 1.29912 0.93894 0.986712C1.25166 0.674307 1.67567 0.498925 2.1177 0.499146C2.55972 0.499367 2.98356 0.675173 3.29596 0.98789C3.60837 1.30061 3.78375 1.72462 3.78353 2.16665V2.16665ZM3.83353 5.06665H0.500195V15.5H3.83353V5.06665ZM9.1002 5.06665H5.78353V15.5H9.06686V10.025C9.06686 6.97498 13.0419 6.69165 13.0419 10.025V15.5H16.3335V8.89165C16.3335 3.74998 10.4502 3.94165 9.06686 6.46665L9.1002 5.06665V5.06665Z"
-                            fill="" />
-                        </svg>
-                      </a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <h4 class="yj go kk wm ob zb">Avi Pestarica</h4>
-            <p>Web Designer</p>
-          </div>
-        </div>
-      </div>
-    </section>
-    <!-- ===== Team End ===== -->
 
 @if(($landingBulletinsTotal ?? 0) > 0)
     <!-- ===== Services Start ===== -->
@@ -386,15 +253,14 @@
 @endif
 
 @if(($landingProgramsTotal ?? 0) > 0)
-      <div class="bb ze ki xn 2xl:ud-px-0 jb">
+  <div id="program" class="bb ze ki xn 2xl:ud-px-0 jb">
         <div class="animate_top bb ze rj ki xn vq">
           <h2 class="fk vj pr kk wm on/5 gq/2 bb _b">Program Kami</h2>
           <p class="bb on/5 wo/5 hq">Program-program unggulan kami meliputi pendidikan, kesehatan, dan bantuan darurat yang dirancang untuk menciptakan dampak berkelanjutan bagi komunitas.</p>
         </div>
 
         <div class="bb ze ki xn 2xl:ud-px-0 jb">
-          <div id="programs" class="projects-wrapper tc -ud-mx-5">
-            <div class="project-sizer"></div>
+          <div id="programs" class="wc qf pn xo zf iq">
             @foreach($landingPrograms ?? [] as $p)
               @php
                 $image = asset('frontend/images/project-01.png');
@@ -405,14 +271,21 @@
                 if (strlen($excerpt) > 120) $excerpt = substr($excerpt, 0, 117) . '...';
               @endphp
 
-              <div class="project-item wi fb vd jn/2 to/3">
-                <div class="c i pg sg z-1">
-                  <img src="{{ $image }}" alt="{{ $p->name }}" />
-
-                  <div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10">
-                    <h4 class="ek tj kk hc">{{ $p->name }}</h4>
-                    <p>{{ $excerpt }}</p>
+              <div class="animate_top sg vk rm xm">
+                <div class="c rc i z-1 pg">
+                  <a href="#" class="rc">
+                    <img class="w-full program-image" src="{{ $image }}" alt="{{ $p->name }}" />
+                  </a>
+                  <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
+                    <a href="#" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
                   </div>
+                </div>
+
+                <div class="yh">
+                  <h4 class="ek tj ml il kk wm xl eq lb">
+                    <a href="#">{{ $p->name }}</a>
+                  </h4>
+                  <p>{{ $excerpt }}</p>
                 </div>
               </div>
             @endforeach
@@ -445,14 +318,11 @@
                 if (json.success && json.data.length) {
                   json.data.forEach(function(p){
                     const div = document.createElement('div');
-                    div.className = 'project-item wi fb vd jn/2 to/3';
+                    div.className = 'animate_top sg vk rm xm';
                     const img = p.image_url && /^https?:\/\//.test(p.image_url) ? p.image_url : (p.image_url ? `/storage/${p.image_url}` : '/frontend/images/project-01.png');
                     const excerpt = (p.description || '').replace(/<[^>]+>/g, '').slice(0, 117) + (p.description && p.description.length > 120 ? '...' : '');
-                    div.innerHTML = `<div class="c i pg sg z-1"><img src="${img}" alt="${p.name}" /><div class="h s r df nl kl im tc sf wf xf vd yc sg al hh/20 z-10"><h4 class="ek tj kk hc">${p.name}</h4><p>${excerpt}</p></div></div>`;
+                    div.innerHTML = `<div class="c rc i z-1 pg"><a href="#" class="rc"><img class="w-full program-image" src="${img}" alt="${p.name}" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="#" class="vc ek rg lk gh sl ml il gi hi">Read More</a></div></div><div class="yh"><h4 class="ek tj ml il kk wm xl eq lb"><a href="#">${p.name}</a></h4><p>${excerpt}</p></div>`;
                     container.appendChild(div);
-                    if (container.querySelectorAll('.project-item').length > 6) {
-                      container.classList.add('projects-grid-fallback');
-                    }
                   });
                   if (!json.has_more) {
                     btn.remove();
@@ -471,60 +341,9 @@
             });
           }
 
-          // Fallbacks and forced grid for >3 items
-          (function(){
-            try {
-              const itemCount = container ? container.querySelectorAll('.project-item').length : 0;
 
-              // If more than 3 items, force CSS grid fallback to avoid overlap
-              if (itemCount > 3) {
-                container.classList.add('projects-grid-fallback');
-              }
-
-              // Also re-check after images load / window load in case Isotope initialized too early
-              window.addEventListener('load', function(){
-                try {
-                  const h = container.clientHeight || 0;
-                  if (h < 200) {
-                    container.classList.add('projects-grid-fallback');
-                  }
-                } catch (e) {
-                  console.error('programs: fallback check failed on load', e);
-                }
-              });
-
-              // re-check shortly after (images may take time to load)
-              setTimeout(function(){
-                try {
-                  const h = container.clientHeight || 0;
-                  if (h < 200) {
-                    container.classList.add('projects-grid-fallback');
-                  }
-                } catch (e) {
-                  console.error('programs: fallback check failed', e);
-                }
-              }, 600);
-            } catch (e) {
-              console.error('programs: init fallback failed', e);
-            }
-          })();
         })();
       </script>
-      <style>
-        .projects-grid-fallback{display:grid;gap:1rem;align-items:start;grid-template-columns:repeat(2,1fr)}
-        @media (min-width: 768px){
-          .projects-grid-fallback{grid-template-columns:repeat(3,1fr)}
-        }
-        @media (min-width: 1024px){
-          .projects-grid-fallback{grid-template-columns:repeat(4,1fr)}
-        }
-        .projects-grid-fallback .project-item{position:relative;display:block;margin-bottom:1rem}
-        /* ensure next sections clear any floats */
-        .projects-wrapper::after{content:'';display:block;clear:both}
-        /* Fix right-side gap: neutralize negative margins and prevent horizontal overflow */
-        .projects-wrapper.-ud-mx-5{margin-left:0;margin-right:0;padding-left:1.25rem;padding-right:1.25rem;box-sizing:border-box;overflow:hidden}
-        .projects-wrapper .project-item img{display:block;width:100%;height:auto}
-      </style>
       @endpush
 @endif
 
@@ -533,8 +352,206 @@
     </section>
     <!-- ===== Projects End ===== -->
 
+    <!-- ===== Galeri Kegiatan Start ===== -->
+    <section id="galeri" class="ji gp uq">
+      <!-- Section Title Start -->
+      <div class="animate_top bb ze rj ki xn vq">
+        <h2 class="fk vj pr kk wm on/5 gq/2 bb _b">Galeri Kegiatan</h2>
+        <p class="bb on/5 wo/5 hq">Dokumentasi kegiatan dan program yang telah kami laksanakan untuk membantu sesama.</p>
+      </div>
+      <!-- Section Title End -->
+
+      <div class="bb ye ki xn vq jb jo">
+        <div id="galeri-items" class="wc qf pn xo zf iq">
+          @foreach($landingKegiatan ?? [] as $k)
+            @php
+              $img = asset('frontend/images/project-01.png');
+              if (!empty($k->images)) {
+                  $imgs = json_decode($k->images, true) ?: [];
+                  if (is_array($imgs) && count($imgs) > 0 && $imgs[0]) {
+                      $img = preg_match('/^https?:\/\//', $imgs[0]) ? $imgs[0] : asset('storage/' . $imgs[0]);
+                  }
+              }
+              $excerpt = strip_tags($k->description ?? '');
+              if (strlen($excerpt) > 120) $excerpt = substr($excerpt, 0, 117) . '...';
+              $slug = \Illuminate\Support\Str::slug($k->title);
+            @endphp
+
+            <div class="animate_top sg vk rm xm">
+              <div class="c rc i z-1 pg">
+                <a href="{{ route('frontend.blog-single', ['slug' => $slug]) }}" class="rc">
+                  <img class="w-full program-image" src="{{ $img }}" alt="{{ $k->title }}" />
+                </a>
+                <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
+                  <a href="{{ route('frontend.blog-single', ['slug' => $slug]) }}" class="vc ek rg lk gh sl ml il gi hi">View</a>
+                </div>
+              </div>
+              <div class="yh">
+                <h4 class="ek tj ml il kk wm xl eq lb">
+                  <a href="{{ route('frontend.blog-single', ['slug' => $slug]) }}">{{ $k->title }}</a>
+                </h4>
+                <p>{{ $excerpt }}</p>
+              </div>
+            </div>
+          @endforeach
+        </div>
+
+        @if(!empty($landingKegiatanTotal) && $landingKegiatanTotal > 6)
+          <div class="tc mt-6">
+            <button id="load-more-galeri" class="ek rg ml il vi mi">Load more</button>
+          </div>
+        @endif
+      </div>
+    </section>
+    <!-- ===== Galeri Kegiatan End ===== -->
+
+    @push('scripts')
+    <script>
+      (function(){
+        let currentPage = 1;
+        const perPage = 6;
+        const btn = document.getElementById('load-more-galeri');
+        const container = document.getElementById('galeri-items');
+
+        if (btn) {
+          btn.addEventListener('click', async function(){
+            currentPage++;
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            try {
+              const res = await fetch(`/api/landing-kegiatan?page=${currentPage}&per_page=${perPage}`);
+              const json = await res.json();
+              if (json.success && json.data.length) {
+                json.data.forEach(function(k){
+                  const div = document.createElement('div');
+                  div.className = 'animate_top sg vk rm xm';
+                  const imgs = k.images ? JSON.parse(k.images) : [];
+                  const img = imgs.length && imgs[0] && /^https?:\/\//.test(imgs[0]) ? imgs[0] : (imgs.length && imgs[0] ? `/storage/${imgs[0]}` : '/frontend/images/project-01.png');
+                  const excerpt = (k.description || '').replace(/<[^>]+>/g, '').slice(0, 117) + (k.description && k.description.length > 120 ? '...' : '');
+                  div.innerHTML = `<div class="c rc i z-1 pg"><a href="/blog-single/${k.id}" class="rc"><img class="w-full program-image" src="${img}" alt="${k.title}" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="/blog-single/${k.id}" class="vc ek rg lk gh sl ml il gi hi">View</a></div></div><div class="yh"><h4 class="ek tj ml il kk wm xl eq lb"><a href="/blog-single/${k.id}">${k.title}</a></h4><p>${excerpt}</p></div>`;
+                  container.appendChild(div);
+                });
+                if (!json.has_more) {
+                  btn.remove();
+                } else {
+                  btn.disabled = false;
+                  btn.textContent = 'Load more';
+                }
+              } else {
+                btn.remove();
+              }
+            } catch (e) {
+              console.error(e);
+              btn.disabled = false;
+              btn.textContent = 'Load more';
+            }
+          });
+        }
+      })();
+    </script>
+    @endpush
+
+    <!-- ===== Cara Berdonasi Start ===== -->
+    <section id="cara-donasi" class="i pg fh rm ji gp uq">
+      <!-- Bg Shapes -->
+      <img src="{{ asset('frontend/images/shape-06.svg') }}" alt="Shape" class="h aa y" />
+      <img src="{{ asset('frontend/images/shape-03.svg') }}" alt="Shape" class="h ca u" />
+      <img src="{{ asset('frontend/images/shape-07.svg') }}" alt="Shape" class="h w da ee" />
+      <img src="{{ asset('frontend/images/shape-12.svg') }}" alt="Shape" class="h p s" />
+      <img src="{{ asset('frontend/images/shape-13.svg') }}" alt="Shape" class="h r q" />
+
+      <!-- Section Title Start -->
+      <div
+        x-data="{ sectionTitle: `Cara Berdonasi`, sectionTitleText: `Berbagai cara mudah untuk Anda berpartisipasi membantu sesama melalui donasi.`}">
+        <div class="animate_top bb ze rj ki xn vq">
+          <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
+          </h2>
+          <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>
+        </div>
+      </div>
+      <!-- Section Title End -->
+
+      <div class="bb ze ki xn yq mb en">
+        <div class="wc qf pn xo ng">
+          @php
+            $bankAccounts = [];
+            if (!empty($landingProfile->bank_account_1)) {
+                $bankAccounts = is_string($landingProfile->bank_account_1) 
+                    ? json_decode($landingProfile->bank_account_1, true) 
+                    : $landingProfile->bank_account_1;
+                $bankAccounts = is_array($bankAccounts) ? $bankAccounts : [];
+            }
+          @endphp
+
+          @foreach($bankAccounts as $account)
+            <!-- Donation Method -->
+            <div class="animate_top sg oi pi zq ml il am cn _m">
+              <div class="tc wf xf ie ld rg ml il mb-4">
+                <svg class="th lm ml il" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 5C2 3.89543 2.89543 3 4 3H20C21.1046 3 22 3.89543 22 5V8H2V5Z" fill="currentColor"/>
+                  <path d="M2 10H22V19C22 20.1046 21.1046 21 20 21H4C2.89543 21 2 20.1046 2 19V10Z" fill="currentColor"/>
+                </svg>
+              </div>
+              <h4 class="ek zj kk wm nb _b">{{ $account['label'] ?? 'Transfer Bank' }}</h4>
+              <div class="text-sm space-y-1">
+                <div class="flex items-center gap-2">
+                  <p class="font-semibold flex-shrink-0">{{ $account['value'] ?? '' }}</p>
+                  <button 
+                    onclick="copyToClipboard('{{ $account['value'] ?? '' }}', this)"
+                    class="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
+                    title="Copy nomor rekening">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor"/>
+                    </svg>
+                  </button>
+                </div>
+                <p>a.n. {{ $landingProfile->organization_name ?? 'Yayasan Kita Membantu Sesama' }}</p>
+              </div>
+            </div>
+          @endforeach
+        </div>
+      </div>
+    </section>
+    <!-- ===== Cara Berdonasi End ===== -->
+
+    <script>
+      function copyToClipboard(text, button) {
+        // Check if clipboard API is available
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="green"/></svg>';
+            setTimeout(function() {
+              button.innerHTML = originalHTML;
+            }, 2000);
+          }).catch(function(err) {
+            alert('Gagal menyalin: ' + err);
+          });
+        } else {
+          // Fallback for older browsers
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.opacity = '0';
+          document.body.appendChild(textarea);
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="green"/></svg>';
+            setTimeout(function() {
+              button.innerHTML = originalHTML;
+            }, 2000);
+          } catch (err) {
+            alert('Gagal menyalin: ' + err);
+          }
+          document.body.removeChild(textarea);
+        }
+      }
+    </script>
+
     <!-- ===== Counter Start ===== -->
-    <section class="i pg qh rm ji hp">
+    <section id="transparansi" class="i pg qh rm ji hp">
       <img src="{{ asset("frontend/images/shape-11.svg") }}" alt="Shape" class="of h ga ha ke" />
       <img src="{{ asset("frontend/images/shape-07.svg") }}" alt="Shape" class="h ia o ae jf" />
       <img src="{{ asset("frontend/images/shape-14.svg") }}" alt="Shape" class="h ja ka" />
@@ -563,50 +580,6 @@
     </section>
     <!-- ===== Counter End ===== -->
 
-    <!-- ===== Clients Start ===== -->
-    <section class="pj vp mr">
-      <!-- Section Title Start -->
-      <div
-        x-data="{ sectionTitle: `Mitra Kami`, sectionTitleText: `Mitra kami terdiri dari organisasi, perusahaan, dan individu yang bekerja sama untuk mendukung dan memperkuat program-program kemanusiaan kami.` }">
-        <div class="animate_top bb ze rj ki xn vq">
-          <h2 x-text="sectionTitle" class="fk vj pr kk wm on/5 gq/2 bb _b">
-          </h2>
-          <p class="bb on/5 wo/5 hq" x-text="sectionTitleText"></p>
-        </div>
-      </div>
-      <!-- Section Title End -->
-
-      <div class="bb ze ah ch pm hj xp ki xn 2xl:ud-px-49 bc">
-        <div class="wc rf qn zf cp kq xf wf">
-          <a href="#!" class="rc animate_top">
-            <img class="th wl ml il zl om" src="{{ asset("frontend/images/brand-light-01.svg") }}" alt="Clients" />
-            <img class="xc sk ml il zl nm" src="{{ asset("frontend/images/brand-dark-01.svg") }}" alt="Clients" />
-          </a>
-          <a href="#!" class="rc animate_top">
-            <img class="tk ml il zl om" src="{{ asset("frontend/images/brand-light-02.svg") }}" alt="Clients" />
-            <img class="xc sk ml il zl nm" src="{{ asset("frontend/images/brand-dark-02.svg") }}" alt="Clients" />
-          </a>
-          <a href="#!" class="rc animate_top">
-            <img class="tk ml il zl om" src="{{ asset("frontend/images/brand-light-03.svg") }}" alt="Clients" />
-            <img class="xc sk ml il zl nm" src="{{ asset("frontend/images/brand-dark-03.svg") }}" alt="Clients" />
-          </a>
-          <a href="#!" class="rc animate_top">
-            <img class="tk ml il zl om" src="{{ asset("frontend/images/brand-light-04.svg") }}" alt="Clients" />
-            <img class="xc sk ml il zl nm" src="{{ asset("frontend/images/brand-dark-04.svg") }}" alt="Clients" />
-          </a>
-          <a href="#!" class="rc animate_top">
-            <img class="tk ml il zl om" src="{{ asset("frontend/images/brand-light-05.svg") }}" alt="Clients" />
-            <img class="xc sk ml il zl nm" src="{{ asset("frontend/images/brand-dark-05.svg") }}" alt="Clients" />
-          </a>
-          <a href="#!" class="rc animate_top">
-            <img class="tk ml il zl om" src="{{ asset("frontend/images/brand-light-06.svg") }}" alt="Clients" />
-            <img class="xc sk ml il zl nm" src="{{ asset("frontend/images/brand-dark-06.svg") }}" alt="Clients" />
-          </a>
-        </div>
-      </div>
-    </section>
-    <!-- ===== Clients End ===== -->
-
     <!-- ===== Blog Start ===== -->
     <section class="ji gp uq">
       <!-- Section Title Start -->
@@ -634,16 +607,17 @@
               $date = $k->activity_date ? \Carbon\Carbon::parse($k->activity_date)->format('d M, Y') : '';
               $excerpt = strip_tags($k->description ?? '');
               if (strlen($excerpt) > 120) $excerpt = substr($excerpt, 0, 117) . '...';
+              $slug = \Illuminate\Support\Str::slug($k->title);
             @endphp
 
             <div class="animate_top sg vk rm xm">
               <div class="c rc i z-1 pg">
-                <a href="{{ route('frontend.blog-single', ['id' => $k->id]) }}" class="rc">
+                <a href="{{ route('frontend.blog-single', ['slug' => $slug]) }}" class="rc">
                   <img class="w-full kegiatan-image" src="{{ $img }}" alt="Kegiatan" />
                 </a>
 
                 <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
-                  <a href="{{ route('frontend.blog-single', ['id' => $k->id]) }}" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
+                  <a href="{{ route('frontend.blog-single', ['slug' => $slug]) }}" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
                 </div>
               </div>
 
@@ -659,7 +633,7 @@
                   </div>
                 </div>
                 <h4 class="ek tj ml il kk wm xl eq lb">
-                  <a href="{{ route('frontend.blog-single', ['id' => $k->id]) }}">{{ $k->title }}</a>
+                  <a href="{{ route('frontend.blog-single', ['slug' => $slug]) }}">{{ $k->title }}</a>
                 </h4>
                 <p>{{ $excerpt }}</p>
               </div>
@@ -675,10 +649,10 @@
       </div> 
 
       <style>
-        /* Kegiatan image: fixed height and crop to avoid overly tall images */
-        .kegiatan-image { display: block; width: 100%; height: 220px; object-fit: cover; object-position: center; border-radius: 6px; }
-        @media (min-width: 768px) { .kegiatan-image { height: 260px; } }
-        @media (min-width: 1024px) { .kegiatan-image { height: 220px; } }
+        /* Kegiatan & Program image: fixed height and crop to avoid overly tall images */
+        .kegiatan-image, .program-image { display: block; width: 100%; height: 220px; object-fit: cover; object-position: center; border-radius: 6px; }
+        @media (min-width: 768px) { .kegiatan-image, .program-image { height: 260px; } }
+        @media (min-width: 1024px) { .kegiatan-image, .program-image { height: 220px; } }
       </style>
 
       @push('scripts')
@@ -732,7 +706,7 @@
     <!-- ===== Blog End ===== -->
 
     <!-- ===== Contact Start ===== -->
-    <section id="support" class="i pg fh rm ji gp uq">
+    <section id="kontak" class="i pg fh rm ji gp uq">
       <!-- Bg Shapes -->
       <img src="{{ asset("frontend/images/shape-06.svg") }}" alt="Shape" class="h aa y" />
       <img src="{{ asset("frontend/images/shape-03.svg") }}" alt="Shape" class="h ca u" />
@@ -1025,4 +999,9 @@
     </section>
 
     <!-- ===== CTA End ===== -->
+
+    <!-- Dummy element for isotope (prevent console error) -->
+    <div class="projects-wrapper" style="display: none;">
+      <div class="project-sizer"></div>
+    </div>
   

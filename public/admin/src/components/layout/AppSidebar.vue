@@ -181,12 +181,7 @@
           </div>
         </div>
       </nav>
-      <div v-else-if="loading" class="flex items-center justify-center p-8">
-        <p class="text-sm text-gray-500">Loading menu...</p>
-      </div>
-      <div v-else class="flex items-center justify-center p-8">
-        <p class="text-sm text-gray-500">No menu available</p>
-      </div>
+      <!-- Remove loading state as menu is now cached and loads instantly -->
       <SidebarWidget v-if="isExpanded || isHovered || isMobileOpen" />
     </div>
   </aside>
@@ -207,7 +202,7 @@ import { useMenu } from "@/composables/useMenu";
 const route = useRoute();
 
 const { isExpanded, isMobileOpen, isHovered, openSubmenu } = useSidebar();
-const { menuGroups: menuGroupsRef, loading } = useMenu();
+const { menuGroups: menuGroupsRef } = useMenu();
 
 // Track explicitly closed menus
 const closedMenus = ref({});

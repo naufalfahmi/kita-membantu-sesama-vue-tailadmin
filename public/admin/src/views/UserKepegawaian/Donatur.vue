@@ -154,6 +154,14 @@ const router = useRouter()
 const toast = useToast()
 const { fetchUser, hasPermission, isAdmin, user } = useAuth()
 
+const allowedPicIds = computed(() => {
+  const raw = (user.value as any)?.visible_donatur_ids
+  if (Array.isArray(raw)) {
+    return raw.map((id: any) => String(id))
+  }
+  return [] as string[]
+})
+
 const isFundraiser = computed(() => {
   const r = (user.value && (user.value as any).role) || null
   const name = r ? ((r.name && String(r.name)) || String(r)) : ''
@@ -208,7 +216,10 @@ const mitraOptions = ref<any[]>([])
 
 const picSelectOptions = computed(() => [
   { value: '', label: 'Semua Fundraiser' },
-  ...karyawanOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
+  ...(allowedPicIds.value.length
+    ? karyawanOptions.value.filter((item: any) => allowedPicIds.value.includes(String(item.id)))
+    : karyawanOptions.value
+  ).map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
 ])
 
 const mitraSelectOptions = computed(() => [
@@ -256,13 +267,13 @@ const columnDefs = computed(() => {
       headerName: 'Nama',
       field: 'nama',
       sortable: true,
-      flex: 1,
+      // flex: 1,
     },
     {
       headerName: 'Jenis Donatur',
       field: 'jenis_donatur',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => {
         const jenis = params.value as string[]
         if (!jenis || jenis.length === 0) return '-'
@@ -274,14 +285,14 @@ const columnDefs = computed(() => {
       headerName: 'Kantor Cabang',
       field: 'kantor_cabang',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => params.value?.nama || '-',
     },
     {
       headerName: 'Mitra',
       field: 'mitra',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => params.value?.nama || '-',
     },
     {
@@ -328,7 +339,7 @@ const columnDefs = computed(() => {
       headerName: 'Fundraiser',
       field: 'pic',
       sortable: true,
-      flex: 1,
+      // flex: 1,
       valueFormatter: (params: any) => params.data?.pic_user?.nama || params.value || '-',
     })
   }
@@ -340,6 +351,7 @@ const columnDefs = computed(() => {
       sortable: false,
       filter: false,
       width: 120,
+      pinned: 'right',
       cellRenderer: (params: any) => {
         const div = document.createElement('div')
         div.className = 'flex items-center gap-3'
@@ -399,13 +411,7 @@ const fetchData = async () => {
       params.append('search', filterNama.value)
     }
 
-    // If current user is a fundraiser (and not admin), restrict list to their PIC
-    if (!isAdmin() && isFundraiser.value && user.value && (user.value as any).id) {
-      const uid = String((user.value as any).id)
-      params.append('pic', uid)
-      // reflect in UI filter if not explicitly set
-      if (!filterPic.value) filterPic.value = uid
-    } else if (filterPic.value) {
+    if (filterPic.value) {
       params.append('pic', filterPic.value)
     }
     if (filterJenis.value && filterJenis.value.length) {

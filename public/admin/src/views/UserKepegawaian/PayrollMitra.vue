@@ -99,7 +99,7 @@ const columnDefs = computed(() => {
     { 
       headerName: 'Program', 
       valueGetter: (p: any) => p.data?.program?.nama_program || '-', 
-      flex: 1 
+      // flex: 1
     },
     {
       headerName: 'Tanggal Payroll',
@@ -145,6 +145,7 @@ const columnDefs = computed(() => {
       width: 140, 
       sortable: false, 
       filter: false,
+      pinned: 'right',
       cellRenderer: (params: any) => {
         // don't render action buttons for pinned bottom row
         if (params.node && params.node.rowPinned === 'bottom') {

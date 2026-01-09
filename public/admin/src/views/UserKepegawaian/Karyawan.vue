@@ -190,7 +190,7 @@ const columnDefs = [
     headerName: 'Nama',
     field: 'name',
     sortable: true,
-    flex: 1,
+    // flex: 1,
   },
   {
     headerName: 'No Induk',
@@ -203,12 +203,12 @@ const columnDefs = [
     headerName: 'Pangkat',
     valueGetter: (params: any) => params.data?.pangkat?.nama || '-',
     sortable: true,
-    flex: 1,
+    // flex: 1,
   },
   {
     headerName: 'Jabatan',
     valueGetter: (params: any) => params.data?.role?.name || '-',
-    flex: 1,
+    // flex: 1,
     sortable: true,
   },
   {
@@ -219,20 +219,20 @@ const columnDefs = [
       }
       return params.data?.kantor_cabang?.nama || '-'
     },
-    flex: 1,
+    // flex: 1,
     sortable: true,
   },
   {
     headerName: 'Leader',
     valueGetter: (params: any) => params.data?.leader?.name || '-',
-    flex: 1,
+    // flex: 1,
     sortable: true,
   },
   {
     headerName: 'Tanggal Masuk',
     field: 'tanggal_masuk',
     sortable: true,
-    flex: 1,
+    // flex: 1,
     valueFormatter: (params: any) => {
       if (params.value) {
         return new Date(params.value).toLocaleDateString('id-ID', {
@@ -267,6 +267,7 @@ const columnDefs = [
     sortable: false,
     filter: false,
     width: 120,
+    pinned: 'right',
     cellRenderer: (params: any) => {
       const container = document.createElement('div')
       container.className = 'flex items-center gap-3'

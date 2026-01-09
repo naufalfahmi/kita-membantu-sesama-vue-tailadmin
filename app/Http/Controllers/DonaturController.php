@@ -165,6 +165,7 @@ class DonaturController extends Controller
             if (empty($allowed)) {
                 $allowed = [-1];
             }
+            $hasExplicitVisibility = $user->donaturVisibilityEntries()->exists();
             // Always consider explicit kantor cabang assignments (pivot).
             // Users who are assigned to branches should see donaturs in
             // those branches regardless of leader/subordinate status.
@@ -229,22 +230,35 @@ class DonaturController extends Controller
                 }
             }
 
-            if (! empty($assignedIds) && $isAdminCabang) {
+            if ($hasExplicitVisibility) {
+                // Jika ada daftar eksplisit, pakai itu saja (PIC atau created_by)
+                    $query->where(function ($q) use ($allowed) {
+                        $q->whereIn('donaturs.pic', $allowed)
+                          ->orWhereIn('donaturs.created_by', $allowed);
+                    });
+            } elseif (! empty($assignedIds) && $isAdminCabang) {
                 // Admin Cabang: show all donaturs in the assigned branches
                 $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
             } elseif (! empty($assignedIds)) {
-                // With branch assignments, allow branch OR explicit visibility list (or descendants fallback)
+                // With branch assignments, allow branch OR subtree fallback list
                 if ($isDirectorFundrising) {
-                    $query->whereIn('donaturs.pic', $allowed);
+                    $query->where(function ($q) use ($allowed) {
+                        $q->whereIn('donaturs.pic', $allowed)
+                          ->orWhereIn('donaturs.created_by', $allowed);
+                    });
                 } else {
                     $query->where(function ($q) use ($assignedIds, $allowed) {
                         $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
-                          ->orWhereIn('donaturs.pic', $allowed);
+                          ->orWhereIn('donaturs.pic', $allowed)
+                          ->orWhereIn('donaturs.created_by', $allowed);
                     });
                 }
             } else {
-                // No branch assignment: rely solely on explicit visibility list (or fallback)
-                $query->whereIn('donaturs.pic', $allowed);
+                // No branch assignment: rely on subtree/allowed list (PIC atau created_by)
+                $query->where(function ($q) use ($allowed) {
+                    $q->whereIn('donaturs.pic', $allowed)
+                      ->orWhereIn('donaturs.created_by', $allowed);
+                });
             }
         }
 
@@ -434,6 +448,7 @@ class DonaturController extends Controller
             if (empty($allowed)) {
                 $allowed = [-1];
             }
+            $hasExplicitVisibility = $user->donaturVisibilityEntries()->exists();
 
             try {
                 $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
@@ -457,7 +472,9 @@ class DonaturController extends Controller
                 }
             }
 
-            if (! empty($assignedIds) && $isAdminCabang) {
+            if ($hasExplicitVisibility) {
+                $query->whereIn('donaturs.pic', $allowed);
+            } elseif (! empty($assignedIds) && $isAdminCabang) {
                 $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
             } elseif (! empty($assignedIds)) {
                 $query->where(function ($q) use ($assignedIds, $allowed) {
@@ -545,6 +562,7 @@ class DonaturController extends Controller
             if (empty($allowed)) {
                 $allowed = [-1];
             }
+            $hasExplicitVisibility = $user->donaturVisibilityEntries()->exists();
             $query->whereIn('donaturs.pic', $allowed);
         }
 
@@ -631,6 +649,7 @@ class DonaturController extends Controller
             if (empty($allowed)) {
                 $allowed = [-1];
             }
+            $hasExplicitVisibility = $user->donaturVisibilityEntries()->exists();
             $query->whereIn('pic', $allowed);
         }
 

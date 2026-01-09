@@ -456,7 +456,7 @@ const columnDefs = [
     field: 'user.name',
     sortable: true,
     filter: false,
-    flex: 1,
+    // flex: 1,
     valueGetter: (params: any) => params.data?.user?.name || '-',
   },
   {
@@ -600,6 +600,7 @@ const columnDefs = [
     sortable: false,
     filter: false,
     width: 100,
+    pinned: 'right',
     cellRenderer: (params: any) => {
       const div = document.createElement('div')
       div.className = 'flex items-center gap-3'

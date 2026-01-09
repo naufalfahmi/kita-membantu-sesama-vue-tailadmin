@@ -280,6 +280,9 @@ class LoginController extends Controller
                 'is_admin' => $user->hasRole('admin'),
                 // Include permission names for client-side checks
                 'permissions' => $user->getAllPermissions()->pluck('name')->toArray(),
+                // Include visibility lists so frontend filters can mirror backend access rules
+                'visible_donatur_ids' => method_exists($user, 'visibleDonaturKaryawanIds') ? $user->visibleDonaturKaryawanIds() : [],
+                'visible_transaksi_ids' => method_exists($user, 'visibleTransaksiKaryawanIds') ? $user->visibleTransaksiKaryawanIds() : [],
                 'is_mitra' => (bool) $mitraProfile,
                 'mitra_profile' => $mitraProfile,
             ],

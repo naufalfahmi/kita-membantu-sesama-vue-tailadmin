@@ -106,35 +106,66 @@
             <div class="relative">
               <img src="{{ asset("frontend/images/shape-05.svg") }}" alt="Shape" class="h -ud-left-5 x" />
               <!-- SVG Illustration -->
-              <svg class="w-full h-auto max-w-lg" viewBox="0 0 500 400" xmlns="http://www.w3.org/2000/svg">
-                <!-- Background -->
-                <rect x="50" y="50" width="400" height="300" rx="20" fill="#E8F5E9"/>
-                
-                <!-- People helping illustration -->
-                <g>
-                  <!-- Person 1 -->
-                  <circle cx="150" cy="150" r="35" fill="#4CAF50"/>
-                  <rect x="130" y="185" width="40" height="80" rx="8" fill="#66BB6A"/>
-                  
-                  <!-- Person 2 -->
-                  <circle cx="250" cy="140" r="35" fill="#2E7D32"/>
-                  <rect x="230" y="175" width="40" height="90" rx="8" fill="#4CAF50"/>
-                  
-                  <!-- Person 3 -->
-                  <circle cx="350" cy="150" r="35" fill="#81C784"/>
-                  <rect x="330" y="185" width="40" height="80" rx="8" fill="#A5D6A7"/>
-                  
-                  <!-- Heart symbol in center -->
-                  <path d="M250 200 L260 190 Q270 180 270 170 Q270 155 260 150 Q250 145 250 150 Q250 145 240 150 Q230 155 230 170 Q230 180 240 190 Z" fill="#FF5252"/>
-                  
-                  <!-- Connecting hands -->
-                  <line x1="170" y1="220" x2="230" y2="220" stroke="#4CAF50" stroke-width="4" stroke-linecap="round"/>
-                  <line x1="270" y1="220" x2="330" y2="220" stroke="#4CAF50" stroke-width="4" stroke-linecap="round"/>
-                </g>
-                
-                <!-- Text -->
-                <text x="250" y="330" text-anchor="middle" fill="#2E7D32" font-size="22" font-weight="bold" font-family="Arial, sans-serif">Kita Membantu Sesama</text>
-              </svg>
+               <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.dev/svgjs" width="700" height="600" preserveAspectRatio="none" viewBox="0 0 700 600">
+    <g mask="url(&quot;#SvgjsMask1143&quot;)" fill="none">
+        <g mask="url(&quot;#SvgjsMask1144&quot;)">
+            <path d="M319 231L297 253L297 275L297 297L297 319M341 77L319 99L319 121L319 143L319 165L297 187L297 209M297 407L297 429L275 451L275 473M319 297L341 319M319 363L319 385L319 407L341 429L341 451L319 473M341 -11L341 11L341 33L341 55L341 77L341 99L341 121L341 143L341 165L319 187L319 209L319 231L319 253L319 275L319 297L319 319L319 341L319 363L297 385L297 407L319 429" stroke="rgba(55, 159, 208, 1)" stroke-width="3.67"></path>
+            <path d="M313.5 429 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM291.5 319 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM291.5 209 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM269.5 473 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM335.5 319 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM313.5 473 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(55, 159, 208, 1)"></path>
+            <path d="M363 253L341 275L341 297M341 209L363 231M363 165L363 187L385 209L385 231M363 341L341 363M363 -11L363 11L363 33L363 55L363 77L363 99L363 121L363 143L363 165L341 187L341 209L341 231L363 253L363 275L363 297L363 319L363 341L363 363" stroke="rgba(55, 159, 208, 1)" stroke-width="3.67"></path>
+            <path d="M357.5 363 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM335.5 297 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM357.5 231 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM379.5 231 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM335.5 363 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(55, 159, 208, 1)"></path>
+            <path d="M319 55L319 77M319 -11L319 11L319 33L319 55L297 77L297 99" stroke="rgba(255, 98, 0, 1)" stroke-width="3.67"></path>
+            <path d="M291.5 99 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM313.5 77 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(255, 98, 0, 1)"></path>
+            <path d="M385 77L385 99L385 121L385 143L385 165M407 231L407 253L407 275L407 297L407 319L407 341M363 407L385 429M363 451L385 473M363 517L385 539M385 55L407 77M385 -11L385 11L385 33L385 55L385 77L407 99L407 121L407 143L407 165L407 187L407 209L407 231L385 253L385 275L385 297L385 319L385 341L385 363L385 385L363 407L363 429L363 451L363 473L363 495L363 517L363 539" stroke="rgba(55, 159, 208, 1)" stroke-width="3.67"></path>
+            <path d="M357.5 539 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM379.5 165 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM401.5 341 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM379.5 429 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM379.5 473 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM379.5 539 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM401.5 77 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(55, 159, 208, 1)"></path>
+            <path d="M275 143L297 165M275 297L253 319L253 341L253 363L253 385M275 121L297 143M275 275L253 297M297 -11L297 11L297 33L297 55L275 77L275 99L275 121L275 143L275 165L275 187L275 209L275 231L275 253L275 275L275 297L275 319L275 341" stroke="rgba(0, 171, 79, 1)" stroke-width="3.67"></path>
+            <path d="M269.5 341 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM291.5 165 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM247.5 385 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM291.5 143 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM247.5 297 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(0, 171, 79, 1)"></path>
+            <path d="M407 -11L407 11" stroke="rgba(0, 171, 79, 1)" stroke-width="3.67"></path>
+            <path d="M401.5 11 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(0, 171, 79, 1)"></path>
+            <path d="M231 253L209 275L209 297L209 319M253 187L231 209L209 231M231 231L253 253L253 275M253 209L253 231M275 -11L275 11L275 33L275 55L253 77L253 99L253 121L253 143L253 165L253 187L253 209L231 231L231 253L231 275L231 297L231 319" stroke="rgba(55, 159, 208, 1)" stroke-width="3.67"></path>
+            <path d="M225.5 319 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM203.5 319 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM203.5 231 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM247.5 275 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM247.5 231 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(55, 159, 208, 1)"></path>
+            <path d="M429 253L429 275L429 297L429 319L429 341L429 363L429 385L429 407M429 187L451 209L451 231L473 253M429 99L451 121L451 143M473 385L451 407M429 77L451 99M429 165L451 187M429 -11L429 11L429 33L429 55L429 77L429 99L429 121L429 143L429 165L429 187L429 209L429 231L429 253L451 275L451 297L451 319L451 341L451 363L473 385L473 407L473 429L473 451L473 473L473 495" stroke="rgba(0, 171, 79, 1)" stroke-width="3.67"></path>
+            <path d="M467.5 495 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM423.5 407 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM467.5 253 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM445.5 143 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM445.5 407 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM445.5 99 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM445.5 187 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(0, 171, 79, 1)"></path>
+            <path d="M187 319L187 341L187 363L187 385L187 407M187 539L209 561M165 341L143 363L143 385L143 407L143 429M209 187L209 209M187 275L165 297L165 319L143 341L121 363L121 385L121 407L121 429M165 429L187 451L209 473L209 495L209 517M253 -11L253 11L253 33L253 55L231 77L231 99L231 121L231 143L209 165L209 187L187 209L187 231L187 253L187 275L187 297L187 319L165 341L165 363L165 385L165 407L165 429L165 451L187 473L187 495L187 517L187 539L187 561" stroke="rgba(255, 98, 0, 1)" stroke-width="3.67"></path>
+            <path d="M181.5 561 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM181.5 407 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM203.5 561 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM137.5 429 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM203.5 209 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM115.5 429 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM203.5 517 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(255, 98, 0, 1)"></path>
+            <path d="M451 11L451 33L451 55L451 77M473 187L495 209M473 143L495 165L495 187M451 -11L451 11L473 33L473 55L473 77L473 99L473 121L473 143L473 165L473 187L473 209" stroke="rgba(0, 171, 79, 1)" stroke-width="3.67"></path>
+            <path d="M467.5 209 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM445.5 77 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM489.5 209 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM489.5 187 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(0, 171, 79, 1)"></path>
+            <path d="M187 121L187 143L187 165M187 99L209 121L209 143M209 77L209 99M231 -11L231 11L231 33L231 55L209 77L187 99L187 121L165 143L165 165L165 187L165 209L165 231L165 253" stroke="rgba(255, 98, 0, 1)" stroke-width="3.67"></path>
+            <path d="M159.5 253 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM181.5 165 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM203.5 143 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM203.5 99 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(255, 98, 0, 1)"></path>
+            <path d="M473 -11L473 11L495 33L495 55L495 77L495 99L495 121" stroke="rgba(0, 171, 79, 1)" stroke-width="3.67"></path>
+            <path d="M489.5 121 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(0, 171, 79, 1)"></path>
+            <path d="M209 11L187 33L187 55L165 77M209 -11L209 11L209 33L209 55L187 77" stroke="rgba(255, 98, 0, 1)" stroke-width="3.67"></path>
+            <path d="M181.5 77 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM159.5 77 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(255, 98, 0, 1)"></path>
+            <path d="M517 187L539 209L539 231L539 253M517 121L539 143L539 165L539 187M495 231L517 253M517 99L539 121M495 -11L495 11L517 33L517 55L517 77L517 99L517 121L517 143L517 165L517 187L517 209L495 231L495 253L495 275L495 297L495 319L495 341" stroke="rgba(55, 159, 208, 1)" stroke-width="3.67"></path>
+            <path d="M489.5 341 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM533.5 253 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM533.5 187 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM511.5 253 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM533.5 121 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(55, 159, 208, 1)"></path>
+            <path d="M143 99L121 121L121 143L121 165M143 33L121 55L121 77M143 187L121 209L121 231L121 253M187 -11L165 11L143 33L143 55L143 77L143 99L143 121L143 143L143 165L143 187L143 209L143 231L143 253" stroke="rgba(0, 171, 79, 1)" stroke-width="3.67"></path>
+            <path d="M137.5 253 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM115.5 165 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM115.5 77 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0zM115.5 253 a5.5 5.5 0 1 0 11 0 a5.5 5.5 0 1 0 -11 0z" fill="rgba(0, 171, 79, 1)"></path>
+        </g>
+    </g>
+    <defs>
+        <mask id="SvgjsMask1143">
+            <rect width="700" height="600" fill="#ffffff"></rect>
+        </mask>
+        <mask id="SvgjsMask1144">
+            <rect width="700" height="600" fill="white"></rect>
+            <path d="M316.25 429 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM294.25 319 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM294.25 209 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM272.25 473 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM338.25 319 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM316.25 473 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M360.25 363 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM338.25 297 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM360.25 231 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM382.25 231 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM338.25 363 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M294.25 99 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM316.25 77 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M360.25 539 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM382.25 165 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM404.25 341 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM382.25 429 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM382.25 473 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM382.25 539 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM404.25 77 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M272.25 341 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM294.25 165 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM250.25 385 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM294.25 143 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM250.25 297 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M404.25 11 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M228.25 319 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM206.25 319 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM206.25 231 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM250.25 275 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM250.25 231 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M470.25 495 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM426.25 407 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM470.25 253 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM448.25 143 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM448.25 407 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM448.25 99 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM448.25 187 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M184.25 561 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM184.25 407 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM206.25 561 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM140.25 429 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM206.25 209 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM118.25 429 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM206.25 517 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M470.25 209 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM448.25 77 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM492.25 209 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM492.25 187 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M162.25 253 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM184.25 165 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM206.25 143 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM206.25 99 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M492.25 121 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M184.25 77 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM162.25 77 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M492.25 341 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM536.25 253 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM536.25 187 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM514.25 253 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM536.25 121 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+            <path d="M140.25 253 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM118.25 165 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM118.25 77 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0zM118.25 253 a2.75 2.75 0 1 0 5.5 0 a2.75 2.75 0 1 0 -5.5 0z" fill="black"></path>
+        </mask>
+    </defs>
+</svg>
+              <!-- End SVG Illustration -->
             </div>
           </div>
 
@@ -143,12 +174,12 @@
             <h4 class="ek yj mk gb">Tentang Kita Membantu Sesama</h4>
             <h2 class="fk vj zp pr kk wm qb">Menjadi Organisasi Sosial Kemanusiaan Internasional yang Unggul dan Profesional</h2>
             <p class="uo mb-4">Kita Membantu Sesama (KMS) adalah organisasi sosial kemanusiaan yang berdedikasi untuk membantu masyarakat yang membutuhkan. Kami berkomitmen untuk memberikan bantuan kemanusiaan yang tepat sasaran dan berkelanjutan.</p>
-            
+            <br>
             <div class="mb-6">
-              <h5 class="ek zj kk wm mb-3">Visi Kami</h5>
+              <h5 class="ek zj kk wm mb-5">Visi Kami</h5>
               <p class="uo">Menjadi organisasi sosial kemanusiaan internasional yang unggul dan profesional untuk kehidupan kemanusiaan yang lebih baik.</p>
             </div>
-            
+            <br>
             <div class="mb-6">
               <h5 class="ek zj kk wm mb-3">Misi Kami</h5>
               <ul class="list-disc list-inside space-y-2">
@@ -158,8 +189,6 @@
                 <li>Mengelola organisasi secara profesional dan transparan</li>
               </ul>
             </div>
-
-            <a href="#kontak" class="vc ek rg lk gh sl ml il gi hi">Hubungi Kami</a>
           </div>
         </div>
       </div>
@@ -494,11 +523,11 @@
               </div>
               <h4 class="ek zj kk wm nb _b">{{ $account['label'] ?? 'Transfer Bank' }}</h4>
               <div class="text-sm space-y-1">
-                <div class="flex items-center gap-2">
-                  <p class="font-semibold flex-shrink-0">{{ $account['value'] ?? '' }}</p>
-                  <button 
+                <div class="flex items-center gap-3 flex-nowrap">
+                  <p class="font-semibold flex-1 min-w-0 truncate">{{ $account['value'] ?? '' }}</p>
+                  <button
                     onclick="copyToClipboard('{{ $account['value'] ?? '' }}', this)"
-                    class="inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
+                    class="inline-flex items-center justify-center w-7 h-7 rounded border border-gray-200 hover:bg-gray-100 transition-colors flex-shrink-0"
                     title="Copy nomor rekening">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor"/>

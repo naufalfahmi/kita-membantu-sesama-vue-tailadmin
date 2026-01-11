@@ -49,6 +49,13 @@ class TransaksiController extends Controller
             }
         } elseif (! $isAdmin) {
             $allowed = $this->resolveTransaksiVisibilityIds($user);
+            $hasExplicitVisibility = $user->transaksiVisibilityEntries()->exists() || $user->donaturVisibilityEntries()->exists();
+            $allowedMitra = array_values(array_unique(array_map('strval', array_merge(
+                $user->visibleMitraTransaksiIds(),
+                $user->visibleMitraDonaturIds()
+            ))));
+            $mitraListForQuery = ! empty($allowedMitra) ? $allowedMitra : ['-1'];
+            $hasExplicitMitraVisibility = $user->mitraTransaksiVisibilityEntries()->exists() || $user->mitraDonaturVisibilityEntries()->exists();
             // Restrict by kantor cabang assignments (pivot `kantor_cabang_user`) when available.
             try {
                 $assignedBranchIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
@@ -77,17 +84,29 @@ class TransaksiController extends Controller
                 // ignore
             }
 
-            // If Admin Cabang with assigned branches, allow viewing all transaksis
-            // in those branches and skip descendant-created_by filtering.
-            if (! empty($assignedBranchIds) && $isAdminCabang) {
+            $visibilityFilter = function ($q) use ($allowed) {
+                $q->whereIn('transaksis.created_by', $allowed)
+                    ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
+            };
+
+            if ($hasExplicitVisibility) {
+                if ($hasExplicitMitraVisibility) {
+                    $query->where(function ($q) use ($visibilityFilter, $mitraListForQuery) {
+                        $visibilityFilter($q);
+                        $q->orWhereIn('transaksis.mitra_id', $mitraListForQuery);
+                    });
+                } else {
+                    $query->where($visibilityFilter);
+                }
+            } elseif ($hasExplicitMitraVisibility) {
+                $query->whereIn('transaksis.mitra_id', $mitraListForQuery);
+            } elseif (! empty($assignedBranchIds) && $isAdminCabang) {
+                // Admin Cabang with assigned branches: branch-based visibility only
                 $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
             } else {
                 // Direktur Fundrising should only see their own and their subordinates' transaksis.
                 if ($isDirekturFundrising) {
-                    $query->where(function ($q) use ($allowed) {
-                        $q->whereIn('transaksis.created_by', $allowed)
-                            ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
-                    });
+                    $query->where($visibilityFilter);
                 } else {
                     if (! empty($assignedBranchIds)) {
                         $query->whereIn('transaksis.kantor_cabang_id', $assignedBranchIds);
@@ -97,11 +116,7 @@ class TransaksiController extends Controller
 
                     // Allow users to see transaksis they created, their subordinates created,
                     // or any transaksi where the related donatur's PIC is the user or a subordinate.
-                    $query->where(function ($q) use ($allowed, $user) {
-                        // Qualify column to avoid ambiguity when query uses joins
-                        $q->whereIn('transaksis.created_by', $allowed)
-                            ->orWhereHas('donatur', fn ($q2) => $q2->whereIn('pic', $allowed));
-                    });
+                    $query->where($visibilityFilter);
                 }
             }
 
@@ -794,8 +809,12 @@ class TransaksiController extends Controller
     protected function resolveTransaksiVisibilityIds(User $user): array
     {
         try {
-            $ids = $user->visibleTransaksiKaryawanIds();
-            return array_values(array_unique(array_map('intval', $ids)));
+            // Combine transaksi and donatur visibility to mirror frontend fundraiser filters
+            $ids = array_merge(
+                $user->visibleTransaksiKaryawanIds(),
+                $user->visibleDonaturKaryawanIds()
+            );
+            return array_values(array_unique(array_map('strval', $ids)));
         } catch (\Throwable $e) {
             return User::descendantIdsOf($user->id);
         }

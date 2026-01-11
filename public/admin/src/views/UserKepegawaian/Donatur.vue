@@ -155,11 +155,28 @@ const toast = useToast()
 const { fetchUser, hasPermission, isAdmin, user } = useAuth()
 
 const allowedPicIds = computed(() => {
-  const raw = (user.value as any)?.visible_donatur_ids
-  if (Array.isArray(raw)) {
-    return raw.map((id: any) => String(id))
-  }
-  return [] as string[]
+  const donaturIds = Array.isArray((user.value as any)?.visible_donatur_ids)
+    ? (user.value as any).visible_donatur_ids
+    : []
+  const transaksiIds = Array.isArray((user.value as any)?.visible_transaksi_ids)
+    ? (user.value as any).visible_transaksi_ids
+    : []
+  const selfId = (user.value as any)?.id ? [(user.value as any).id] : []
+  // Prefer Akses Data Donatur; if empty, fall back to transaksi list, and always include self
+  const base = donaturIds.length ? donaturIds : transaksiIds
+  const combined = [...base, ...selfId]
+  return Array.from(new Set(combined.map((id: any) => String(id)) as string[]))
+})
+
+const allowedMitraIds = computed(() => {
+  const donaturMitraIds = Array.isArray((user.value as any)?.visible_mitra_donatur_ids)
+    ? (user.value as any).visible_mitra_donatur_ids
+    : []
+  const transaksiMitraIds = Array.isArray((user.value as any)?.visible_mitra_transaksi_ids)
+    ? (user.value as any).visible_mitra_transaksi_ids
+    : []
+  const combined = [...donaturMitraIds, ...transaksiMitraIds]
+  return Array.from(new Set(combined.map((id: any) => String(id)) as string[]))
 })
 
 const isFundraiser = computed(() => {
@@ -224,7 +241,11 @@ const picSelectOptions = computed(() => [
 
 const mitraSelectOptions = computed(() => [
   { value: '', label: 'Semua Mitra' },
-  ...mitraOptions.value.map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
+  ...(
+    allowedMitraIds.value.length
+      ? mitraOptions.value.filter((item: any) => allowedMitraIds.value.includes(String(item.id)))
+      : mitraOptions.value
+  ).map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
 ])
 
 const kantorCabangSelectOptions = computed(() => [
@@ -549,9 +570,13 @@ const fetchReferenceData = async () => {
     })()
 
     const kantorUrl = (isAdmin() || isRoleAdminCabang) ? '/admin/api/kantor-cabang?per_page=1000' : '/admin/api/kantor-cabang?per_page=1000&only_assigned=1'
+    const includeIdsParam = allowedPicIds.value.length
+      ? `&include_ids[]=${allowedPicIds.value.join('&include_ids[]=')}`
+      : ''
+
     const [kantorRes, karyawanRes, mitraRes] = await Promise.all([
       fetch(kantorUrl, { credentials: 'same-origin' }),
-      fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' }),
+      fetch(`/admin/api/karyawan?per_page=1000${includeIdsParam}`, { credentials: 'same-origin' }),
       fetch('/admin/api/mitra?per_page=1000', { credentials: 'same-origin' }),
     ])
 

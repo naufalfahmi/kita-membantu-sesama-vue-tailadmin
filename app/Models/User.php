@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\KaryawanDonaturVisibility;
 use App\Models\KaryawanTransaksiVisibility;
+use App\Models\KaryawanMitraTransaksiVisibility;
+use App\Models\KaryawanMitraDonaturVisibility;
 
 class User extends Authenticatable
 {
@@ -160,6 +162,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Explicit visibility list for mitra in transaksi context.
+     */
+    public function mitraTransaksiVisibilityEntries()
+    {
+        return $this->hasMany(KaryawanMitraTransaksiVisibility::class, 'karyawan_id')
+            ->whereNull('deleted_at');
+    }
+
+    /**
+     * Explicit visibility list for mitra in donatur context.
+     */
+    public function mitraDonaturVisibilityEntries()
+    {
+        return $this->hasMany(KaryawanMitraDonaturVisibility::class, 'karyawan_id')
+            ->whereNull('deleted_at');
+    }
+
+    /**
      * Helper: return IDs this user may see in transaksi context.
      */
     public function visibleTransaksiKaryawanIds(): array
@@ -190,6 +210,34 @@ class User extends Authenticatable
     }
 
     /**
+     * Helper: return mitra IDs this user may see in transaksi context.
+     */
+    public function visibleMitraTransaksiIds(): array
+    {
+        $ids = $this->mitraTransaksiVisibilityEntries()->pluck('visible_mitra_id')->toArray();
+
+        if (! empty($ids)) {
+            return $this->normalizeVisibilityIds($ids);
+        }
+
+        return [];
+    }
+
+    /**
+     * Helper: return mitra IDs this user may see in donatur context.
+     */
+    public function visibleMitraDonaturIds(): array
+    {
+        $ids = $this->mitraDonaturVisibilityEntries()->pluck('visible_mitra_id')->toArray();
+
+        if (! empty($ids)) {
+            return $this->normalizeVisibilityIds($ids);
+        }
+
+        return [];
+    }
+
+    /**
      * Linked mitra profile when this user represents a mitra account.
      */
     public function mitra()
@@ -205,7 +253,7 @@ class User extends Authenticatable
      * Usage: $allowed = User::descendantIdsOf($user->id);
      *
      * @param  int|string  $userId
-     * @return array<int>
+     * @return array<string>
      */
     public static function descendantIdsOf($userId): array
     {
@@ -225,20 +273,18 @@ class User extends Authenticatable
 
         // ensure caller is included first
         array_unshift($collected, $userId);
-        // unique and integer cast
-        $collected = array_values(array_unique($collected));
-        return array_map('intval', $collected);
+        // unique string ids (support UUIDs)
+        $collected = array_values(array_unique(array_map('strval', $collected)));
+        return $collected;
     }
 
     /**
-     * Normalize visibility IDs to a unique int array.
+     * Normalize visibility IDs to a unique string array (supports UUIDs).
      */
     protected function normalizeVisibilityIds(array $ids): array
     {
-        $normalized = array_map(static fn ($id) => (int) $id, $ids);
-        $normalized = array_values(array_unique($normalized));
-
-        return $normalized;
+        $normalized = array_map(static fn ($id) => (string) $id, $ids);
+        return array_values(array_unique($normalized));
     }
 
     /**

@@ -283,6 +283,8 @@ class LoginController extends Controller
                 // Include visibility lists so frontend filters can mirror backend access rules
                 'visible_donatur_ids' => method_exists($user, 'visibleDonaturKaryawanIds') ? $user->visibleDonaturKaryawanIds() : [],
                 'visible_transaksi_ids' => method_exists($user, 'visibleTransaksiKaryawanIds') ? $user->visibleTransaksiKaryawanIds() : [],
+                'visible_mitra_transaksi_ids' => method_exists($user, 'visibleMitraTransaksiIds') ? $user->visibleMitraTransaksiIds() : [],
+                'visible_mitra_donatur_ids' => method_exists($user, 'visibleMitraDonaturIds') ? $user->visibleMitraDonaturIds() : [],
                 'is_mitra' => (bool) $mitraProfile,
                 'mitra_profile' => $mitraProfile,
             ],

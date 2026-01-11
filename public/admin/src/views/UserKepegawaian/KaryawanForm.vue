@@ -340,6 +340,38 @@
             <div v-else class="mt-2 text-sm text-gray-500">Belum ada karyawan untuk dipilih.</div>
           </div>
 
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Akses Data Mitra Transaksi (mitra yang bisa dilihat)
+            </label>
+            <div v-if="mitraSelectOptions.length">
+              <SearchableMultiSelect
+                v-model="formData.visible_mitra_transaksi_ids"
+                :options="mitraSelectOptions"
+                placeholder="Pilih mitra untuk akses transaksi"
+                :search-input="kantorCabangSearchInput"
+                @update:search-input="kantorCabangSearchInput = $event"
+              />
+            </div>
+            <div v-else class="mt-2 text-sm text-gray-500">Belum ada mitra untuk dipilih.</div>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Akses Data Mitra Donatur (mitra yang bisa dilihat)
+            </label>
+            <div v-if="mitraSelectOptions.length">
+              <SearchableMultiSelect
+                v-model="formData.visible_mitra_donatur_ids"
+                :options="mitraSelectOptions"
+                placeholder="Pilih mitra untuk akses donatur"
+                :search-input="kantorCabangSearchInput"
+                @update:search-input="kantorCabangSearchInput = $event"
+              />
+            </div>
+            <div v-else class="mt-2 text-sm text-gray-500">Belum ada mitra untuk dipilih.</div>
+          </div>
+
           <div class="flex items-center gap-3">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-400">Status Akun</label>
             <label class="relative inline-flex cursor-pointer items-center">
@@ -394,6 +426,7 @@ const jabatanOptions = ref<any[]>([])
 const pangkatOptions = ref<any[]>([])
 const tipeAbsensiOptions = ref<any[]>([])
 const kantorCabangOptions = ref<any[]>([])
+const mitraOptions = ref<any[]>([])
 const isSubmitting = ref(false)
 const showPassword = ref(false)
 const jabatanSearchInput = ref('')
@@ -449,6 +482,13 @@ const kantorCabangSelectOptions = computed(() =>
   }))
 )
 
+const mitraSelectOptions = computed(() =>
+  mitraOptions.value.map((item: any) => ({
+    value: String(item.id),
+    label: item.nama || item.name || '-',
+  }))
+)
+
 const leaderOptions = ref<any[]>([])
 const leaderSelectOptions = computed(() => leaderOptions.value.map((item: any) => ({ value: String(item.id), label: item.name || item.nama || '-' })))
 
@@ -483,6 +523,8 @@ const formData = reactive({
   subordinate_ids: [] as string[],
   visible_transaksi_ids: [] as string[],
   visible_donatur_ids: [] as string[],
+  visible_mitra_transaksi_ids: [] as string[],
+  visible_mitra_donatur_ids: [] as string[],
   is_active: true,
 })
 
@@ -493,28 +535,31 @@ const togglePasswordVisibility = () => {
 // Load supporting dropdown data needed across form inputs.
 const fetchReferenceData = async () => {
   try {
-    const [roleRes, pangRes, tipeRes, cabRes] = await Promise.all([
+    const [roleRes, pangRes, tipeRes, cabRes, mitraRes] = await Promise.all([
       fetch('/admin/api/jabatan?per_page=1000', { credentials: 'same-origin' }),
       fetch('/admin/api/pangkat?per_page=1000', { credentials: 'same-origin' }),
       fetch('/admin/api/tipe-absensi?per_page=1000', { credentials: 'same-origin' }),
       fetch('/admin/api/kantor-cabang?per_page=1000', { credentials: 'same-origin' }),
+      fetch('/admin/api/mitra?per_page=1000', { credentials: 'same-origin' }),
     ])
 
     if (!roleRes.ok || !pangRes.ok || !tipeRes.ok || !cabRes.ok) {
       throw new Error('Failed to fetch lookup data')
     }
 
-    const [roleJson, pangJson, tipeJson, cabJson] = await Promise.all([
+    const [roleJson, pangJson, tipeJson, cabJson, mitraJson] = await Promise.all([
       roleRes.json(),
       pangRes.json(),
       tipeRes.json(),
       cabRes.json(),
+      mitraRes.json(),
     ])
 
     if (roleJson.success) jabatanOptions.value = roleJson.data || []
     if (pangJson.success) pangkatOptions.value = pangJson.data || []
     if (tipeJson.success) tipeAbsensiOptions.value = tipeJson.data || []
     if (cabJson.success) kantorCabangOptions.value = cabJson.data || []
+    if (mitraJson.success) mitraOptions.value = Array.isArray(mitraJson.data) ? mitraJson.data : (mitraJson.data?.data || [])
     // Fetch karyawan list for leader choices
     try {
       const k = await fetch('/admin/api/karyawan?per_page=1000', { credentials: 'same-origin' })
@@ -580,6 +625,8 @@ const loadData = async (id: string) => {
       formData.subordinate_ids = (data.subordinates || []).map((s: any) => String(s.id ?? s))
       formData.visible_transaksi_ids = (data.visible_transaksi_ids || []).map((id: string) => String(id))
       formData.visible_donatur_ids = (data.visible_donatur_ids || []).map((id: string) => String(id))
+      formData.visible_mitra_transaksi_ids = (data.visible_mitra_transaksi_ids || []).map((id: string) => String(id))
+      formData.visible_mitra_donatur_ids = (data.visible_mitra_donatur_ids || []).map((id: string) => String(id))
       formData.is_active = Boolean(data.is_active)
       formData.password = ''
     } else {
@@ -651,6 +698,8 @@ const handleSave = async () => {
       subordinate_ids: formData.subordinate_ids,
       visible_transaksi_ids: formData.visible_transaksi_ids,
       visible_donatur_ids: formData.visible_donatur_ids,
+      visible_mitra_transaksi_ids: formData.visible_mitra_transaksi_ids,
+      visible_mitra_donatur_ids: formData.visible_mitra_donatur_ids,
       is_active: formData.is_active,
     }
 

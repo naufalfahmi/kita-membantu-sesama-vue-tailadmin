@@ -95,7 +95,7 @@ class DonaturController extends Controller
                         'requested_kantor_cabang_id' => $request->input('kantor_cabang_id'),
                     ]);
                 } catch (\Throwable $e) {
-                    // ignore logging errors
+                    return array_values(array_unique(array_map('strval', User::descendantIdsOf($user->id))));
                 }
             }
 
@@ -161,11 +161,21 @@ class DonaturController extends Controller
         }
 
         if (! $isAdmin && ! ($skipVisibility)) {
-            $allowed = $this->resolveDonaturVisibilityIds($user);
+            // Combine both Donatur and Transaksi visibility lists to mirror
+            // the frontend expectation that fundraiser filters include both.
+            $allowed = array_values(array_unique(array_map('strval', array_merge(
+                $user->visibleDonaturKaryawanIds(),
+                $user->visibleTransaksiKaryawanIds()
+            ))));
             if (empty($allowed)) {
-                $allowed = [-1];
+                $allowed = ['-1'];
             }
             $hasExplicitVisibility = $user->donaturVisibilityEntries()->exists();
+            $allowedMitra = array_values(array_unique(array_map('strval', array_merge(
+                $user->visibleMitraDonaturIds(),
+                $user->visibleMitraTransaksiIds()
+            ))));
+            $hasExplicitMitraVisibility = $user->mitraDonaturVisibilityEntries()->exists() || $user->mitraTransaksiVisibilityEntries()->exists();
             // Always consider explicit kantor cabang assignments (pivot).
             // Users who are assigned to branches should see donaturs in
             // those branches regardless of leader/subordinate status.
@@ -231,11 +241,26 @@ class DonaturController extends Controller
             }
 
             if ($hasExplicitVisibility) {
-                // Jika ada daftar eksplisit, pakai itu saja (PIC atau created_by)
+                // Jika ada daftar eksplisit PIC/creator, utamakan itu. Bila juga ada daftar mitra,
+                // perbolehkan donatur muncul jika memenuhi salah satu (PIC/creator OR mitra eksplisit).
+                if ($hasExplicitMitraVisibility) {
+                    $query->where(function ($q) use ($allowed, $allowedMitra) {
+                        $q->where(function ($q2) use ($allowed) {
+                            $q2->whereIn('donaturs.pic', $allowed)
+                               ->orWhereIn('donaturs.created_by', $allowed);
+                        })
+                        ->orWhereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
+                    });
+                } else {
                     $query->where(function ($q) use ($allowed) {
                         $q->whereIn('donaturs.pic', $allowed)
                           ->orWhereIn('donaturs.created_by', $allowed);
                     });
+                }
+            } elseif ($hasExplicitMitraVisibility) {
+                // Ketika hanya ada visibilitas mitra eksplisit, izinkan seluruh donatur
+                // pada mitra tersebut tanpa syarat PIC/created_by agar data muncul sesuai assignment.
+                $query->whereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
             } elseif (! empty($assignedIds) && $isAdminCabang) {
                 // Admin Cabang: show all donaturs in the assigned branches
                 $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
@@ -449,6 +474,8 @@ class DonaturController extends Controller
                 $allowed = [-1];
             }
             $hasExplicitVisibility = $user->donaturVisibilityEntries()->exists();
+            $allowedMitra = $user->visibleMitraDonaturIds();
+            $hasExplicitMitraVisibility = $user->mitraDonaturVisibilityEntries()->exists();
 
             try {
                 $assignedIds = $user->kantorCabangs()->pluck('kantor_cabang.id')->toArray();
@@ -474,6 +501,9 @@ class DonaturController extends Controller
 
             if ($hasExplicitVisibility) {
                 $query->whereIn('donaturs.pic', $allowed);
+                if ($hasExplicitMitraVisibility) {
+                    $query->whereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
+                }
             } elseif (! empty($assignedIds) && $isAdminCabang) {
                 $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
             } elseif (! empty($assignedIds)) {
@@ -481,8 +511,14 @@ class DonaturController extends Controller
                     $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
                       ->orWhereIn('donaturs.pic', $allowed);
                 });
+                if ($hasExplicitMitraVisibility) {
+                    $query->whereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
+                }
             } else {
                 $query->whereIn('donaturs.pic', $allowed);
+                if ($hasExplicitMitraVisibility) {
+                    $query->whereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
+                }
             }
             try {
                 \Log::debug('DonaturController@show visibility debug', [
@@ -687,9 +723,10 @@ class DonaturController extends Controller
     {
         try {
             $ids = $user->visibleDonaturKaryawanIds();
-            return array_values(array_unique(array_map('intval', $ids)));
+            // Preserve string IDs (UUIDs) and de-duplicate
+            return array_values(array_unique(array_map('strval', $ids)));
         } catch (\Throwable $e) {
-            return User::descendantIdsOf($user->id);
+            return array_values(array_unique(array_map('strval', User::descendantIdsOf($user->id))));
         }
     }
 

@@ -11,6 +11,8 @@ use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use App\Models\KaryawanDonaturVisibility;
 use App\Models\KaryawanTransaksiVisibility;
+use App\Models\KaryawanMitraTransaksiVisibility;
+use App\Models\KaryawanMitraDonaturVisibility;
 
 class KaryawanController extends Controller
 {
@@ -29,6 +31,15 @@ class KaryawanController extends Controller
                 'donaturVisibilityEntries.visibleKaryawan:id,name',
             ])
             ->karyawan();
+
+        // Allow callers to explicitly request specific user IDs (e.g., visibility pickers)
+        // and skip subtree restriction when provided.
+        $includeIds = collect($request->input('include_ids', []))
+            ->filter(fn ($id) => !empty($id))
+            ->map(fn ($id) => (string) $id)
+            ->values()
+            ->toArray();
+        $skipSubtreeForIncludeIds = !empty($includeIds);
 
         // Support filtering by role name (case-insensitive). When provided,
         // return users having that role. This is used by frontend pickers
@@ -64,7 +75,7 @@ class KaryawanController extends Controller
             }
         } else {
             // If caller is not admin, restrict visible users to the caller's subtree.
-            if ($authUser && ! $this->userIsAdmin($authUser)) {
+            if ($authUser && ! $this->userIsAdmin($authUser) && ! $skipSubtreeForIncludeIds) {
                 // If a role_name filter was provided we skip this subtree
                 // restriction so that callers requesting a specific role get
                 // the full list of users with that role.
@@ -155,6 +166,11 @@ class KaryawanController extends Controller
             });
         }
 
+        // If include_ids provided, constrain to those IDs (used for visibility-based pickers)
+        if (!empty($includeIds)) {
+            $query->whereIn('id', $includeIds);
+        }
+
         $karyawans = $query
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 20));
@@ -230,6 +246,10 @@ class KaryawanController extends Controller
             'visible_transaksi_ids.*' => 'string|exists:users,id',
             'visible_donatur_ids' => 'nullable|array',
             'visible_donatur_ids.*' => 'string|exists:users,id',
+            'visible_mitra_transaksi_ids' => 'nullable|array',
+            'visible_mitra_transaksi_ids.*' => 'uuid|exists:mitras,id',
+            'visible_mitra_donatur_ids' => 'nullable|array',
+            'visible_mitra_donatur_ids.*' => 'uuid|exists:mitras,id',
         ]);
 
         if ($validator->fails()) {
@@ -281,6 +301,8 @@ class KaryawanController extends Controller
 
                 $this->syncVisibilityAssignments($karyawan, $request->input('visible_transaksi_ids', []), 'transaksi');
                 $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
+                $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_transaksi_ids', []), 'transaksi');
+                $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_donatur_ids', []), 'donatur');
 
                 return $karyawan->fresh([
                     'pangkat:id,nama',
@@ -377,6 +399,10 @@ class KaryawanController extends Controller
             'visible_transaksi_ids.*' => 'string|exists:users,id',
             'visible_donatur_ids' => 'nullable|array',
             'visible_donatur_ids.*' => 'string|exists:users,id',
+            'visible_mitra_transaksi_ids' => 'nullable|array',
+            'visible_mitra_transaksi_ids.*' => 'uuid|exists:mitras,id',
+            'visible_mitra_donatur_ids' => 'nullable|array',
+            'visible_mitra_donatur_ids.*' => 'uuid|exists:mitras,id',
         ]);
 
         if ($validator->fails()) {
@@ -438,6 +464,14 @@ class KaryawanController extends Controller
 
                 if ($request->has('visible_donatur_ids')) {
                     $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
+                }
+
+                if ($request->has('visible_mitra_transaksi_ids')) {
+                    $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_transaksi_ids', []), 'transaksi');
+                }
+
+                if ($request->has('visible_mitra_donatur_ids')) {
+                    $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_donatur_ids', []), 'donatur');
                 }
 
                 return $karyawan->fresh([
@@ -594,6 +628,50 @@ class KaryawanController extends Controller
     }
 
     /**
+     * Sync explicit visibility assignments for mitra (transaksi/donatur context).
+     */
+    protected function syncMitraVisibilityAssignments(User $karyawan, $rawIds, string $type): void
+    {
+        $modelClass = $type === 'donatur' ? KaryawanMitraDonaturVisibility::class : KaryawanMitraTransaksiVisibility::class;
+
+        $ids = $this->normalizeIdArray($rawIds, null);
+        $ids = array_values(array_unique($ids));
+
+        $now = now();
+        $actor = auth()->id();
+
+        $modelClass::where('karyawan_id', $karyawan->id)
+            ->whereNull('deleted_at')
+            ->whereNotIn('visible_mitra_id', $ids)
+            ->update([
+                'deleted_at' => $now,
+                'deleted_by' => $actor,
+                'updated_by' => $actor,
+            ]);
+
+        foreach ($ids as $visibleId) {
+            $existing = $modelClass::withTrashed()
+                ->where('karyawan_id', $karyawan->id)
+                ->where('visible_mitra_id', $visibleId)
+                ->first();
+
+            if ($existing) {
+                $existing->deleted_at = null;
+                $existing->deleted_by = null;
+                $existing->updated_by = $actor;
+                $existing->save();
+            } else {
+                $modelClass::create([
+                    'karyawan_id' => $karyawan->id,
+                    'visible_mitra_id' => $visibleId,
+                    'created_by' => $actor,
+                    'updated_by' => $actor,
+                ]);
+            }
+        }
+    }
+
+    /**
      * Normalize ID inputs (string|array|mixed) into an array of string IDs.
      */
     protected function normalizeIdArray($value, $selfId = null): array
@@ -629,6 +707,8 @@ class KaryawanController extends Controller
         $user->loadMissing([
             'transaksiVisibilityEntries.visibleKaryawan',
             'donaturVisibilityEntries.visibleKaryawan',
+            'mitraTransaksiVisibilityEntries.visibleMitra',
+            'mitraDonaturVisibilityEntries.visibleMitra',
         ]);
         $role = $user->roles->first();
 
@@ -692,6 +772,20 @@ class KaryawanController extends Controller
                 return [
                     'id' => $row->visible_karyawan_id,
                     'name' => optional($row->visibleKaryawan)->name,
+                ];
+            })->values()->all(),
+            'visible_mitra_transaksi_ids' => $user->mitraTransaksiVisibilityEntries->pluck('visible_mitra_id')->values()->all(),
+            'visible_mitra_transaksis' => $user->mitraTransaksiVisibilityEntries->map(function ($row) {
+                return [
+                    'id' => $row->visible_mitra_id,
+                    'name' => optional($row->visibleMitra)->nama,
+                ];
+            })->values()->all(),
+            'visible_mitra_donatur_ids' => $user->mitraDonaturVisibilityEntries->pluck('visible_mitra_id')->values()->all(),
+            'visible_mitra_donaturs' => $user->mitraDonaturVisibilityEntries->map(function ($row) {
+                return [
+                    'id' => $row->visible_mitra_id,
+                    'name' => optional($row->visibleMitra)->nama,
                 ];
             })->values()->all(),
             'created_at' => optional($user->created_at)->toIso8601String(),

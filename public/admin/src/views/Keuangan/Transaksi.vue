@@ -246,6 +246,30 @@ const canUpdate = computed(() => isAdmin() || hasPermission('update transaksi'))
 const canDelete = computed(() => isAdmin() || hasPermission('delete transaksi'))
 const canView = computed(() => isAdmin() || hasPermission('view transaksi'))
 
+const allowedFundraiserIds = computed(() => {
+  const transaksiIds = Array.isArray((user.value as any)?.visible_transaksi_ids)
+    ? (user.value as any).visible_transaksi_ids
+    : []
+  const donaturIds = Array.isArray((user.value as any)?.visible_donatur_ids)
+    ? (user.value as any).visible_donatur_ids
+    : []
+  const selfId = (user.value as any)?.id ? [(user.value as any).id] : []
+  const base = transaksiIds.length ? transaksiIds : donaturIds
+  const combined = [...base, ...selfId]
+  return Array.from(new Set(combined.map((id: any) => String(id)) as string[]))
+})
+
+const allowedMitraIds = computed(() => {
+  const transaksiMitraIds = Array.isArray((user.value as any)?.visible_mitra_transaksi_ids)
+    ? (user.value as any).visible_mitra_transaksi_ids
+    : []
+  const donaturMitraIds = Array.isArray((user.value as any)?.visible_mitra_donatur_ids)
+    ? (user.value as any).visible_mitra_donatur_ids
+    : []
+  const combined = [...transaksiMitraIds, ...donaturMitraIds]
+  return Array.from(new Set(combined.map((id: any) => String(id)) as string[]))
+})
+
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 
 // AG Grid server-side/infinite settings
@@ -376,97 +400,48 @@ const programOptions = computed(() => [
 
 const mitraOptions = computed(() => [
   { value: '', label: 'Semua Mitra' },
-  ...mitraList.value.map((item: any) => ({ value: item.id, label: item.nama || item.name || '-' })),
+  ...(
+    allowedMitraIds.value.length
+      ? mitraList.value.filter((item: any) => allowedMitraIds.value.includes(String(item.id)))
+      : mitraList.value
+  ).map((item: any) => ({ value: item.id, label: item.nama || item.name || '-' })),
 ])
 
 const fundraiserOptions = computed(() => {
-  const roleName = String(user?.value?.role?.name || '').toLowerCase()
-  const isLeader = roleName.includes('leader') || roleName.includes('lead')
-  const isAtasan = roleName.includes('atasan') || roleName.includes('supervisor') || roleName.includes('manager')
+  const allowed = allowedFundraiserIds.value.map((id: any) => String(id)).filter(Boolean)
+  const allowedSet = new Set(allowed)
+  const shouldRestrict = allowedSet.size > 0
 
   const map = new Map<string, string>()
+  map.set('', 'Semua Fundraiser')
 
-  const userIdStr = user?.value?.id ? String(user.value.id) : null
-  const userEmail = user?.value?.email ? String(user.value.email).toLowerCase() : null
-
-  const isManagedByUser = (entity: any) => {
-    if (!entity) return false
-    const checkIds = [
-      'atasan_id',
-      'leader_id',
-      'parent_id',
-      'supervisor_id',
-      'manager_id',
-      'manager_id',
-    ]
-    for (const k of checkIds) {
-      if (entity[k] && userIdStr && String(entity[k]) === userIdStr) return true
-    }
-    // nested objects
-    const nestedKeys = ['atasan', 'leader', 'parent', 'supervisor', 'manager']
-    for (const nk of nestedKeys) {
-      const obj = entity[nk]
-      if (obj) {
-        if (obj.id && userIdStr && String(obj.id) === userIdStr) return true
-        if (obj.email && userEmail && String(obj.email).toLowerCase() === userEmail) return true
-      }
-    }
-    // emails on root
-    const emailKeys = ['atasan_email', 'leader_email', 'parent_email', 'supervisor_email', 'manager_email', 'email']
-    for (const ek of emailKeys) {
-      if (entity[ek] && userEmail && String(entity[ek]).toLowerCase() === userEmail) return true
-    }
-    return false
-  }
-
-  // Helper to add an entry
   const addEntry = (id: any, label: any) => {
     if (!id) return
     const key = String(id)
+    if (shouldRestrict && !allowedSet.has(key)) return
     if (!map.has(key)) map.set(key, String(label || '-'))
   }
 
-  // If user is 'atasan' show only themselves
-  if (isAtasan && user?.value?.id) {
-    addEntry(user.value.id, user.value.name || user.value.nama || user.value.email || 'Saya')
-    return Array.from(map.entries()).map(([value, label]) => ({ value, label }))
-  }
-
-  // For leaders, include only subordinates + themselves
-  if (isLeader && user?.value?.id) {
-    // add karyawan entries that look like subordinates (try common keys)
-    for (const item of fundraiserList.value) {
-      if (!item || !item.id) continue
-      if (isManagedByUser(item) || (userIdStr && String(item.id) === userIdStr)) {
-        addEntry(item.id, item.name || item.nama || item.label || item.email || item.username)
-      }
-    }
-
-    // include PICs from donatur that belong to subordinates
-    for (const donor of donaturList.value) {
-      const pic = donor?.pic_user || (donor?.pic ? { id: donor.pic, nama: donor.pic_nama || donor.pic_name || '' } : null)
-      if (!pic || !pic.id) continue
-      // check pic object for manager/leader relation or id/email match
-      if (isManagedByUser(pic) || (userIdStr && String(pic.id) === userIdStr)) {
-        addEntry(pic.id, pic.nama || pic.name || pic.label || '-')
-      }
-    }
-
-    // Ensure current user is present
-    addEntry(user.value.id, user.value.name || user.value.nama || user.value.email || 'Saya')
-
-    return Array.from(map.entries()).map(([value, label]) => ({ value, label }))
-  }
-
-  // Default behavior: include all fundraisers + unique PICs
-  // include the global "Semua Fundraiser" option in default case
-  map.set('', 'Semua Fundraiser')
   for (const item of fundraiserList.value) {
-    if (item?.id) addEntry(item.id, item.name || item.nama || '-')
+    if (!item || !item.id) continue
+    addEntry(item.id, item.name || item.nama || item.label || item.email || item.username)
   }
+
   for (const donor of donaturList.value) {
     const pic = donor?.pic_user || (donor?.pic ? { id: donor.pic, nama: donor.pic_nama || donor.pic_name || '' } : null)
     if (pic && pic.id) addEntry(pic.id, pic.nama || pic.name || '-')
+  }
+
+  if (user?.value?.id) {
+    addEntry(user.value.id, user.value.name || user.value.nama || user.value.email || 'Saya')
+  }
+
+  if (shouldRestrict) {
+    for (const id of allowedSet) {
+      if (!map.has(id)) {
+        map.set(id, 'Fundraiser')
+      }
+    }
   }
 
   return Array.from(map.entries()).map(([value, label]) => ({ value, label }))
@@ -474,25 +449,9 @@ const fundraiserOptions = computed(() => {
 
 // Compute subordinate IDs for leader users (used to filter datasource client-side)
 const subordinateFundraiserIds = computed(() => {
-  const roleName = String(user?.value?.role?.name || '').toLowerCase()
-  const isLeader = roleName.includes('leader') || roleName.includes('lead')
-  const set = new Set<string>()
-  if (!isLeader || !user?.value?.id) return set
-
-  for (const item of fundraiserList.value) {
-    if (!item || !item.id) continue
-    if (isManagedByUser(item) || (userIdStr && String(item.id) === userIdStr)) set.add(String(item.id))
-  }
-
-  for (const donor of donaturList.value) {
-    const pic = donor?.pic_user || (donor?.pic ? { id: donor.pic } : null)
-    if (!pic || !pic.id) continue
-    if (isManagedByUser(pic) || (userIdStr && String(pic.id) === userIdStr)) set.add(String(pic.id))
-  }
-
-  // Always include current user id
-  set.add(String(user.value.id))
-  return set
+  const allowed = allowedFundraiserIds.value.map((id: any) => String(id)).filter(Boolean)
+  if (allowed.length) return new Set<string>(allowed)
+  return null
 })
 
 const kantorCabangOptions = computed(() => [
@@ -936,13 +895,18 @@ const createDatasource = () => {
           const isLeader = roleName.includes('leader') || roleName.includes('lead')
           if (isLeader) {
             const subSet = subordinateFundraiserIds.value
-            const filtered = rowsThisPage.filter((r: any) => {
-              const fId = r.fundraiser_id != null ? String(r.fundraiser_id) : null
-              const fpId = r.fundraiser_pic_id != null ? String(r.fundraiser_pic_id) : null
-              return (fId && subSet.has(fId)) || (fpId && subSet.has(fpId))
-            })
-            const lastRow = filtered.length >= 0 ? filtered.length : undefined
-            params.successCallback(filtered, lastRow)
+            if (subSet && subSet.size > 0) {
+              const filtered = rowsThisPage.filter((r: any) => {
+                const fId = r.fundraiser_id != null ? String(r.fundraiser_id) : null
+                const fpId = r.fundraiser_pic_id != null ? String(r.fundraiser_pic_id) : null
+                return (fId && subSet.has(fId)) || (fpId && subSet.has(fpId))
+              })
+              const lastRow = filtered.length >= 0 ? filtered.length : undefined
+              params.successCallback(filtered, lastRow)
+            } else {
+              const lastRow = total >= 0 ? total : undefined
+              params.successCallback(rowsThisPage, lastRow)
+            }
           } else {
             const lastRow = total >= 0 ? total : undefined
             params.successCallback(rowsThisPage, lastRow)
@@ -989,7 +953,11 @@ const refreshGrid = () => {
   const fetchFilterOptions = async () => {
     try {
       const kantorUrl = isAdmin() ? '/admin/api/kantor-cabang?per_page=1000' : '/admin/api/kantor-cabang?per_page=1000&only_assigned=1'
-      const karyawanUrl = isAdmin() ? '/admin/api/karyawan?per_page=1000' : '/admin/api/karyawan?per_page=1000&only_assigned=1'
+      const baseKaryawanUrl = isAdmin() ? '/admin/api/karyawan?per_page=1000' : '/admin/api/karyawan?per_page=1000&only_assigned=1'
+      const includeIdsParam = allowedFundraiserIds.value.length
+        ? `&include_ids[]=${allowedFundraiserIds.value.join('&include_ids[]=')}`
+        : ''
+      const karyawanUrl = `${baseKaryawanUrl}${includeIdsParam}`
       const [kantorRes, programRes, fundraiserRes] = await Promise.all([
         fetch(kantorUrl, { credentials: 'same-origin' }),
         fetch('/admin/api/program?per_page=1000', { credentials: 'same-origin' }),
@@ -1021,7 +989,14 @@ const refreshGrid = () => {
       const mitraRes = await fetch('/admin/api/mitra?per_page=1000', { credentials: 'same-origin' })
       if (mitraRes.ok) {
         const json = await mitraRes.json()
-        if (json.success) mitraList.value = Array.isArray(json.data) ? json.data : json.data?.data || []
+        if (json.success) {
+          const payload = Array.isArray(json.data) ? json.data : json.data?.data || []
+          mitraList.value = Array.isArray(payload)
+            ? (allowedMitraIds.value.length
+              ? payload.filter((item: any) => allowedMitraIds.value.includes(String(item.id)))
+              : payload)
+            : []
+        }
       }
     } catch (e) {
       console.error('Error fetching mitra options:', e)

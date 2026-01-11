@@ -155,6 +155,7 @@ const toast = useToast()
 const { fetchUser, hasPermission, isAdmin, user } = useAuth()
 
 const allowedPicIds = computed(() => {
+  if (isAdmin()) return []
   const donaturIds = Array.isArray((user.value as any)?.visible_donatur_ids)
     ? (user.value as any).visible_donatur_ids
     : []
@@ -233,9 +234,11 @@ const mitraOptions = ref<any[]>([])
 
 const picSelectOptions = computed(() => [
   { value: '', label: 'Semua Fundraiser' },
-  ...(allowedPicIds.value.length
-    ? karyawanOptions.value.filter((item: any) => allowedPicIds.value.includes(String(item.id)))
-    : karyawanOptions.value
+  ...(isAdmin()
+    ? karyawanOptions.value
+    : allowedPicIds.value.length
+      ? karyawanOptions.value.filter((item: any) => allowedPicIds.value.includes(String(item.id)))
+      : karyawanOptions.value
   ).map((item: any) => ({ value: String(item.id), label: item.nama || item.name || '-' })),
 ])
 
@@ -570,7 +573,7 @@ const fetchReferenceData = async () => {
     })()
 
     const kantorUrl = (isAdmin() || isRoleAdminCabang) ? '/admin/api/kantor-cabang?per_page=1000' : '/admin/api/kantor-cabang?per_page=1000&only_assigned=1'
-    const includeIdsParam = allowedPicIds.value.length
+    const includeIdsParam = (!isAdmin() && allowedPicIds.value.length)
       ? `&include_ids[]=${allowedPicIds.value.join('&include_ids[]=')}`
       : ''
 

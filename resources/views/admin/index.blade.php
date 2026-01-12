@@ -35,6 +35,8 @@
             100% { transform: rotate(360deg); }
         }
     </style>
+
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     
     @vite(['resources/js/admin.js'])
 </head>

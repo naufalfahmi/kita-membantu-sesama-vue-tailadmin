@@ -6,7 +6,7 @@ use App\Models\Absensi;
 use App\Models\AttendanceReminderLog;
 use App\Models\Holiday;
 use App\Models\User;
-use App\Services\PushifyService;
+use App\Services\OneSignalService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -14,9 +14,9 @@ class SendAttendanceReminders extends Command
 {
     protected $signature = 'absensi:reminders';
 
-    protected $description = 'Send Pushify reminders for clock-in and clock-out based on tipe absensi schedule';
+    protected $description = 'Send push reminders for clock-in and clock-out based on tipe absensi schedule';
 
-    public function handle(PushifyService $pushify): int
+    public function handle(OneSignalService $push): int
     {
         $now = now('Asia/Jakarta');
         $today = $now->toDateString();
@@ -44,7 +44,7 @@ class SendAttendanceReminders extends Command
             if ($tipe->jam_masuk && ! $attendance) {
                 $jamMasuk = $this->parseTimeToday($tipe->jam_masuk, $now->timezoneName);
                 if ($this->shouldSendReminder($user->id, $today, 'masuk', $now, $jamMasuk)) {
-                    if ($this->notifyUser($pushify, $user, 'Reminder Absen Masuk', "Hai {$user->name}, mohon lakukan absen masuk kerja.")) {
+                    if ($this->notifyUser($push, $user, 'Reminder Absen Masuk', "Hai {$user->name}, mohon lakukan absen masuk kerja.")) {
                         $this->logReminder($user->id, $today, 'masuk');
                         $sentCount++;
                     }
@@ -55,7 +55,7 @@ class SendAttendanceReminders extends Command
             if ($tipe->jam_keluar && $attendance && $attendance->jam_keluar === null) {
                 $jamKeluar = $this->parseTimeToday($tipe->jam_keluar, $now->timezoneName);
                 if ($this->shouldSendReminder($user->id, $today, 'keluar', $now, $jamKeluar)) {
-                    if ($this->notifyUser($pushify, $user, 'Reminder Absen Keluar', "Hai {$user->name}, mohon lakukan absen keluar kerja.")) {
+                    if ($this->notifyUser($push, $user, 'Reminder Absen Keluar', "Hai {$user->name}, mohon lakukan absen keluar kerja.")) {
                         $this->logReminder($user->id, $today, 'keluar');
                         $sentCount++;
                     }
@@ -100,21 +100,13 @@ class SendAttendanceReminders extends Command
         return $now->greaterThanOrEqualTo($targetTime) && $now->diffInMinutes($targetTime) <= 5;
     }
 
-    private function notifyUser(PushifyService $pushify, User $user, string $title, string $description): bool
+    private function notifyUser(OneSignalService $push, User $user, string $title, string $description): bool
     {
         $url = url('/admin/absensi');
-        $success = false;
-
-        foreach ($user->pushSubscriptions as $subscription) {
-            if (! $subscription->pushify_subscriber_id) {
-                continue;
-            }
-
-            $success = $pushify->sendPersonal($subscription->pushify_subscriber_id, $title, $description, $url) || $success;
-        }
+        $success = $push->sendToExternalId((string) $user->id, $title, $description, $url);
 
         if (! $success) {
-            Log::warning('No push subscriptions sent for user', [
+            Log::warning('No push sent for user', [
                 'user_id' => $user->id,
                 'title' => $title,
             ]);

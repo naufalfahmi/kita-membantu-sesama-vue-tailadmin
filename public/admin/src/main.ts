@@ -15,7 +15,7 @@ import VueApexCharts from 'vue3-apexcharts'
 import { AgGridVue } from 'ag-grid-vue3'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
-import { registerPushify } from '@/utils/registerPushify'
+import { initOneSignal } from '@/utils/oneSignal'
 
 const app = createApp(App)
 
@@ -43,8 +43,20 @@ app.use(Toast, {
   containerClass: 'toast-container-custom',
 })
 
-router.isReady().then(() => {
+router.isReady().then(async () => {
   app.mount('#app')
-  // fire-and-forget push registration
-  registerPushify()
+
+  // initialize OneSignal with external user id if available
+  try {
+    const res = await fetch('/admin/api/user', { credentials: 'same-origin' })
+    if (res.ok) {
+      const data = await res.json().catch(() => null)
+      const externalId = data?.data?.id || data?.user?.id || data?.id || null
+      await initOneSignal(externalId ? String(externalId) : undefined)
+    } else {
+      await initOneSignal(undefined)
+    }
+  } catch (e) {
+    console.warn('[OneSignal] init skipped', e)
+  }
 })

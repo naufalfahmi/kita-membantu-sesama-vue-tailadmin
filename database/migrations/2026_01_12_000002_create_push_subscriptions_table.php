@@ -14,7 +14,6 @@ return new class extends Migration
             $table->string('endpoint', 500);
             $table->string('auth_key', 191)->nullable();
             $table->string('p256dh', 191)->nullable();
-            $table->string('pushify_subscriber_id')->nullable()->index();
             $table->string('device')->nullable();
             $table->string('user_agent')->nullable();
             $table->timestamp('subscribed_at')->nullable();

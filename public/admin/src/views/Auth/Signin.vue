@@ -183,7 +183,7 @@ import { useRouter } from 'vue-router'
 import { resetAuthState, checkAuth } from '@/router'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
-import { registerPushify } from '@/utils/registerPushify'
+import { initOneSignal } from '@/utils/oneSignal'
 
 const router = useRouter()
 const email = ref('')
@@ -310,11 +310,11 @@ const handleSubmit = async (e?: Event) => {
       // Force check auth to update state before redirect
       const authResult = await checkAuth(true)
 
-      // Attempt to register push subscription right after login
+      // Initialize OneSignal after login (without blocking redirect)
       try {
-        await registerPushify()
+        initOneSignal()
       } catch (e) {
-        console.warn('[Pushify] post-login registration skipped', e)
+        console.warn('[OneSignal] post-login init skipped', e)
       }
       
       // Always redirect to welcome page after successful login

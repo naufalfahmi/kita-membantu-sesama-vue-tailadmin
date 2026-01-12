@@ -16,7 +16,6 @@ class PushSubscription extends Model
         'endpoint',
         'auth_key',
         'p256dh',
-        'pushify_subscriber_id',
         'device',
         'user_agent',
         'subscribed_at',

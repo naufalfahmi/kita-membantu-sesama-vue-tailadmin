@@ -64,7 +64,7 @@
       <h3 class="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">Notifikasi</h3>
 
       <div class="max-w-md">
-        <p class="mb-4 text-sm text-gray-600 dark:text-white/70">Kirim notifikasi percobaan ke perangkat Anda yang terdaftar pada Pushify.</p>
+        <p class="mb-4 text-sm text-gray-600 dark:text-white/70">Kirim notifikasi percobaan ke perangkat Anda yang sudah terdaftar untuk push (OneSignal).</p>
         <div class="flex items-center gap-3">
           <button @click="testPush" :disabled="pushLoading" class="inline-flex items-center px-4 py-2 bg-brand-500 text-white rounded-md">
             <span v-if="!pushLoading">Test Notifikasi</span>
@@ -80,9 +80,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
-
-const currentPageTitle = 'Account Settings'
+// PageBreadcrumb import removed (unused)
 
 const form = ref({ current_password: '', new_password: '', new_password_confirmation: '' })
 const errors = ref<any>({})
@@ -147,7 +145,7 @@ const testPush = async () => {
 
   try {
     const csrf = await getCsrf()
-    const res = await fetch('/admin/api/pushify/test', {
+    const res = await fetch('/admin/api/onesignal/test', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

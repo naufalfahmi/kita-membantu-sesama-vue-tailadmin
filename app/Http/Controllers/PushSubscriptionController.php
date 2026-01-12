@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PushSubscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Services\PushifyService;
+use App\Services\OneSignalService;
 
 class PushSubscriptionController extends Controller
 {
@@ -15,7 +15,6 @@ class PushSubscriptionController extends Controller
             'endpoint' => 'required|string',
             'keys.auth' => 'nullable|string',
             'keys.p256dh' => 'nullable|string',
-            'pushify_subscriber_id' => 'nullable|string',
             'device' => 'nullable|string|max:100',
         ]);
 
@@ -38,7 +37,6 @@ class PushSubscriptionController extends Controller
             [
                 'auth_key' => $request->input('keys.auth'),
                 'p256dh' => $request->input('keys.p256dh'),
-                'pushify_subscriber_id' => $request->input('pushify_subscriber_id'),
                 'device' => $data['device'] ?? null,
                 'user_agent' => $request->userAgent(),
                 'subscribed_at' => now(),
@@ -76,31 +74,16 @@ class PushSubscriptionController extends Controller
         ]);
     }
 
-    public function test(Request $request, PushifyService $pushify)
+    public function test(Request $request, OneSignalService $push)
     {
         $user = $request->user();
 
-        $subscription = PushSubscription::where('user_id', $user->id)
-            ->whereNotNull('pushify_subscriber_id')
-            ->orderByDesc('last_seen_at')
-            ->first();
-
-        if (! $subscription) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No Pushify subscription with subscriber id found for user.'
-            ], 404);
-        }
-
-        $title = 'Test Notifikasi';
-        $description = 'Notifikasi percobaan dari aplikasi.';
-
-        $sent = $pushify->sendPersonal($subscription->pushify_subscriber_id, $title, $description, url('/admin/dashboard'));
+        $sent = $push->sendToExternalId((string) $user->id, 'Test Notifikasi', 'Notifikasi percobaan dari aplikasi.', url('/admin/dashboard'));
 
         if (! $sent) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pushify request failed'
+                'message' => 'OneSignal request failed'
             ], 500);
         }
 

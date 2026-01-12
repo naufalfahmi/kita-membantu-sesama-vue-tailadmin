@@ -172,48 +172,11 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::post('/user/profile', [LoginController::class, 'updateProfile'])->name('admin.api.user.profile');
     Route::post('/user/password', [LoginController::class, 'changePassword'])->name('admin.api.user.password');
 
-    // Push subscriptions (Pushify)
+    // Push subscriptions
     Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])->name('admin.api.push-subscriptions.store');
     Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('admin.api.push-subscriptions.destroy');
-    // Test push via Pushify for current user
-    Route::post('/pushify/test', [PushSubscriptionController::class, 'test'])->name('admin.api.pushify.test');
-    // Debug: list current user's push subscriptions (local/dev only)
-    Route::get('/pushify/debug-subscriptions', function () {
-        if (!app()->environment('local') && !config('app.debug')) {
-            abort(403);
-        }
-        $user = auth()->user();
-        $subs = \App\Models\PushSubscription::where('user_id', $user->id)->orderByDesc('last_seen_at')->get();
-        return response()->json([
-            'success' => true,
-            'data' => $subs,
-        ]);
-    })->name('admin.api.pushify.debug')->middleware(['web', 'auth']);
-
-    // Debug: send manual Pushify personal notification (dev only)
-    Route::post('/pushify/send-manual', function (\Illuminate\Http\Request $request, \App\Services\PushifyService $pushify) {
-        if (!app()->environment('local') && !config('app.debug')) {
-            abort(403);
-        }
-
-        $data = $request->validate([
-            'subscriber_id' => 'required|string',
-            'title' => 'nullable|string',
-            'description' => 'nullable|string',
-            'url' => 'nullable|url',
-        ]);
-
-        $title = $data['title'] ?? 'Test Notifikasi (manual)';
-        $description = $data['description'] ?? 'Ini adalah notifikasi percobaan.';
-
-        $sent = $pushify->sendPersonal($data['subscriber_id'], $title, $description, $data['url'] ?? url('/'));
-
-        if (! $sent) {
-            return response()->json(['success' => false, 'message' => 'Pushify send failed (check logs or config)'], 500);
-        }
-
-        return response()->json(['success' => true, 'message' => 'Sent']);
-    })->name('admin.api.pushify.send_manual')->middleware(['web', 'auth']);
+    // Test push via OneSignal for current user
+    Route::post('/onesignal/test', [PushSubscriptionController::class, 'test'])->name('admin.api.onesignal.test');
     
     // Dashboard API
     Route::get('/dashboard/stats', [\App\Http\Controllers\DashboardController::class, 'stats'])->name('admin.api.dashboard.stats');

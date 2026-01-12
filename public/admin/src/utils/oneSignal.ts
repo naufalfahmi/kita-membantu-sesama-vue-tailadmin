@@ -67,9 +67,11 @@ export const initOneSignal = async (externalUserId?: string): Promise<boolean> =
 
       if (externalUserId) {
         try {
-          await OneSignalInstance.login(String(externalUserId))
+          // Register external user id with OneSignal so server-side sends match
+          await OneSignalInstance.setExternalUserId(String(externalUserId))
+          console.info('[OneSignal] external user id set', externalUserId)
         } catch (e) {
-          console.warn('[OneSignal] login failed', e)
+          console.warn('[OneSignal] setExternalUserId failed', e)
         }
       }
     })

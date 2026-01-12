@@ -49,6 +49,16 @@ class OneSignalService
             return false;
         }
 
+        // Log response body for debugging (contains recipients/delivery info)
+        try {
+            Log::info('OneSignal response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Throwable $e) {
+            // ignore logging errors
+        }
+
         return true;
     }
 }

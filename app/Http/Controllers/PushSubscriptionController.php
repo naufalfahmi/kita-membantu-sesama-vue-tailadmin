@@ -108,18 +108,30 @@ class PushSubscriptionController extends Controller
 
         $data = $validator->validated();
 
-        $sub = PushSubscription::updateOrCreate(
-            [
+        // Check if record already exists for this user + player_id
+        $sub = PushSubscription::where('user_id', $user->id)
+            ->where('onesignal_player_id', $data['player_id'])
+            ->first();
+
+        if ($sub) {
+            // Update existing
+            $sub->update([
+                'device' => $data['device'] ?? $sub->device,
+                'user_agent' => $request->userAgent(),
+                'last_seen_at' => now(),
+            ]);
+        } else {
+            // Create new with endpoint set to player_id as placeholder
+            $sub = PushSubscription::create([
                 'user_id' => $user->id,
                 'onesignal_player_id' => $data['player_id'],
-            ],
-            [
+                'endpoint' => 'onesignal:' . $data['player_id'], // placeholder endpoint
                 'device' => $data['device'] ?? null,
                 'user_agent' => $request->userAgent(),
                 'subscribed_at' => now(),
                 'last_seen_at' => now(),
-            ]
-        );
+            ]);
+        }
 
         return response()->json(['success' => true, 'data' => $sub]);
     }

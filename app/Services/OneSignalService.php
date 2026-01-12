@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\PushSubscription;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -25,9 +26,24 @@ class OneSignalService
             return false;
         }
 
+        // Try to get player_ids from DB for these user IDs
+        $playerIds = PushSubscription::whereIn('user_id', $externalIds)
+            ->whereNotNull('onesignal_player_id')
+            ->pluck('onesignal_player_id')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        if (empty($playerIds)) {
+            Log::warning('OneSignal: no player IDs found for users', [
+                'user_ids' => $externalIds,
+            ]);
+            return false;
+        }
+
         $payload = [
             'app_id' => $appId,
-            'include_external_user_ids' => array_values($externalIds),
+            'include_player_ids' => $playerIds, // use player_ids instead of external_user_ids
             'headings' => ['en' => $title],
             'contents' => ['en' => $message],
         ];
@@ -35,6 +51,11 @@ class OneSignalService
         if ($url) {
             $payload['url'] = $url;
         }
+
+        Log::info('OneSignal sending', [
+            'player_ids' => $playerIds,
+            'title' => $title,
+        ]);
 
         $response = Http::withHeaders([
             'Authorization' => "Basic {$apiKey}",

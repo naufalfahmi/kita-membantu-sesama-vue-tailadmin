@@ -28,7 +28,20 @@ export const initOneSignal = async (externalUserId?: string): Promise<boolean> =
     ;(window as any).OneSignalDeferred.push(async function (OneSignalInstance: any) {
       await OneSignalInstance.init({
         appId: APP_ID,
+        serviceWorkerPath: '/OneSignalSDKWorker.js',
+        serviceWorkerUpdaterPath: '/OneSignalSDKWorker.js',
+        serviceWorkerParam: { scope: '/' },
       })
+
+      try {
+        // Ensure we have permission; returns 'granted' | 'denied' | 'default'
+        const permission = await OneSignalInstance.Notifications.requestPermission()
+        if (permission !== 'granted') {
+          console.warn('[OneSignal] notifications not granted, current state:', permission)
+        }
+      } catch (err) {
+        console.warn('[OneSignal] permission request failed', err)
+      }
 
       if (externalUserId) {
         try {

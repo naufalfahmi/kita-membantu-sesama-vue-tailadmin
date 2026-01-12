@@ -34,13 +34,35 @@ export const initOneSignal = async (externalUserId?: string): Promise<boolean> =
       })
 
       try {
-        // Ensure we have permission; returns 'granted' | 'denied' | 'default'
+        // Skip if not supported (e.g., in-app browsers)
+        const supported = await OneSignalInstance.Notifications.isPushSupported()
+        if (!supported) {
+          console.warn('[OneSignal] push not supported in this browser')
+          return
+        }
+      } catch (err) {
+        console.warn('[OneSignal] support check failed', err)
+      }
+
+      try {
+        // Ensure permission; OneSignal may return a string or boolean
         const permission = await OneSignalInstance.Notifications.requestPermission()
-        if (permission !== 'granted') {
+        const granted = permission === 'granted' || permission === true
+        if (!granted) {
           console.warn('[OneSignal] notifications not granted, current state:', permission)
         }
       } catch (err) {
         console.warn('[OneSignal] permission request failed', err)
+      }
+
+      try {
+        // Ensure subscription is opted-in; this is required for repeat sends
+        const isOptedIn = await OneSignalInstance.User.PushSubscription.optedIn
+        if (!isOptedIn) {
+          await OneSignalInstance.User.PushSubscription.optIn()
+        }
+      } catch (err) {
+        console.warn('[OneSignal] opt-in failed', err)
       }
 
       if (externalUserId) {

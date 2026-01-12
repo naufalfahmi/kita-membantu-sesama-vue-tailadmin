@@ -58,52 +58,14 @@ export const initOneSignal = async (externalUserId?: string): Promise<boolean> =
       try {
         // Ensure subscription is opted-in; this is required for repeat sends
         const isOptedIn = await OneSignalInstance.User.PushSubscription.optedIn
+        console.info('[OneSignal] current opt-in status:', isOptedIn)
         if (!isOptedIn) {
+          console.info('[OneSignal] attempting opt-in...')
           await OneSignalInstance.User.PushSubscription.optIn()
+          console.info('[OneSignal] opt-in completed')
         }
       } catch (err) {
         console.warn('[OneSignal] opt-in failed', err)
-      }
-
-      // After opt-in, collect player id and register it with backend for debugging
-      try {
-        // get player id (OneSignal subscription id)
-        const playerId = await (window as any).OneSignal?.getUserId()
-        const extId = await (window as any).OneSignal?.getExternalUserId()
-        if (playerId) {
-            try {
-              let csrfToken = ''
-              try {
-                const res = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
-                const json = await res.json()
-                csrfToken = json?.csrf_token || ''
-              } catch (_) {
-                csrfToken = ''
-              }
-
-              const regRes = await fetch('/admin/api/onesignal/register', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-CSRF-TOKEN': csrfToken
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ player_id: playerId, device: navigator.userAgent, external_user_id: extId || undefined })
-              })
-
-              if (!regRes.ok) {
-                console.warn('[OneSignal] backend register responded not OK', regRes.status)
-              } else {
-                console.info('[OneSignal] registered player id to backend', playerId)
-              }
-            } catch (e) {
-              console.warn('[OneSignal] backend register failed', e)
-            }
-        } else {
-          console.info('[OneSignal] player id not available yet')
-        }
-      } catch (err) {
-        console.warn('[OneSignal] collect player id failed', err)
       }
 
       if (externalUserId) {
@@ -128,6 +90,55 @@ export const initOneSignal = async (externalUserId?: string): Promise<boolean> =
           console.warn('[OneSignal] setExternalUserId failed', e)
         }
       }
+
+      // After ALL setup complete, register player ID with backend (wait a bit for opt-in to complete)
+      setTimeout(async () => {
+        try {
+          const playerId = await OneSignalInstance.User.PushSubscription.id
+          console.info('[OneSignal] player id retrieved:', playerId)
+          
+          if (playerId) {
+            try {
+              let csrfToken = ''
+              try {
+                const res = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+                const json = await res.json()
+                csrfToken = json?.csrf_token || ''
+              } catch (_) {
+                csrfToken = ''
+              }
+
+              const payload = { player_id: playerId, device: navigator.userAgent }
+              console.info('[OneSignal] posting to /admin/api/onesignal/register', payload)
+
+              const regRes = await fetch('/admin/api/onesignal/register', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': csrfToken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload)
+              })
+
+              const regData = await regRes.json().catch(() => null)
+              console.info('[OneSignal] backend register response:', regRes.status, regData)
+              
+              if (!regRes.ok) {
+                console.warn('[OneSignal] backend register responded not OK', regRes.status, regData)
+              } else {
+                console.info('[OneSignal] successfully registered player id to backend', playerId)
+              }
+            } catch (e) {
+              console.warn('[OneSignal] backend register failed', e)
+            }
+          } else {
+            console.info('[OneSignal] player id not available after opt-in')
+          }
+        } catch (err) {
+          console.warn('[OneSignal] collect player id failed', err)
+        }
+      }, 2000) // wait 2 seconds for opt-in to complete
     })
     return true
   } catch (e) {

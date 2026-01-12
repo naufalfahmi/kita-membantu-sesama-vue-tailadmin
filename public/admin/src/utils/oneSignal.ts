@@ -65,6 +65,34 @@ export const initOneSignal = async (externalUserId?: string): Promise<boolean> =
         console.warn('[OneSignal] opt-in failed', err)
       }
 
+      // After opt-in, collect player id and register it with backend for debugging
+      try {
+        // get player id (OneSignal subscription id)
+        const playerId = await (window as any).OneSignal?.getUserId()
+        const extId = await (window as any).OneSignal?.getExternalUserId()
+        if (playerId) {
+          try {
+            const csrf = await fetch('/admin/api/csrf-token').then(r=>r.text()).catch(()=>null)
+            await fetch('/admin/api/onesignal/register', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf || ''
+              },
+              credentials: 'same-origin',
+              body: JSON.stringify({ player_id: playerId, device: navigator.userAgent, external_user_id: extId || undefined })
+            })
+            console.info('[OneSignal] registered player id to backend', playerId)
+          } catch (e) {
+            console.warn('[OneSignal] backend register failed', e)
+          }
+        } else {
+          console.info('[OneSignal] player id not available yet')
+        }
+      } catch (err) {
+        console.warn('[OneSignal] collect player id failed', err)
+      }
+
       if (externalUserId) {
         try {
           // Prefer the global OneSignal API if available

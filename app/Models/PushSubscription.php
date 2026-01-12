@@ -17,6 +17,7 @@ class PushSubscription extends Model
         'auth_key',
         'p256dh',
         'device',
+        'onesignal_player_id',
         'user_agent',
         'subscribed_at',
         'last_seen_at',
@@ -25,6 +26,10 @@ class PushSubscription extends Model
     protected $casts = [
         'subscribed_at' => 'datetime',
         'last_seen_at' => 'datetime',
+    ];
+
+    protected $hidden = [
+        // hide internal ids from default JSON if needed
     ];
 
     public function user(): BelongsTo

@@ -92,4 +92,35 @@ class PushSubscriptionController extends Controller
             'message' => 'Test notification sent.'
         ]);
     }
+
+    public function registerOneSignal(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'player_id' => 'required|string',
+            'device' => 'nullable|string|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        $user = $request->user();
+
+        $data = $validator->validated();
+
+        $sub = PushSubscription::updateOrCreate(
+            [
+                'user_id' => $user->id,
+                'onesignal_player_id' => $data['player_id'],
+            ],
+            [
+                'device' => $data['device'] ?? null,
+                'user_agent' => $request->userAgent(),
+                'subscribed_at' => now(),
+                'last_seen_at' => now(),
+            ]
+        );
+
+        return response()->json(['success' => true, 'data' => $sub]);
+    }
 }

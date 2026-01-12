@@ -177,6 +177,7 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('admin.api.push-subscriptions.destroy');
     // Test push via OneSignal for current user
     Route::post('/onesignal/test', [PushSubscriptionController::class, 'test'])->name('admin.api.onesignal.test');
+    Route::post('/onesignal/register', [PushSubscriptionController::class, 'registerOneSignal'])->name('admin.api.onesignal.register');
     
     // Dashboard API
     Route::get('/dashboard/stats', [\App\Http\Controllers\DashboardController::class, 'stats'])->name('admin.api.dashboard.stats');

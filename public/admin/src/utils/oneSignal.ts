@@ -71,21 +71,34 @@ export const initOneSignal = async (externalUserId?: string): Promise<boolean> =
         const playerId = await (window as any).OneSignal?.getUserId()
         const extId = await (window as any).OneSignal?.getExternalUserId()
         if (playerId) {
-          try {
-            const csrf = await fetch('/admin/api/csrf-token').then(r=>r.text()).catch(()=>null)
-            await fetch('/admin/api/onesignal/register', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrf || ''
-              },
-              credentials: 'same-origin',
-              body: JSON.stringify({ player_id: playerId, device: navigator.userAgent, external_user_id: extId || undefined })
-            })
-            console.info('[OneSignal] registered player id to backend', playerId)
-          } catch (e) {
-            console.warn('[OneSignal] backend register failed', e)
-          }
+            try {
+              let csrfToken = ''
+              try {
+                const res = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
+                const json = await res.json()
+                csrfToken = json?.csrf_token || ''
+              } catch (_) {
+                csrfToken = ''
+              }
+
+              const regRes = await fetch('/admin/api/onesignal/register', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': csrfToken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ player_id: playerId, device: navigator.userAgent, external_user_id: extId || undefined })
+              })
+
+              if (!regRes.ok) {
+                console.warn('[OneSignal] backend register responded not OK', regRes.status)
+              } else {
+                console.info('[OneSignal] registered player id to backend', playerId)
+              }
+            } catch (e) {
+              console.warn('[OneSignal] backend register failed', e)
+            }
         } else {
           console.info('[OneSignal] player id not available yet')
         }

@@ -67,9 +67,22 @@ export const initOneSignal = async (externalUserId?: string): Promise<boolean> =
 
       if (externalUserId) {
         try {
-          // Register external user id with OneSignal so server-side sends match
-          await OneSignalInstance.setExternalUserId(String(externalUserId))
-          console.info('[OneSignal] external user id set', externalUserId)
+          // Prefer the global OneSignal API if available
+          const globalOneSignal = (window as any).OneSignal || OneSignal
+          if (globalOneSignal && typeof globalOneSignal.setExternalUserId === 'function') {
+            await globalOneSignal.setExternalUserId(String(externalUserId))
+            console.info('[OneSignal] external user id set (global)', externalUserId)
+          } else if (OneSignalInstance && typeof OneSignalInstance.setExternalUserId === 'function') {
+            await OneSignalInstance.setExternalUserId(String(externalUserId))
+            console.info('[OneSignal] external user id set (instance)', externalUserId)
+          } else if (globalOneSignal && typeof globalOneSignal.login === 'function') {
+            // fallback: older SDKs had login/identify methods
+            await globalOneSignal.login(String(externalUserId))
+            console.info('[OneSignal] external user id set via login fallback', externalUserId)
+          } else {
+            console.warn('[OneSignal] setExternalUserId not available on SDK instance')
+            console.info('OneSignal available methods:', Object.keys(globalOneSignal || {}))
+          }
         } catch (e) {
           console.warn('[OneSignal] setExternalUserId failed', e)
         }

@@ -15,7 +15,7 @@ class PushSubscriptionController extends Controller
             'endpoint' => 'required|string',
             'keys.auth' => 'nullable|string',
             'keys.p256dh' => 'nullable|string',
-            'device' => 'nullable|string|max:100',
+            'device' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -97,7 +97,7 @@ class PushSubscriptionController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'player_id' => 'required|string',
-            'device' => 'nullable|string|max:100',
+            'device' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {

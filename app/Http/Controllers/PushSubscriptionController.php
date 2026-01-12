@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PushSubscription;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Services\PushifyService;
 
 class PushSubscriptionController extends Controller
 {
@@ -72,6 +73,40 @@ class PushSubscriptionController extends Controller
         return response()->json([
             'success' => true,
             'deleted' => $deleted,
+        ]);
+    }
+
+    public function test(Request $request, PushifyService $pushify)
+    {
+        $user = $request->user();
+
+        $subscription = PushSubscription::where('user_id', $user->id)
+            ->whereNotNull('pushify_subscriber_id')
+            ->orderByDesc('last_seen_at')
+            ->first();
+
+        if (! $subscription) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No Pushify subscription with subscriber id found for user.'
+            ], 404);
+        }
+
+        $title = 'Test Notifikasi';
+        $description = 'Notifikasi percobaan dari aplikasi.';
+
+        $sent = $pushify->sendPersonal($subscription->pushify_subscriber_id, $title, $description, url('/admin/dashboard'));
+
+        if (! $sent) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pushify request failed'
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Test notification sent.'
         ]);
     }
 }

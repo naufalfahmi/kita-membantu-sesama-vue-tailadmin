@@ -59,6 +59,21 @@
         </form>
       </div>
     </div>
+    
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6 mt-6">
+      <h3 class="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">Notifikasi</h3>
+
+      <div class="max-w-md">
+        <p class="mb-4 text-sm text-gray-600 dark:text-white/70">Kirim notifikasi percobaan ke perangkat Anda yang terdaftar pada Pushify.</p>
+        <div class="flex items-center gap-3">
+          <button @click="testPush" :disabled="pushLoading" class="inline-flex items-center px-4 py-2 bg-brand-500 text-white rounded-md">
+            <span v-if="!pushLoading">Test Notifikasi</span>
+            <span v-else>Sending...</span>
+          </button>
+        </div>
+        <p v-if="pushMessage" class="mt-3 text-sm" :class="pushError ? 'text-red-600' : 'text-green-600'">{{ pushMessage }}</p>
+      </div>
+    </div>
   </AdminLayout>
 </template>
 
@@ -119,6 +134,43 @@ const submit = async () => {
 const showCurrent = ref(false)
 const showNew = ref(false)
 const showConfirm = ref(false)
+
+// Push test
+const pushLoading = ref(false)
+const pushMessage = ref('')
+const pushError = ref(false)
+
+const testPush = async () => {
+  pushLoading.value = true
+  pushMessage.value = ''
+  pushError.value = false
+
+  try {
+    const csrf = await getCsrf()
+    const res = await fetch('/admin/api/pushify/test', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrf,
+      },
+      credentials: 'same-origin',
+    })
+
+    const data = await res.json()
+    if (res.ok && data.success) {
+      pushMessage.value = data.message || 'Notifikasi terkirim.'
+    } else {
+      pushMessage.value = data.message || 'Gagal mengirim notifikasi.'
+      pushError.value = true
+    }
+  } catch (e) {
+    pushMessage.value = 'Terjadi kesalahan. Coba lagi.'
+    pushError.value = true
+    console.error(e)
+  }
+
+  pushLoading.value = false
+}
 </script>
 
 <style scoped></style>

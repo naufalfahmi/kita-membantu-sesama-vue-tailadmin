@@ -183,6 +183,7 @@ import { useRouter } from 'vue-router'
 import { resetAuthState, checkAuth } from '@/router'
 import CommonGridShape from '@/components/common/CommonGridShape.vue'
 import FullScreenLayout from '@/components/layout/FullScreenLayout.vue'
+import { registerPushify } from '@/utils/registerPushify'
 
 const router = useRouter()
 const email = ref('')
@@ -308,6 +309,13 @@ const handleSubmit = async (e?: Event) => {
       
       // Force check auth to update state before redirect
       const authResult = await checkAuth(true)
+
+      // Attempt to register push subscription right after login
+      try {
+        await registerPushify()
+      } catch (e) {
+        console.warn('[Pushify] post-login registration skipped', e)
+      }
       
       // Always redirect to welcome page after successful login
       const redirectPath = '/admin/welcome'

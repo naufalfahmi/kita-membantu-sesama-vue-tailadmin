@@ -13,6 +13,8 @@ use App\Models\KaryawanDonaturVisibility;
 use App\Models\KaryawanTransaksiVisibility;
 use App\Models\KaryawanMitraTransaksiVisibility;
 use App\Models\KaryawanMitraDonaturVisibility;
+use App\Models\PushSubscription;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -177,6 +179,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(KaryawanMitraDonaturVisibility::class, 'karyawan_id')
             ->whereNull('deleted_at');
+    }
+
+    /**
+     * Push subscription entries for this user.
+     */
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class, 'user_id');
     }
 
     /**

@@ -12,6 +12,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        // Sync holidays daily at 02:00 Asia/Jakarta
+        $schedule->command('holidays:sync')->timezone('Asia/Jakarta')->dailyAt('02:00');
+
+        // Send attendance reminders every minute
+        $schedule->command('absensi:reminders')->timezone('Asia/Jakarta')->everyMinute();
+    })
     ->withMiddleware(function (Middleware $middleware): void {
         // Redirect unauthenticated users to admin signin page
         // For AJAX requests, return 401 JSON response instead of redirect

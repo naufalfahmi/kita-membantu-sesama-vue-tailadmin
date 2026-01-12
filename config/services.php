@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+        'pushify' => [
+            'api_key' => env('PUSHIFY_API_KEY'),
+            'website_id' => env('PUSHIFY_WEBSITE_ID'),
+            'pixel_key' => env('PUSHIFY_PIXEL_KEY'),
+        ],
+
 ];

@@ -20,6 +20,7 @@ use App\Http\Controllers\TipeAbsensiController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\TipeDonaturController;
 use App\Http\Controllers\TransaksiController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\PengajuanDanaController;
 use App\Services\MenuService;
 
@@ -170,6 +171,10 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Update authenticated user's personal information
     Route::post('/user/profile', [LoginController::class, 'updateProfile'])->name('admin.api.user.profile');
     Route::post('/user/password', [LoginController::class, 'changePassword'])->name('admin.api.user.password');
+
+    // Push subscriptions (Pushify)
+    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])->name('admin.api.push-subscriptions.store');
+    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('admin.api.push-subscriptions.destroy');
     
     // Dashboard API
     Route::get('/dashboard/stats', [\App\Http\Controllers\DashboardController::class, 'stats'])->name('admin.api.dashboard.stats');

@@ -199,13 +199,22 @@ class PayrollController extends Controller
     /**
      * Return all payroll records belonging to the current authenticated user across periods
      */
-    public function myRecords()
+    public function myRecords(Request $request)
     {
         $user = auth()->user();
 
-        $records = PayrollRecord::with(['period', 'items'])
-            ->where('employee_id', $user->id)
-            ->get()
+        $query = PayrollRecord::with(['period', 'items'])
+            ->where('employee_id', $user->id);
+
+        // optional filter by year (e.g., ?year=2026)
+        if ($request->filled('year')) {
+            $year = (int) $request->query('year');
+            $query->whereHas('period', function ($q) use ($year) {
+                $q->where('year', $year);
+            });
+        }
+
+        $records = $query->get()
             // sort by period year/month descending so the latest period appears first
             ->sortByDesc(function ($r) {
                 $year = optional($r->period)->year ?? 0;

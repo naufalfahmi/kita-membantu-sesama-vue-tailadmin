@@ -589,6 +589,13 @@ const columnDefs = computed(() => {
       valueFormatter: (params: any) => params.value || '-',
     },
     {
+      headerName: 'Program',
+      field: 'program',
+      sortable: true,
+      // flex: 1,
+      valueFormatter: (params: any) => params.value || '-',
+    },
+    {
       headerName: 'Nominal',
       field: 'nominal',
       sortable: true,
@@ -610,21 +617,7 @@ const columnDefs = computed(() => {
       valueFormatter: (params: any) => params.value || '-',
     },
     {
-      headerName: 'Kantor Cabang',
-      field: 'kantor_cabang',
-      sortable: true,
-      // flex: 1,
-      valueFormatter: (params: any) => params.value || '-',
-    },
-    {
-      headerName: 'Program',
-      field: 'program',
-      sortable: true,
-      // flex: 1,
-      valueFormatter: (params: any) => params.value || '-',
-    },
-    {
-      headerName: 'Tanggal Transaksi',
+      headerName: 'Tgl Transaksi',
       field: 'tanggal_transaksi',
       sortable: true,
       width: 150,
@@ -638,6 +631,13 @@ const columnDefs = computed(() => {
         }
         return '-'
       },
+    },
+    {
+      headerName: 'Kantor Cabang',
+      field: 'kantor_cabang',
+      sortable: true,
+      // flex: 1,
+      valueFormatter: (params: any) => params.value || '-',
     },
     // 'Dibuat oleh' column: hide for Admin Cabang users
     ...(!isRoleAdminCabang

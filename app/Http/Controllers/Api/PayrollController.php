@@ -220,10 +220,20 @@ class PayrollController extends Controller
                 $deductionsTotal = abs($deductions->sum('amount'));
                 $net = $gross - $deductionsTotal;
 
+                $monthNames = [
+                    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                    5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                ];
+                $monthNumber = optional($r->period)->month;
+                $periodLabel = optional($r->period) 
+                    ? ($monthNames[$monthNumber] ?? $monthNumber) . ' ' . optional($r->period)->year 
+                    : null;
+
                 return [
                     'id' => $r->id,
                     'period_id' => $r->payroll_period_id,
-                    'period_label' => optional($r->period) ? optional($r->period)->month . '/' . optional($r->period)->year : null,
+                    'period_label' => $periodLabel,
                     'status' => $r->status,
                     'total' => $net ?? 0,
                     'gross' => $gross ?? 0,

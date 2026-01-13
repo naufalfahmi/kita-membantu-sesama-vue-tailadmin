@@ -29,8 +29,13 @@ const columnDefs = [
   { headerName: 'Periode', field: 'period_label', flex: 1 },
   { headerName: 'Status', field: 'status', width: 150, cellRenderer: (params: any) => {
     const mapLabel: Record<string,string> = { pending: 'Pending', locked: 'Selesai', transferred: 'Ditransfer' }
+    const mapColor: Record<string,string> = { 
+      pending: 'bg-yellow-100 text-yellow-800', 
+      locked: 'bg-green-100 text-green-800', 
+      transferred: 'bg-blue-100 text-blue-800' 
+    }
     const span = document.createElement('span')
-    span.className = 'inline-block rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800'
+    span.className = `inline-block rounded-full px-3 py-1 text-xs font-medium ${mapColor[params.value] || 'bg-gray-100 text-gray-800'}`
     span.textContent = mapLabel[params.value] || params.value || ''
     return span
   }},

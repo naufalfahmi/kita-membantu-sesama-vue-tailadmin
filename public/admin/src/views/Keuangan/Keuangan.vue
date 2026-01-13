@@ -40,6 +40,14 @@
         </div>
       </div>
 
+      <!-- Summary boxes (dynamic, update with date filter) -->
+      <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div v-for="(box, idx) in summaryBoxes" :key="`summary-${idx}`" class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.02]">
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ box.label }}</p>
+          <p class="mt-2 text-lg font-semibold text-gray-800 dark:text-white">{{ formatCurrency(box.value) }}</p>
+        </div>
+      </div>
+
       <div class="relative" style="width: 100%; height: 450px;">
         <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 100%;">
               <ag-grid-vue
@@ -186,6 +194,11 @@ function currencyFormatter(params: any) {
   return ''
 }
 
+// Helper used in template to format raw numbers
+const formatCurrency = (v: number) => {
+  return currencyFormatter({ value: v })
+}
+
 // Map share key to header label
 function toHeader(key: string) {
   switch ((key || '').toString()) {
@@ -208,8 +221,35 @@ function toHeader(key: string) {
   }
 }
 
+// Get a friendly label for a share key. Prefer known mappings (toHeader), then
+// try program metadata (shares_meta), otherwise fall back to a humanized key.
+function getShareLabel(key: string, programs: any[]) {
+  const basic = toHeader(key)
+  if (basic && basic !== String(key)) return basic
+
+  try {
+    for (const p of (programs || [])) {
+      const meta = p?.shares_meta?.[key]
+      if (meta) {
+        if (typeof meta === 'string') return meta
+        if (meta.label || meta.name || meta.title) return meta.label || meta.name || meta.title
+      }
+      // Some payloads may provide label mappings on the program object directly
+      if (p && p.share_labels && p.share_labels[key]) return p.share_labels[key]
+    }
+  } catch (e) { /* ignore */ }
+
+  // Fallback: remove custom_ prefix and humanize
+  let label = String(key).replace(/^custom_/, '').replace(/_/g, ' ')
+  label = label.replace(/\b\w/g, (c) => c.toUpperCase())
+  return label
+}
+
 // Pinned bottom rows for totals
 const pinnedBottomRowData = ref<any[]>([])
+
+// Summary boxes shown above the grid (dynamically built from program summaries)
+const summaryBoxes = ref<any[]>([])
 
 // Sample data - generate 200 items for infinite scroll testing
 const generateRowData = (): KeuanganRow[] => {
@@ -495,7 +535,10 @@ const fetchSummary = async () => {
     const dynamicCols: any[] = []
     dynamicCols.push({ headerName: 'Ringkasan', field: 'summary_label', pinned: 'left', width: 250 })
       // nominal transaksi column next to summary
-      dynamicCols.push({ headerName: 'Nominal Transaksi', field: 'nominal', pinned: 'left', width: 160, valueFormatter: currencyFormatter, resizable: true })
+      dynamicCols.push({ headerName: 'Nominal Transaksi Keseluruhan', field: 'nominal', pinned: 'left', width: 160, valueFormatter: currencyFormatter, resizable: true })
+
+    // Global mapping of share key -> friendly name provided by the API
+    const shareTypeLabels: Record<string, string> = (payload.data && payload.data.share_type_labels) ? payload.data.share_type_labels : {}
 
     programs.forEach((p: any) => {
       // build children starting with per-program nominal transaksi
@@ -522,8 +565,10 @@ const fetchSummary = async () => {
           }
         } catch (e) { /* ignore */ }
 
+        const labelName = shareTypeLabels[k] || getShareLabel(k, programs)
+
         return {
-          headerName: `${toHeader(k)}${childMeta}`,
+          headerName: `${labelName}${childMeta}`,
           field: `p_${p.program_id || p.id}_${k}`,
           valueFormatter: currencyFormatter,
           resizable: true,
@@ -585,6 +630,20 @@ const fetchSummary = async () => {
     })
 
     totalsRow.nominal = totalNominal
+
+    // Build summary boxes: overall nominal and aggregated per-share totals
+    const boxes: any[] = []
+    boxes.push({ label: 'Nominal Keseluruhan Transaksi', value: totalNominal })
+
+    // Include aggregated totals for each share key (dynamic)
+    shareKeys.forEach((k: string) => {
+      const sum = programs.reduce((s: number, p: any) => s + (Number(p[k] || 0) || 0), 0)
+      const labelName = shareTypeLabels[k] || getShareLabel(k, programs)
+      boxes.push({ label: `Nominal All ${labelName}`, value: sum })
+    })
+
+    summaryBoxes.value = boxes
+
     // single row dataset (summary)
     rowDataArray.value = [totalsRow]
 

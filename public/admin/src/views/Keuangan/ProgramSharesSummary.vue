@@ -97,8 +97,9 @@ async function fetchSummary() {
     const defs: any[] = []
     defs.push({ headerName: 'Program', field: 'program_name', flex: 2 })
     defs.push({ headerName: 'Total Transaksi', field: 'total_transaksi', flex: 1, valueFormatter: currencyFormatter })
+    const shareTypeLabels: Record<string, string> = (data.data && data.data.share_type_labels) ? data.data.share_type_labels : {}
     ;(data.data.columns ?? []).forEach((c: string) => {
-      defs.push({ headerName: toHeader(c), field: c, flex: 1, valueFormatter: currencyFormatter })
+      defs.push({ headerName: shareTypeLabels[c] || toHeader(c), field: c, flex: 1, valueFormatter: currencyFormatter })
     })
 
     columnDefs.value = defs

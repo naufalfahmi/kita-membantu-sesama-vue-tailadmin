@@ -414,6 +414,8 @@ class ProgramController extends Controller
                     $sharesMeta[$keym] = [
                         'type' => $smeta->type,
                         'value' => $smeta->value,
+                        'label' => $pst->name ?? ($pst->label ?? null),
+                        'key' => $keym,
                     ];
                 }
                 $row['shares_meta'] = $sharesMeta;
@@ -597,6 +599,8 @@ class ProgramController extends Controller
                 }
             }
 
+            $shareTypeLabels = \App\Models\ProgramShareType::pluck('name', 'key')->toArray();
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -606,6 +610,7 @@ class ProgramController extends Controller
                     'disbursed_totals' => $disbursedTotals,
                     'disbursed_totals_by_program' => $disbursedTotalsByProgram,
                     'transaksis' => $transRows ?? [],
+                    'share_type_labels' => $shareTypeLabels,
                 ],
             ]);
         } catch (\Exception $e) {

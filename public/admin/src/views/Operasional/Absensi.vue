@@ -147,11 +147,19 @@
         </div>
       </div>
     </div>
+
+    <!-- pinned total hours button -->
+    <div class="fixed right-6 bottom-6 z-50">
+      <button class="flex items-center gap-3 px-4 py-3 rounded-lg text-white bg-brand-500 hover:bg-brand-600 shadow-lg">
+        <span class="text-sm">Total Jam Kerja</span>
+        <span class="text-lg font-semibold">{{ formattedTotalMinutes }}</span>
+      </button>
+    </div>
   </AdminLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import FlatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
@@ -714,6 +722,9 @@ const handleExportExcel = async () => {
     const json = await res.json()
     const data = json.success ? JSON.parse(JSON.stringify(json.data || [])) : JSON.parse(JSON.stringify(rowData.value || []))
 
+    // compute total minutes for the pinned total button (use total_jam_kerja if available, else compute from timestamps)
+    computeTotalMinutesFromData(data)
+
     const dataToExport = data.map((item: any) => {
       return {
         'Nama': item.user?.name || '-',
@@ -777,6 +788,8 @@ const resetFilter = () => {
   } else {
     fetchData()
   }
+  // recompute totals after reset
+  computeTotalMinutesDebounced()
 }
 
 // Watch filter changes with debounce
@@ -801,13 +814,120 @@ watch([filterSearch, filterTanggal, filterStatus, filterKantorCabang, filterTipe
     } else {
       fetchData()
     }
+    // recompute total minutes when filters change
+    computeTotalMinutesDebounced()
   }, 500)
 })
 
 onMounted(() => {
   loadOptions()
   fetchData()
+  // compute total minutes on mount
+  computeTotalMinutesDebounced()
 })
+
+// ---- total minutes for pinned button ----
+const totalMinutes = ref<number>(0)
+const formattedTotalMinutes = computed(() => {
+  const mins = Math.max(0, totalMinutes.value)
+  if (!mins) return '0 jam kerja'
+  const hours = Math.floor(mins / 60)
+  const minutes = Math.round(mins % 60)
+  if (minutes === 0) return `${hours} jam ${minutes === 0 ? '' : ''}`.trim()
+  return `${hours} jam ${minutes} menit`
+})
+
+// compute total minutes from a dataset (used by export and by internal fetch)
+const computeTotalMinutesFromData = (data: any[]) => {
+  let sum = 0
+  for (const item of data) {
+    if (item === null || item === undefined) continue
+    // prefer raw total_jam_kerja if numeric (assumed decimal hours)
+    const raw = item.total_jam_kerja
+    if (raw !== null && raw !== undefined && !isNaN(Number(raw))) {
+      const dec = Number(raw)
+      // use absolute value so negative stored values are treated as positive
+      const mins = Math.round(Math.abs(dec) * 60)
+      if (mins > 0) sum += mins
+      continue
+    }
+    // fallback to timestamps
+    const masuk = item.jam_masuk
+    const keluar = item.jam_keluar
+    if (masuk && keluar) {
+      try {
+        const m = new Date(masuk)
+        const k = new Date(keluar)
+        let diff = Math.round((k.getTime() - m.getTime()) / 60000)
+        if (diff < 0) {
+          // prefer cross-midnight interpretation (small positive), otherwise use absolute value
+          const cross = diff + 24 * 60
+          if (cross > 0 && cross <= 12 * 60) {
+            diff = cross
+          } else {
+            diff = Math.abs(diff)
+          }
+        }
+        // ensure non-negative per-row minutes
+        diff = Math.max(0, diff)
+        sum += diff
+        continue
+      } catch (e) {
+        // ignore
+      }
+    }
+    // otherwise ignore row
+  }
+  totalMinutes.value = Math.max(0, sum)
+}
+
+let computeTimeout: ReturnType<typeof setTimeout> | null = null
+const computeTotalMinutesDebounced = () => {
+  if (computeTimeout) clearTimeout(computeTimeout)
+  computeTimeout = setTimeout(() => {
+    // fetch up to 1000 rows using same filters as export
+    (async () => {
+      try {
+        const exportParams = new URLSearchParams()
+        if (filterSearch.value) exportParams.append('search', filterSearch.value)
+        if (filterTanggal.value) {
+          const val: any = filterTanggal.value
+          if (Array.isArray(val)) {
+            if (val[0]) exportParams.append('date_from', formatDateString(val[0]))
+            if (val[1]) exportParams.append('date_to', formatDateString(val[1]))
+          } else if (typeof val === 'string') {
+            if (val.includes(' to ')) {
+              const [from, to] = val.split(' to ').map((s) => s.trim())
+              if (from) exportParams.append('date_from', from)
+              if (to) exportParams.append('date_to', to)
+            } else if (val.includes(' - ')) {
+              const [from, to] = val.split(' - ').map((s) => s.trim())
+              if (from) exportParams.append('date_from', from)
+              if (to) exportParams.append('date_to', to)
+            } else {
+              exportParams.append('date', val)
+            }
+          }
+        }
+        if (filterKantorCabang.value) exportParams.append('kantor_cabang_id', filterKantorCabang.value)
+        if (filterTipeAbsensi.value) exportParams.append('tipe_absensi_id', filterTipeAbsensi.value)
+        if (filterStatus.value) exportParams.append('status', filterStatus.value)
+        exportParams.append('per_page', '1000')
+
+        const url = `/admin/api/absensi?${exportParams.toString()}`
+        const res = await fetch(url, { method: 'GET', credentials: 'same-origin' })
+        if (!res.ok) throw new Error('Failed to fetch totals')
+        const json = await res.json()
+        const data = json.success ? JSON.parse(JSON.stringify(json.data || [])) : []
+        computeTotalMinutesFromData(data)
+      } catch (e) {
+        console.error('Failed to compute total minutes:', e)
+        totalMinutes.value = 0
+      }
+    })()
+  }, 400)
+}
+
 </script>
 
 <style>

@@ -11,6 +11,7 @@
   <link rel="icon" href="{{ asset('favicon.svg') }}?v={{ filemtime(public_path('favicon.svg')) }}" type="image/svg+xml">
   <link rel="alternate icon" href="{{ asset('frontend/favicon.ico') }}?v={{ filemtime(public_path('favicon.svg')) }}">
   <link href="{{ asset('frontend/style.css') }}" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/baguettebox.js/1.11.1/baguetteBox.min.css">
 </head>
 
 <body x-data="{
@@ -63,6 +64,7 @@
   @include('partials.frontend.footer')
   @include('partials.frontend.back-to-top')
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/baguettebox.js/1.11.1/baguetteBox.min.js"></script>
   @stack('scripts')
   <script defer src="{{ asset('frontend/bundle.js') }}"></script>
 </body>

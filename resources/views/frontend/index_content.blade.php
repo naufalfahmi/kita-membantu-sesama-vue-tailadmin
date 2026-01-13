@@ -317,7 +317,7 @@
         </div>
 
         <div class="bb ze ki xn 2xl:ud-px-0 jb">
-          <div id="programs" class="wc qf pn xo zf iq">
+          <div id="programs" class="wc qf pn xo zf iq program-gallery">
             @foreach($landingPrograms ?? [] as $p)
               @php
                 $image = asset('frontend/images/project-01.png');
@@ -330,11 +330,11 @@
 
               <div class="animate_top sg vk rm xm">
                 <div class="c rc i z-1 pg">
-                  <a href="#" class="rc">
+                  <a href="{{ $image }}" class="rc" data-caption="{{ $p->name }}">
                     <img class="w-full program-image" src="{{ $image }}" alt="{{ $p->name }}" />
                   </a>
                   <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
-                    <a href="#" class="vc ek rg lk gh sl ml il gi hi">Read More</a>
+                    <span class="vc ek rg lk gh sl ml il gi hi" style="cursor: pointer;">Read More</span>
                   </div>
                 </div>
 
@@ -359,6 +359,45 @@
       @push('scripts')
       <script>
         (function(){
+          // Initialize baguetteBox for program gallery with retry (safe if script loads later)
+          const initProgramGallery = () => {
+            if (typeof baguetteBox !== 'undefined') {
+              try {
+                baguetteBox.run('.program-gallery', {
+                  animation: 'slideIn',
+                  captions: true
+                });
+              } catch (e) {
+                console.error('baguetteBox.run failed', e)
+              }
+              return true
+            }
+            return false
+          }
+
+          // Try once, then poll until library available (clears automatically)
+          if (!initProgramGallery()) {
+            const ib = setInterval(() => { if (initProgramGallery()) clearInterval(ib) }, 200)
+          }
+
+          // Attach Read More click handlers to trigger lightbox on corresponding image
+          const attachReadMoreHandlers = () => {
+            document.querySelectorAll('.program-gallery .vc').forEach((el) => {
+              if (el.getAttribute('data-has-handler')) return
+              el.setAttribute('data-has-handler', '1')
+              el.addEventListener('click', (ev) => {
+                ev.preventDefault()
+                const anchor = el.closest('.c')?.querySelector('a.rc')
+                if (anchor) {
+                  // trigger click on anchor which baguetteBox should intercept
+                  anchor.click()
+                }
+              })
+            })
+          }
+          // run once now
+          attachReadMoreHandlers()
+
           let currentPage = 1;
           const perPage = 6;
           const btn = document.getElementById('load-more-programs');
@@ -378,9 +417,16 @@
                     div.className = 'animate_top sg vk rm xm';
                     const img = p.image_url && /^https?:\/\//.test(p.image_url) ? p.image_url : (p.image_url ? `/storage/${p.image_url}` : '/frontend/images/project-01.png');
                     const excerpt = (p.description || '').replace(/<[^>]+>/g, '').slice(0, 117) + (p.description && p.description.length > 120 ? '...' : '');
-                    div.innerHTML = `<div class="c rc i z-1 pg"><a href="#" class="rc"><img class="w-full program-image" src="${img}" alt="${p.name}" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="#" class="vc ek rg lk gh sl ml il gi hi">Read More</a></div></div><div class="yh"><h4 class="ek tj ml il kk wm xl eq lb"><a href="#">${p.name}</a></h4><p>${excerpt}</p></div>`;
+                    div.innerHTML = `<div class="c rc i z-1 pg"><a href="${img}" class="rc" data-caption="${p.name}"><img class="w-full program-image" src="${img}" alt="${p.name}" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><span class="vc ek rg lk gh sl ml il gi hi" style="cursor: pointer;">Read More</span></div></div><div class="yh"><h4 class="ek tj ml il kk wm xl eq lb"><a href="#">${p.name}</a></h4><p>${excerpt}</p></div>`;
                     container.appendChild(div);
                   });
+                  // Reinitialize baguetteBox after adding new images
+                  if (typeof baguetteBox !== 'undefined') {
+                    baguetteBox.run('.program-gallery', {
+                      animation: 'slideIn',
+                      captions: true
+                    });
+                  }
                   if (!json.has_more) {
                     btn.remove();
                   } else {

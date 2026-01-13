@@ -2,7 +2,7 @@
     <!-- ===== Blog Grid Start ===== -->
     <section class="ji gp uq">
       <div class="bb ye ki xn vq jb jo">
-        <div class="wc qf pn xo zf iq">
+        <div class="wc qf pn xo zf iq blog-gallery">
           <!-- Blog Item -->
           <div class="animate_top sg vk rm xm">
             <div class="c rc i z-1 pg">
@@ -165,6 +165,44 @@
             </div>
           </div>
         </div>
+
+        @push('scripts')
+        <script>
+          (function(){
+            const setupGridGallery = () => {
+              document.querySelectorAll('.blog-gallery .animate_top').forEach(item => {
+                try {
+                  const img = item.querySelector('img.w-full')
+                  const readMore = item.querySelector('.im a.vc')
+                  const title = item.querySelector('.yh h4 a')
+                  if (img && readMore) {
+                    // update href to image src so baguetteBox will open it
+                    readMore.setAttribute('href', img.getAttribute('src'))
+                    if (title && title.textContent) readMore.setAttribute('data-caption', title.textContent.trim())
+                  }
+                } catch (e) { /* ignore */ }
+              })
+
+              // initialize baguetteBox for this container
+              try {
+                if (typeof baguetteBox !== 'undefined') {
+                  baguetteBox.run('.blog-gallery', { animation: 'slideIn', captions: true })
+                }
+              } catch (e) { /* ignore */ }
+            }
+
+            // run on load and after a short delay (in case of dynamic content)
+            if (!document.readyState || document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', setupGridGallery)
+            } else {
+              setupGridGallery()
+            }
+
+            // also re-run when new content is added via JS
+            const observer = new MutationObserver(() => setupGridGallery())
+            observer.observe(document.querySelector('.blog-gallery') || document.body, { childList: true, subtree: true })
+          })();
+        </script>
 
         <!-- Pagination -->
         <div class="mb lo bq i ua">

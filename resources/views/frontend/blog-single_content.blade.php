@@ -61,12 +61,31 @@
 
                 @if(count($imgs) > 1)
                   <h3 class="text-xl font-semibold mb-4">Galeri Kegiatan</h3>
-                  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                  <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 kegiatan-gallery">
                     @foreach(array_slice($imgs, 1) as $si)
                       @php $simg = preg_match('/^https?:\/\//', $si) ? $si : asset('storage/' . $si); @endphp
-                      <img src="{{ $simg }}" alt="{{ $kegiatan->title }}" class="w-full h-48 object-cover rounded-lg" />
+                      <a href="{{ $simg }}" class="block rounded-lg overflow-hidden" data-caption="{{ $kegiatan->title }}">
+                        <img src="{{ $simg }}" alt="{{ $kegiatan->title }}" class="w-full h-48 object-cover rounded-lg" />
+                      </a>
                     @endforeach
                   </div>
+
+                  @push('scripts')
+                  <script>
+                    (function(){
+                      // Initialize baguetteBox for the kegiatan gallery; safe to call multiple times
+                      try {
+                        if (typeof baguetteBox !== 'undefined') {
+                          baguetteBox.run('.kegiatan-gallery', { animation: 'slideIn', captions: true });
+                        } else {
+                          const iv = setInterval(() => { if (typeof baguetteBox !== 'undefined') { clearInterval(iv); baguetteBox.run('.kegiatan-gallery', { animation: 'slideIn', captions: true }); } }, 200);
+                        }
+                      } catch (e) {
+                        console.error('Failed to init kegiatan gallery lightbox', e)
+                      }
+                    })();
+                  </script>
+                  @endpush
                 @endif
 
               @else

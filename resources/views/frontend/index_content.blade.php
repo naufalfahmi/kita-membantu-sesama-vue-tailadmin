@@ -7,28 +7,43 @@
         <img src="{{ asset("frontend/images/shape-02.svg") }}" alt="shape" class="xc 2xl:ud-block h u p va" />
         <img src="{{ asset("frontend/images/shape-03.svg") }}" alt="shape" class="xc 2xl:ud-block h v w va" />
         {{-- shape-04.svg removed per request --}}
-        <img src="{{ asset("frontend/images/people-who-support-svgrepo-com.svg") }}" alt="People Supporting" class="h q r ua" />
+        @php
+          $lp = $landingProfile ?? null;
+          $heroImage = $lp && !empty($lp->hero_image) ? $lp->hero_image : null;
+          if ($heroImage) {
+            $heroImageUrl = preg_match('/^data:|^https?:\/\//', $heroImage) ? $heroImage : asset('storage/' . $heroImage);
+          } else {
+            $heroImageUrl = asset("frontend/images/people-who-support-svgrepo-com.svg");
+          }
+        @endphp
+        <img src="{{ $heroImageUrl }}" alt="Hero Image" class="h q r ua object-cover" />
       </div>
 
       <!-- Hero Content -->
       <div class="bb ze ki xn 2xl:ud-px-0">
         <div class="tc _o">
           <div class="animate_left jn/2">
-            <h1 class="fk vj zp or kk wm wb">Kita Membantu Sesama</h1>
-            <p class="fq">menjadi organisasi sosial kemanusiaan internasional yang unggul dan profesional untuk kehidupan
-              kemanusiaan yang lebih baik</p>
+            <h1 class="fk vj zp or kk wm wb">{{ $lp && !empty($lp->hero_title) ? $lp->hero_title : 'Kita Membantu Sesama' }}</h1>
+            <p class="fq">{{ $lp && !empty($lp->hero_description) ? $lp->hero_description : 'menjadi organisasi sosial kemanusiaan internasional yang unggul dan profesional untuk kehidupan\n              kemanusiaan yang lebih baik' }}</p>
 
             <div class="tc tf yo zf mb">
-              <a href="#program" class="ek jk lk gh gi hi rg ml il vc _d _l vc items-center inline-flex">Lihat Program Kami</a>
+              @php
+                $heroButtonActive = $lp && !empty($lp->hero_button_active);
+                $heroButtonLink = $lp && !empty($lp->hero_button_link) ? $lp->hero_button_link : '#program';
+
+                $heroPhone = $lp && !empty($lp->hero_whatsapp_active) && !empty($lp->hero_whatsapp_number) ? $lp->hero_whatsapp_number : ($lp && !empty($lp->phone_number) ? $lp->phone_number : '+62 895-6210-93500');
+                $heroPhoneStr = is_array($heroPhone) ? implode('', array_filter($heroPhone)) : $heroPhone;
+                $heroPhoneDigits = preg_replace('/\D+/', '', $heroPhoneStr);
+                $heroWa = $heroPhoneDigits ? 'https://wa.me/'.$heroPhoneDigits : 'https://wa.me/62895621093500';
+              @endphp
+
+              @if($heroButtonActive)
+                <a href="{{ $heroButtonLink }}" class="ek jk lk gh gi hi rg ml il vc _d _l vc items-center inline-flex">Lihat Program Kami</a>
+              @else
+                <a href="#program" class="ek jk lk gh gi hi rg ml il vc _d _l vc items-center inline-flex">Lihat Program Kami</a>
+              @endif
 
               <span class="tc sf">
-                @php
-                  $lp = $landingProfile ?? null;
-                  $heroPhone = $lp && !empty($lp->phone_number) ? $lp->phone_number : '+62 895-6210-93500';
-                  $heroPhoneStr = is_array($heroPhone) ? implode('', array_filter($heroPhone)) : $heroPhone;
-                  $heroPhoneDigits = preg_replace('/\D+/', '', $heroPhoneStr);
-                  $heroWa = $heroPhoneDigits ? 'https://wa.me/'.$heroPhoneDigits : 'https://wa.me/62895621093500';
-                @endphp
                 <a href="{{ $heroWa }}" aria-label="Kontak via WhatsApp {{ $heroPhone }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 ek xj kk wm">
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" class="sc mr-2" aria-hidden="true">
                     <path d="M20.52 3.48A11.89 11.89 0 0012.02.12C6.08.12 1.19 4.99 1.19 10.93c0 1.93.5 3.82 1.44 5.5L.12 23.88l7.61-2.01a11.8 11.8 0 005.29 1.21h.01c5.94 0 10.83-4.89 10.83-10.83 0-3-1.17-5.83-3.65-7.57z" fill="#25D366" />
@@ -49,49 +64,32 @@
     <section id="features">
       <div class="bb ze ki yn 2xl:ud-px-12.5">
         <div class="tc uf zo xf ap zf bp mq">
-          <!-- Small Features Item -->
-          <div class="animate_top kn to/3 tc cg oq">
-            <div class="tc wf xf cf ae cd rg mh">
-              <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="24" cy="24" r="20" fill="#E8F5E9"/>
-                <path d="M24 12C17.4 12 12 17.4 12 24C12 30.6 17.4 36 24 36C30.6 36 36 30.6 36 24C36 17.4 30.6 12 24 12ZM24 33C19 33 15 29 15 24C15 19 19 15 24 15C29 15 33 19 33 24C33 29 29 33 24 33Z" fill="#4CAF50"/>
-                <path d="M22 28L18 24L19.4 22.6L22 25.2L28.6 18.6L30 20L22 28Z" fill="#4CAF50"/>
-              </svg>
-            </div>
-            <div>
-              <h4 class="ek yj go kk wm xb">Transparansi</h4>
-              <p>Keterbukaan penuh dalam pengelolaan dana dan program untuk membangun kepercayaan publik.</p>
-            </div>
-          </div>
+          @php
+            $lp = $landingProfile ?? null;
+            $features = $lp && is_array($lp->features) && count($lp->features) ? $lp->features : [
+              ['title' => 'Transparansi', 'description' => 'Keterbukaan penuh dalam pengelolaan dana dan program untuk membangun kepercayaan publik.'],
+              ['title' => 'Amanah', 'description' => 'Menjalankan tanggung jawab dengan penuh integritas dan akuntabilitas kepada donatur.'],
+              ['title' => 'Profesional', 'description' => 'Dikelola oleh tim berpengalaman dengan standar tata kelola organisasi yang baik.'],
+            ];
+            $iconClasses = ['mh','nh','oh'];
+          @endphp
 
-          <!-- Small Features Item -->
-          <div class="animate_top kn to/3 tc cg oq">
-            <div class="tc wf xf cf ae cd rg nh">
-              <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="24" cy="24" r="20" fill="#FFF3E0"/>
-                <path d="M24 10L28 18H36L30 24L32 32L24 27L16 32L18 24L12 18H20L24 10Z" fill="#FF9800"/>
-              </svg>
+          @foreach($features as $feat)
+            <div class="animate_top kn to/3 tc cg oq">
+              <div class="tc wf xf cf ae cd rg {{ $iconClasses[$loop->index % count($iconClasses)] }}">
+                <!-- Generic feature icon (keeps consistent style) -->
+                <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="24" cy="24" r="20" fill="#E8F5E9"/>
+                  <path d="M24 12C17.4 12 12 17.4 12 24C12 30.6 17.4 36 24 36C30.6 36 36 30.6 36 24C36 17.4 30.6 12 24 12ZM24 33C19 33 15 29 15 24C15 19 19 15 24 15C29 15 33 19 33 24C33 29 29 33 24 33Z" fill="#4CAF50"/>
+                  <path d="M22 28L18 24L19.4 22.6L22 25.2L28.6 18.6L30 20L22 28Z" fill="#4CAF50"/>
+                </svg>
+              </div>
+              <div>
+                <h4 class="ek yj go kk wm xb">{{ $feat['title'] }}</h4>
+                <p>{{ $feat['description'] }}</p>
+              </div>
             </div>
-            <div>
-              <h4 class="ek yj go kk wm xb">Amanah</h4>
-              <p>Menjalankan tanggung jawab dengan penuh integritas dan akuntabilitas kepada donatur.</p>
-            </div>
-          </div>
-
-          <!-- Small Features Item -->
-          <div class="animate_top kn to/3 tc cg oq">
-            <div class="tc wf xf cf ae cd rg oh">
-              <svg class="w-12 h-12" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="24" cy="24" r="20" fill="#E3F2FD"/>
-                <path d="M20 14H28V18H32V22H28V26H32V30H28V34H20V30H16V26H20V22H16V18H20V14Z" fill="#2196F3"/>
-                <circle cx="24" cy="20" r="3" fill="#2196F3"/>
-              </svg>
-            </div>
-            <div>
-              <h4 class="ek yj go kk wm xb">Profesional</h4>
-              <p>Dikelola oleh tim berpengalaman dengan standar tata kelola organisasi yang baik.</p>
-            </div>
-          </div>
+          @endforeach
         </div>
       </div>
     </section>
@@ -105,7 +103,18 @@
           <div class="animate_left xc gn gg jn/2 i">
             <div class="relative">
               <img src="{{ asset("frontend/images/shape-05.svg") }}" alt="Shape" class="h -ud-left-5 x" />
-              <!-- SVG Illustration -->
+              @php
+                $lp = $landingProfile ?? null;
+                $vmImage = $lp && !empty($lp->vision_mission_image) ? $lp->vision_mission_image : null;
+                if ($vmImage) {
+                  $vmImageUrl = preg_match('/^data:|^https?:\/\//', $vmImage) ? $vmImage : asset('storage/' . $vmImage);
+                }
+              @endphp
+
+              @if(!empty($vmImageUrl))
+                <img src="{{ $vmImageUrl }}" alt="Vision & Mission" class="h q r ua object-cover" />
+              @else
+                <!-- SVG Illustration -->
                <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svgjs="http://svgjs.dev/svgjs" width="700" height="600" preserveAspectRatio="none" viewBox="0 0 700 600">
     <g mask="url(&quot;#SvgjsMask1143&quot;)" fill="none">
         <g mask="url(&quot;#SvgjsMask1144&quot;)">
@@ -165,28 +174,47 @@
         </mask>
     </defs>
 </svg>
+              @endif
               <!-- End SVG Illustration -->
             </div>
           </div>
 
           <!-- About Content -->
           <div class="animate_right jn/2">
+            @php
+              $lp = $landingProfile ?? null;
+              $aboutTitle = $lp && !empty($lp->vision_title) ? $lp->vision_title : 'Menjadi Organisasi Sosial Kemanusiaan Internasional yang Unggul dan Profesional';
+              $aboutDesc = $lp && !empty($lp->vision_description) ? $lp->vision_description : '';
+              $missions = [];
+              if ($lp && !empty($lp->mission_description)) {
+                $missions = preg_split('/\r\n|\r|\n/', trim($lp->mission_description));
+                $missions = array_filter(array_map('trim', $missions));
+              }
+              if (empty($missions)) {
+                $missions = [
+                  'Memberikan bantuan kemanusiaan yang tepat sasaran',
+                  'Memberdayakan masyarakat untuk hidup mandiri',
+                  'Membangun kemitraan strategis dengan berbagai pihak',
+                  'Mengelola organisasi secara profesional dan transparan',
+                ];
+              }
+            @endphp
+
             <h4 class="ek yj mk gb">Tentang Kita Membantu Sesama</h4>
-            <h2 class="fk vj zp pr kk wm qb">Menjadi Organisasi Sosial Kemanusiaan Internasional yang Unggul dan Profesional</h2>
-            <p class="uo mb-4">Kita Membantu Sesama (KMS) adalah organisasi sosial kemanusiaan yang berdedikasi untuk membantu masyarakat yang membutuhkan. Kami berkomitmen untuk memberikan bantuan kemanusiaan yang tepat sasaran dan berkelanjutan.</p>
+            <h2 class="fk vj zp pr kk wm qb">{{ $aboutTitle }}</h2>
+            <p class="uo mb-4">{!! nl2br(e($aboutDesc)) !!}</p>
             <br>
             <div class="mb-6">
               <h5 class="ek zj kk wm mb-5">Visi Kami</h5>
-              <p class="uo">Menjadi organisasi sosial kemanusiaan internasional yang unggul dan profesional untuk kehidupan kemanusiaan yang lebih baik.</p>
+              <p class="uo">{{ $aboutTitle }}</p>
             </div>
             <br>
             <div class="mb-6">
               <h5 class="ek zj kk wm mb-3">Misi Kami</h5>
               <ul class="list-disc list-inside space-y-2">
-                <li>Memberikan bantuan kemanusiaan yang tepat sasaran</li>
-                <li>Memberdayakan masyarakat untuk hidup mandiri</li>
-                <li>Membangun kemitraan strategis dengan berbagai pihak</li>
-                <li>Mengelola organisasi secara profesional dan transparan</li>
+                @foreach($missions as $m)
+                  <li>{{ $m }}</li>
+                @endforeach
               </ul>
             </div>
           </div>
@@ -523,16 +551,15 @@
               </div>
               <h4 class="ek zj kk wm nb _b">{{ $account['label'] ?? 'Transfer Bank' }}</h4>
               <div class="text-sm space-y-1">
-                <div class="flex items-center gap-3 flex-nowrap">
-                  <p class="font-semibold flex-1 min-w-0 truncate">{{ $account['value'] ?? '' }}</p>
-                  <button
+                <div class="flex items-center justify-between gap-3">
+                  <p class="font-semibold flex-1 min-w-0 truncate">{{ $account['value'] ?? '' }} <button
                     onclick="copyToClipboard('{{ $account['value'] ?? '' }}', this)"
                     class="inline-flex items-center justify-center w-7 h-7 rounded border border-gray-200 hover:bg-gray-100 transition-colors flex-shrink-0"
                     title="Copy nomor rekening">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor"/>
                     </svg>
-                  </button>
+                  </button></p>
                 </div>
                 <p>a.n. {{ $landingProfile->organization_name ?? 'Yayasan Kita Membantu Sesama' }}</p>
               </div>
@@ -1009,19 +1036,24 @@
 
       <div class="bb ye i z-10 ki xn dr">
         <div class="tc uf sn tn un gg">
+          @php
+            $lp = $landingProfile ?? null;
+            $ctaTitle = $lp && !empty($lp->cta_title) ? $lp->cta_title : 'Sudah 353+ donatur mari mulai donasi untuk Membantu Sesama';
+            $ctaDesc = $lp && !empty($lp->cta_description) ? $lp->cta_description : 'Bergabunglah untuk mendukung program-program kami — donasi Anda membantu pendidikan, kesehatan, dan respon darurat bagi komunitas yang membutuhkan.';
+            $ctaActive = $lp && !empty($lp->cta_button_active);
+            $ctaLink = $lp && !empty($lp->cta_button_link) ? $lp->cta_button_link : '#program';
+          @endphp
+
           <div class="animate_left to/2">
-            <h2 class="fk vj zp pr lk ac">
-              Sudah 353+ donatur mari mulai donasi untuk Membantu Sesama
-            </h2>
-            <p class="lk">
-              Bergabunglah untuk mendukung program-program kami — donasi Anda membantu pendidikan, kesehatan, dan respon
-              darurat bagi komunitas yang membutuhkan.
-            </p>
+            <h2 class="fk vj zp pr lk ac">{{ $ctaTitle }}</h2>
+            <p class="lk">{!! nl2br(e($ctaDesc)) !!}</p>
           </div>
           <div class="animate_right bf">
-            <a href="#!" class="vc ek kk hh rg ol il cm gi hi">
-              Donasi Sekarang
-            </a>
+            @if($ctaActive)
+              <a href="{{ $ctaLink }}" class="vc ek kk hh rg ol il cm gi hi">Donasi Sekarang</a>
+            @else
+              <!-- CTA button disabled because not active -->
+            @endif
           </div>
         </div>
       </div>

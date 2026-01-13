@@ -57,6 +57,28 @@ class LandingProfileController extends Controller
             'bank_account_1' => 'nullable|array',
             'bank_account_2' => 'nullable|string',
             'about' => 'nullable|string',
+
+            // Vision & Mission
+            'vision_title' => 'nullable|string|max:255',
+            'vision_description' => 'nullable|string',
+            'mission_description' => 'nullable|string',
+            'vision_mission_image' => 'nullable|string',
+            'features' => 'nullable|array',
+
+            // CTA
+            'cta_title' => 'nullable|string|max:255',
+            'cta_description' => 'nullable|string',
+            'cta_button_active' => 'nullable|boolean',
+            'cta_button_link' => 'nullable|string',
+
+            // Hero
+            'hero_title' => 'nullable|string|max:255',
+            'hero_description' => 'nullable|string',
+            'hero_button_active' => 'nullable|boolean',
+            'hero_button_link' => 'nullable|string',
+            'hero_whatsapp_active' => 'nullable|boolean',
+            'hero_whatsapp_number' => 'nullable|string',
+            'hero_image' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -102,6 +124,28 @@ class LandingProfileController extends Controller
             'bank_account_1' => 'nullable|array',
             'bank_account_2' => 'nullable|string',
             'about' => 'nullable|string',
+
+            // Vision & Mission
+            'vision_title' => 'nullable|string|max:255',
+            'vision_description' => 'nullable|string',
+            'mission_description' => 'nullable|string',
+            'vision_mission_image' => 'nullable|string',
+            'features' => 'nullable|array',
+
+            // CTA
+            'cta_title' => 'nullable|string|max:255',
+            'cta_description' => 'nullable|string',
+            'cta_button_active' => 'nullable|boolean',
+            'cta_button_link' => 'nullable|string',
+
+            // Hero
+            'hero_title' => 'nullable|string|max:255',
+            'hero_description' => 'nullable|string',
+            'hero_button_active' => 'nullable|boolean',
+            'hero_button_link' => 'nullable|string',
+            'hero_whatsapp_active' => 'nullable|boolean',
+            'hero_whatsapp_number' => 'nullable|string',
+            'hero_image' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {

@@ -521,32 +521,32 @@ const columnDefs = computed(() => {
         valueFormatter: (params: any) => params.value || '-',
       },
       {
+        headerName: 'Nominal',
+        field: 'nominal',
+        sortable: true,
+        flex: 1,
+        valueFormatter: (params: any) => params.data?.nominal_formatted || params.value || '-',
+      },
+      {
+        headerName: 'Fundrising',
+        field: 'fundraiser',
+        sortable: true,
+        flex: 1,
+        valueFormatter: (params: any) => params.value || '-',
+      },
+      {
         headerName: 'Mitra',
         field: 'mitra',
         sortable: true,
         flex: 1,
         valueFormatter: (params: any) => params.value || '-',
       },
-          {
-            headerName: 'Fundrising',
-            field: 'fundraiser',
-            sortable: true,
-            flex: 1,
-            valueFormatter: (params: any) => params.value || '-',
-          },
       {
         headerName: 'Program',
         field: 'program',
         sortable: true,
         flex: 1,
         valueFormatter: (params: any) => params.value || '-',
-      },
-      {
-        headerName: 'Nominal',
-        field: 'nominal',
-        sortable: true,
-        flex: 1,
-        valueFormatter: (params: any) => params.data?.nominal_formatted || params.value || '-',
       },
       {
         headerName: 'Tanggal Transaksi',
@@ -589,30 +589,12 @@ const columnDefs = computed(() => {
       valueFormatter: (params: any) => params.value || '-',
     },
     {
-      headerName: 'Kantor Cabang',
-      field: 'kantor_cabang',
+      headerName: 'Nominal',
+      field: 'nominal',
       sortable: true,
       // flex: 1,
-      valueFormatter: (params: any) => params.value || '-',
+      valueFormatter: (params: any) => params.data?.nominal_formatted || params.value || '-',
     },
-    {
-      headerName: 'Mitra',
-      field: 'mitra',
-      sortable: true,
-      // flex: 1,
-      valueFormatter: (params: any) => params.value || '-',
-    },
-    // 'Dibuat oleh' column: hide for Admin Cabang users
-    ...(!isRoleAdminCabang
-      ? [
-          {
-            headerName: 'Dibuat oleh',
-            field: 'fundraiser',
-            sortable: true,
-            valueFormatter: (params: any) => params.value || '-',
-          },
-        ]
-      : []),
     {
       headerName: 'Fundraiser',
       field: 'fundraiser_pic',
@@ -621,18 +603,25 @@ const columnDefs = computed(() => {
       valueFormatter: (params: any) => (params.data?.fundraiser_pic?.nama || params.data?.fundraiser_pic?.name) || params.value || '-',
     },
     {
-      headerName: 'Program',
-      field: 'program',
+      headerName: 'Mitra',
+      field: 'mitra',
       sortable: true,
       // flex: 1,
       valueFormatter: (params: any) => params.value || '-',
     },
     {
-      headerName: 'Nominal',
-      field: 'nominal',
+      headerName: 'Kantor Cabang',
+      field: 'kantor_cabang',
       sortable: true,
       // flex: 1,
-      valueFormatter: (params: any) => params.data?.nominal_formatted || params.value || '-',
+      valueFormatter: (params: any) => params.value || '-',
+    },
+    {
+      headerName: 'Program',
+      field: 'program',
+      sortable: true,
+      // flex: 1,
+      valueFormatter: (params: any) => params.value || '-',
     },
     {
       headerName: 'Tanggal Transaksi',
@@ -650,6 +639,17 @@ const columnDefs = computed(() => {
         return '-'
       },
     },
+    // 'Dibuat oleh' column: hide for Admin Cabang users
+    ...(!isRoleAdminCabang
+      ? [
+          {
+            headerName: 'Dibuat oleh',
+            field: 'fundraiser',
+            sortable: true,
+            valueFormatter: (params: any) => params.value || '-',
+          },
+        ]
+      : []),
     {
       headerName: 'Tanggal Dibuat',
       field: 'tanggal_dibuat',

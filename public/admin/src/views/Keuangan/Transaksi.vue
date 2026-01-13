@@ -549,7 +549,7 @@ const columnDefs = computed(() => {
         valueFormatter: (params: any) => params.value || '-',
       },
       {
-        headerName: 'Tanggal Transaksi',
+        headerName: 'Tgl Transaksi',
         field: 'tanggal_transaksi',
         sortable: true,
         width: 150,

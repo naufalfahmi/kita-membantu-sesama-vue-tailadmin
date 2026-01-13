@@ -635,7 +635,7 @@ const router = createRouter({
     {
       path: '/laporan/laporan-transaksi',
       name: 'Laporan Transaksi',
-      component: () => import('../views/Laporan/LaporanTransaksi.vue'),
+      component: () => import('../views/Laporan/LaporanTransaksiKeuangan.vue'),
       meta: { title: 'Laporan Transaksi', permission: 'view laporan transaksi' },
     },
     {

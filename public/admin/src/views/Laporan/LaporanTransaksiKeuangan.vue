@@ -48,15 +48,17 @@
                 @first-data-rendered="onFirstDataRendered"
                 class="ag-theme-alpine"
                 style="width: 100%; height: 100%;"
-              :columnDefs="columnDefs"
-              :defaultColDef="defaultColDef"
-              :pinnedBottomRowData="pinnedBottomRowData"
-              :rowData="rowDataArray"
+            :columnDefs="columnDefs"
+            :defaultColDef="defaultColDef"
+            :pinnedBottomRowData="pinnedBottomRowData"
+            :rowModelType="'infinite'"
+            :cacheBlockSize="50"
+            :maxBlocksInCache="10"
               :suppressSorting="false"
               theme="legacy"
               :animateRows="true"
               :suppressHorizontalScroll="false"
-              @sortChanged="onSortChanged"
+            @sortChanged="onSortChanged"
           />
         </div>
         
@@ -491,10 +493,10 @@ const fetchSummary = async () => {
     const programs = payload.data.rows || []
     const shareKeys = payload.data.columns && payload.data.columns.length ? payload.data.columns : ['dp','ops_1','ops_2','program','fee_mitra','bonus','championship']
 
-    // Build dynamic columnDefs: first column is a summary label (left pinned), then one group column per program with children for each share key
+    // Build dynamic columnDefs: first column is 'Tanggal Transaksi' (left pinned), then one group column per program with children for each share key
     const dynamicCols: any[] = []
-    dynamicCols.push({ headerName: 'Ringkasan', field: 'summary_label', pinned: 'left', width: 250 })
-      // nominal transaksi column next to summary
+    dynamicCols.push({ headerName: 'Tanggal Transaksi', field: 'tanggal', pinned: 'left', width: 250 })
+      // nominal transaksi column next to tanggal
       dynamicCols.push({ headerName: 'Nominal Transaksi', field: 'nominal', pinned: 'left', width: 160, valueFormatter: currencyFormatter, resizable: true })
 
     programs.forEach((p: any) => {
@@ -570,28 +572,89 @@ const fetchSummary = async () => {
       }
     })
 
-    // Build a single totals row (summary across the selected date range)
-    const totalsRow: any = { summary_label: 'TOTAL' }
-    // total nominal can be taken from program totals
-    const totalNominal = programs.reduce((s: number, p: any) => s + (p.total_transaksi || 0), 0)
+    // Build rows: aggregate transaksi per tanggal_transaksi (one row per date)
+    const transaksis = payload.data.transaksis || []
+    const rowsByDate: Record<string, any> = {}
+    const formatDateDisplay = (d: string) => {
+      if (!d) return ''
+      const dt = new Date(d)
+      if (isNaN(dt.getTime())) return d
+      return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    }
 
-    programs.forEach((p: any) => {
-      const nominalFld = `p_${p.program_id || p.id}_nominal`
-      totalsRow[nominalFld] = p.total_transaksi || 0
-      shareKeys.forEach((k: string) => {
-        const fld = `p_${p.program_id || p.id}_${k}`
-        totalsRow[fld] = p[k] || 0
+    transaksis.forEach((t: any) => {
+      const rawDate = (t.tanggal_transaksi || t.tanggal || t.date || '').toString()
+      const dateKey = rawDate
+      if (! rowsByDate[dateKey]) {
+        rowsByDate[dateKey] = { tanggal: formatDateDisplay(rawDate), kode: null, nominal: 0 }
+        // initialize program-share fields and per-program nominal
+        programs.forEach((p: any) => {
+          // per-program nominal
+          rowsByDate[dateKey][`p_${p.program_id || p.id}_nominal`] = 0
+          shareKeys.forEach((k: string) => {
+            rowsByDate[dateKey][`p_${p.program_id || p.id}_${k}`] = 0
+          })
+        })
+      }
+
+      const row = rowsByDate[dateKey]
+      row.kode = row.kode || t.kode || null
+      row.nominal = (row.nominal || 0) + (t.nominal || 0)
+
+      programs.forEach((p: any) => {
+        shareKeys.forEach((k: string) => {
+          const fld = `p_${p.program_id || p.id}_${k}`
+          const transField = `p_${p.program_id || p.id}`
+          if (k === 'program' && (t[transField] !== undefined)) {
+            row[fld] += (t[transField] || 0)
+          } else {
+            row[fld] += (t[fld] || 0)
+          }
+        })
+        // accumulate per-program nominal (transaction nominal belongs to the program)
+        try {
+          const progId = p.program_id || p.id
+          if (t.program_id && String(t.program_id) === String(progId)) {
+            row[`p_${progId}_nominal`] = (row[`p_${progId}_nominal`] || 0) + (t.nominal || 0)
+          }
+        } catch (e) { /* ignore */ }
       })
     })
 
+    const pivotRows = Object.values(rowsByDate)
+    rowDataArray.value = pivotRows
+
+    // compute total nominal across pivot rows for pinned TOTAL
+    const totalNominal = pivotRows.reduce((s: number, r: any) => s + (r.nominal || 0), 0)
+
+    // Pinned totals per program and pinned disbursed per program (children fields)
+    const totalsRow: any = { tanggal: 'TOTAL' }
+    const disbRow: any = { tanggal: 'DISBURSED TOTALS' }
+    const disbByProgram = (payload.data && payload.data.disbursed_totals_by_program) ? payload.data.disbursed_totals_by_program : {}
+    programs.forEach((p: any) => {
+      // totals for per-program nominal
+      const nominalFld = `p_${p.program_id || p.id}_nominal`
+      totalsRow[nominalFld] = p.total_transaksi || 0
+      disbRow[nominalFld] = 0
+      shareKeys.forEach((k: string) => {
+        const fld = `p_${p.program_id || p.id}_${k}`
+        totalsRow[fld] = p[k] || 0
+        // prefer per-program-per-share disbursed value, fallback to per-program total mapped to 'program' share
+        const perShareKey = fld
+        const perProgramKey = `p_${p.program_id || p.id}`
+        let disbVal = 0
+        if (disbByProgram && disbByProgram[perShareKey] !== undefined) disbVal = disbByProgram[perShareKey]
+        else if (k === 'program' && disbByProgram && disbByProgram[perProgramKey] !== undefined) disbVal = disbByProgram[perProgramKey]
+        disbRow[fld] = disbVal || 0
+      })
+    })
+
+    // set total nominal on totalsRow
     totalsRow.nominal = totalNominal
-    // single row dataset (summary)
-    rowDataArray.value = [totalsRow]
 
-    // don't use pinned rows for this summary view
-    pinnedBottomRowData.value = []
+    pinnedBottomRowData.value = [totalsRow, disbRow]
 
-    // refresh grid data
+    // refresh grid datasource
     refreshGrid(true)
   } catch (e) {
     console.error(e)
@@ -643,11 +706,12 @@ onMounted(async () => {
 function onGridReady(params: any) {
   gridApiRef.value = params.api
   gridColumnApiRef.value = params.columnApi
-  // For client-side data we set the row data directly when the grid is ready
+  // attach infinite datasource when grid is ready
   try {
-    if (params.api.setRowData) params.api.setRowData(rowDataArray.value)
+    const ds = dataSource.value || createDataSource()
+    if (params.api.setDatasource) params.api.setDatasource(ds as any)
   } catch (e) {
-    /* ignore */
+    console.error('Failed to set datasource for infinite row model', e)
   }
 }
 

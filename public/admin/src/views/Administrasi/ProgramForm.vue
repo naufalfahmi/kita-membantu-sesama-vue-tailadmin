@@ -120,6 +120,14 @@
         </div>
       </form>
     </div>
+
+    <!-- pinned percentage button -->
+    <div class="fixed right-6 bottom-6 z-50">
+      <button :title="calculatedJumlahPersentase > 100 ? 'Jumlah persentase melebihi 100%' : 'Jumlah persentase'" class="flex items-center gap-3 px-4 py-3 rounded-lg text-white shadow-lg" :class="percentageButtonClass">
+        <span class="text-sm">Jumlah Persentase</span>
+        <span class="text-lg font-semibold">{{ formattedPercentage }}</span>
+      </button>
+    </div>
   </AdminLayout>
 </template>
 
@@ -187,6 +195,20 @@ const calculatedJumlahPersentase = computed(() => {
 watch(() => calculatedJumlahPersentase.value, (val) => {
   formData.jumlah_persentase = val
 }, { immediate: true })
+
+// formatted percentage display (e.g., "63.16%" or "100%" for whole numbers)
+const formattedPercentage = computed(() => {
+  const v = Number(calculatedJumlahPersentase.value || 0)
+  // show without decimals for whole numbers (e.g., 100 -> "100%")
+  if (Number.isInteger(v)) return `${v}%`
+  return v.toFixed(2) + '%'
+})
+
+// dynamic button class: red if over 100%, otherwise brand color
+const percentageButtonClass = computed(() => {
+  const v = Number(calculatedJumlahPersentase.value || 0)
+  return v > 100 ? 'bg-red-500 hover:bg-red-600' : 'bg-brand-500 hover:bg-brand-600'
+})
 
 // Fetch available program share types
 const fetchProgramShareTypes = async () => {

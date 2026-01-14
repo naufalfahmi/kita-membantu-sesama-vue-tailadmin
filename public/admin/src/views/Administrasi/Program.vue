@@ -128,6 +128,22 @@ const columnDefs = [
     flex: 1,
   },
   {
+    headerName: 'Persentase',
+    field: 'jumlah_persentase',
+    sortable: true,
+    width: 140,
+    // return numeric value so sorting works; use valueFormatter for display
+    valueGetter: (params: any) => {
+      return Number(params.data?.jumlah_persentase) || 0
+    },
+    valueFormatter: (params: any) => {
+      const v = Number(params.value || 0)
+      if (Number.isInteger(v)) return `${v}%`
+      return `${v.toFixed(2)}%`
+    },
+    cellStyle: { textAlign: 'center' },
+  },
+  {
     headerName: 'Tanggal Dibuat',
     field: 'created_at',
     sortable: true,

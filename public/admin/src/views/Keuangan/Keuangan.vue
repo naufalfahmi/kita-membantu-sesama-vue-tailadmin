@@ -20,9 +20,9 @@
         </div>
       </div>
 
-      <!-- Filter Section: only date-range picker -->
+      <!-- Filter Section: date-range, fundraiser, mitra -->
       <div class="mb-6 rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-1 lg:grid-cols-1">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-3">
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal Transaksi</label>
             <div class="relative">
@@ -33,6 +33,33 @@
                 placeholder="Pilih rentang tanggal transaksi"
               />
             </div>
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Fundraiser</label>
+            <AsyncSearchableSelect
+              v-model="filterFundraiser"
+              :fetch-url="'/admin/api/karyawan'"
+              :label-key="'nama'"
+              :value-key="'id'"
+              placeholder="Pilih Fundraiser"
+              :allow-clear="true"
+              :include-all="true"
+              all-label="Semua Fundraiser"
+              :params="{ role: 'fundraiser' }"
+            />
+          </div>
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Mitra</label>
+            <AsyncSearchableSelect
+              v-model="filterMitra"
+              :fetch-url="'/admin/api/mitra'"
+              :label-key="'nama'"
+              :value-key="'id'"
+              placeholder="Pilih Mitra"
+              :allow-clear="true"
+              :include-all="true"
+              all-label="Semua Mitra"
+            />
           </div>
         </div>
         <div class="mt-4">
@@ -124,6 +151,7 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import AsyncSearchableSelect from '@/components/forms/AsyncSearchableSelect.vue'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/composables/useAuth'
 
@@ -292,8 +320,10 @@ const generateRowData = (): KeuanganRow[] => {
 
 const rowDataArray = ref<KeuanganRow[]>(generateRowData())
 
-// Filter state (only date-range)
+// Filter state
 const filterTanggalKeuangan = ref('')
+const filterFundraiser = ref('')
+const filterMitra = ref('')
 
 // Filtered data is the current rowDataArray (server-side filtered by date range)
 const filteredData = computed(() => rowDataArray.value)
@@ -492,7 +522,7 @@ const dataSource = ref<IDatasource>(createDataSource())
 // Rows will be populated from program-shares summary endpoint
 const fetchSummary = async () => {
   try {
-    // include optional date range from filterTanggalKeuangan
+    // include optional date range and filters
     let url = '/admin/api/keuangan/program-shares-summary'
     try {
       const fr = filterTanggalKeuangan.value
@@ -517,6 +547,8 @@ const fetchSummary = async () => {
       const params: any = {}
       if (startDate) params.start_date = startDate
       if (endDate) params.end_date = endDate
+      if (filterFundraiser.value) params.fundraiser_id = filterFundraiser.value
+      if (filterMitra.value) params.mitra_id = filterMitra.value
       const qp = new URLSearchParams(params).toString()
       if (qp) url += `?${qp}`
     } catch (e) { /* ignore parsing errors and call without range */ }
@@ -755,13 +787,13 @@ const onSortChanged = () => {
 let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Watch for filter changes and refresh grid with debounce
-watch([filterTanggalKeuangan], () => {
+watch([filterTanggalKeuangan, filterFundraiser, filterMitra], () => {
   // Clear existing timer
   if (filterDebounceTimer) {
     clearTimeout(filterDebounceTimer)
   }
 
-  // Debounce filter update to prevent flickering and refetch summary when date range changes
+  // Debounce filter update to prevent flickering and refetch summary when filters change
   filterDebounceTimer = setTimeout(async () => {
     try {
       await fetchSummary()
@@ -769,9 +801,11 @@ watch([filterTanggalKeuangan], () => {
     refreshGrid(true)
   }, 300) // 300ms debounce delay to prevent flickering
 })
-// Reset filter (only date-range)
+// Reset filter
 const resetFilter = () => {
   filterTanggalKeuangan.value = ''
+  filterFundraiser.value = ''
+  filterMitra.value = ''
 }
 </script>
 

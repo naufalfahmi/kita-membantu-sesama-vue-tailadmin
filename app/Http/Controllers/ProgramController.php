@@ -17,7 +17,8 @@ class ProgramController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Program::with(['creator', 'updater']);
+        // include shares so we can compute total percentage per program for list view
+        $query = Program::with(['creator', 'updater', 'shares']);
 
         // Search filter
         if ($request->has('search') && $request->search) {
@@ -35,9 +36,33 @@ class ProgramController extends Controller
         $program = $query->orderBy('created_at', 'desc')
                         ->paginate($request->get('per_page', 20));
 
+        // compute jumlah_persentase per program from its shares (sum of percentage-type shares)
+        $items = collect($program->items())->map(function ($p) {
+            $total = 0;
+            $shares = $p->shares ?? [];
+            foreach ($shares as $s) {
+                if (($s->type ?? '') === 'percentage' && $s->value !== null) {
+                    $total += floatval($s->value);
+                }
+            }
+
+            // Normalize model/row to array safely so attributes like nama_program and created_at are preserved
+            if (is_object($p) && method_exists($p, 'toArray')) {
+                $arr = $p->toArray();
+            } elseif (is_array($p)) {
+                $arr = $p;
+            } else {
+                // fallback (rare) - cast to array
+                $arr = (array) $p;
+            }
+
+            $arr['jumlah_persentase'] = $total > 0 ? floatval(number_format($total, 2, '.', '')) : 0;
+            return $arr;
+        })->all();
+
         return response()->json([
             'success' => true,
-            'data' => $program->items(),
+            'data' => $items,
             'pagination' => [
                 'current_page' => $program->currentPage(),
                 'last_page' => $program->lastPage(),
@@ -371,12 +396,14 @@ class ProgramController extends Controller
 
     /**
      * Return per-program aggregated allocation totals per program share type.
-     * Optional query params: start_date, end_date
+     * Optional query params: start_date, end_date, fundraiser_id, mitra_id
      */
     public function programSharesSummary(Request $request)
     {
         $startDateParam = $request->get('start_date');
         $endDateParam = $request->get('end_date');
+        $fundraiserId = $request->get('fundraiser_id');
+        $mitraId = $request->get('mitra_id');
 
         try {
             $start = $startDateParam ? \Carbon\Carbon::parse($startDateParam)->startOfDay() : null;
@@ -393,10 +420,16 @@ class ProgramController extends Controller
             $disbursedTotals = ['total_transaksi' => 0];
 
             foreach ($programs as $program) {
-                // inflow for this program
+                // inflow for this program with optional filters
                 $inflowQuery = \App\Models\Transaksi::where('program_id', $program->id);
                 if ($start && $end) {
                     $inflowQuery->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()]);
+                }
+                if ($fundraiserId) {
+                    $inflowQuery->where('fundraiser_id', $fundraiserId);
+                }
+                if ($mitraId) {
+                    $inflowQuery->where('mitra_id', $mitraId);
                 }
                 $inflow = (int) $inflowQuery->sum('nominal');
 
@@ -488,6 +521,12 @@ class ProgramController extends Controller
             $transQuery = \App\Models\Transaksi::query();
             if ($start && $end) {
                 $transQuery->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()]);
+            }
+            if ($fundraiserId) {
+                $transQuery->where('fundraiser_id', $fundraiserId);
+            }
+            if ($mitraId) {
+                $transQuery->where('mitra_id', $mitraId);
             }
             $transQuery->orderByDesc('tanggal_transaksi');
             $transaksis = $transQuery->get(['id','kode','nominal','tanggal_transaksi','program_id']);

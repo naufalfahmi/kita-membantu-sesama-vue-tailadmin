@@ -262,6 +262,8 @@ interface PengajuanDanaRow {
   id: string
   namaPengaju: string
   tanggalPemakaian: string
+  submissionType: string
+  purpose: string
   jumlahDana: number
   status: string
   tanggal: string
@@ -300,14 +302,14 @@ const columnDefs = [
     field: 'namaPengaju',
     sortable: true,
     filter: false,
-    flex: 1,
+    // flex: 1,
   },
   {
     headerName: 'Tanggal Pemakaian',
     field: 'tanggalPemakaian',
     sortable: true,
     filter: false,
-    flex: 1,
+    // flex: 1,
     valueFormatter: (params: any) => {
       if (params.value) {
         return new Date(params.value).toLocaleDateString('id-ID', {
@@ -320,11 +322,38 @@ const columnDefs = [
     },
   },
   {
+    headerName: 'Tipe Pengajuan',
+    field: 'submissionType',
+    sortable: true,
+    filter: false,
+    // flex: 1,
+    valueFormatter: (params: any) => {
+      if (!params.value) return ''
+      return String(params.value).charAt(0).toUpperCase() + String(params.value).slice(1)
+    },
+  },
+  {
+    headerName: 'Tujuan Pengajuan',
+    field: 'purpose',
+    sortable: true,
+    filter: false,
+    // flex: 1,
+    cellRenderer: (params: any) => {
+      if (!params.value) return ''
+      const text = String(params.value)
+      const div = document.createElement('div')
+      // div.className = 'whitespace-normal py-2'
+      div.textContent = text.length > 100 ? text.substring(0, 100) + '...' : text
+      div.title = text
+      return div
+    },
+  },
+  {
     headerName: 'Jumlah Dana',
     field: 'jumlahDana',
     sortable: true,
     filter: false,
-    flex: 1,
+    // flex: 1,
     valueFormatter: (params: any) => {
       if (params.value) {
         return new Intl.NumberFormat('id-ID', {
@@ -366,7 +395,7 @@ const columnDefs = [
     field: 'tanggal',
     sortable: true,
     filter: false,
-    flex: 1,
+    // flex: 1,
     valueFormatter: (params: any) => {
       if (params.value) {
         return new Date(params.value).toLocaleDateString('id-ID', {
@@ -383,7 +412,7 @@ const columnDefs = [
     field: 'persetujuan',
     sortable: true,
     filter: false,
-    flex: 1,
+    // flex: 1,
   },
   {
     headerName: 'Actions',
@@ -391,6 +420,7 @@ const columnDefs = [
     sortable: false,
     filter: false,
     width: 160,
+    pinned: 'right',
     cellRenderer: (params: any) => {
       const div = document.createElement('div')
       div.className = 'flex items-center gap-3'
@@ -597,6 +627,8 @@ const handleExportExcel = () => {
       const dataToExport = (json.data || []).map((item: any) => ({
         'Nama Pengaju': item.fundraiser ? item.fundraiser.name : '-',
         'Tanggal Pemakaian': item.used_at ? new Date(item.used_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
+        'Tipe Pengajuan': item.submission_type ? String(item.submission_type).charAt(0).toUpperCase() + String(item.submission_type).slice(1) : '',
+        'Tujuan Pengajuan': item.purpose || '',
         'Jumlah Dana': item.amount ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.amount) : '',
         'Status': item.status || '',
         'Tanggal': item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '',
@@ -705,6 +737,8 @@ const createDataSource = (): IDatasource => {
             id: r.id,
             namaPengaju: r.fundraiser ? r.fundraiser.name : '-',
             tanggalPemakaian: r.used_at || '',
+            submissionType: r.submission_type || '',
+            purpose: r.purpose || '',
             jumlahDana: r.amount || 0,
             status: r.status || 'Draft',
             tanggal: r.created_at ? r.created_at.split(' ')[0] : '',

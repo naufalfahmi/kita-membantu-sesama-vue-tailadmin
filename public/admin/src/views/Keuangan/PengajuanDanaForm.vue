@@ -27,7 +27,7 @@
           </div>
 
           <div class="lg:col-span-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang <span class="text-red-500">*</span></label>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor <span class="text-red-500">*</span></label>
             <SearchableSelect v-model="formData.branchId" :options="kantorCabangList" placeholder="Pilih atau cari kantor cabang" :search-input="kantorCabangSearchInput" @update:search-input="kantorCabangSearchInput = $event" />
           </div>
 

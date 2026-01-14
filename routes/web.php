@@ -20,7 +20,6 @@ use App\Http\Controllers\TipeAbsensiController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\TipeDonaturController;
 use App\Http\Controllers\TransaksiController;
-use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\PengajuanDanaController;
 use App\Services\MenuService;
 
@@ -82,26 +81,15 @@ Route::get('/blog-grid', function () {
     return view('frontend.blog-grid');
 })->name('frontend.blog-grid');
 
-Route::get('/kegiatan/{slug}', function ($slug) {
-    // Try to find by ID first (if slug is numeric), then by title (case-insensitive)
-    $kegiatan = \App\Models\LandingKegiatan::where(function($query) use ($slug) {
-        $query->where('id', $slug)
-              ->orWhereRaw('LOWER(REPLACE(title, " ", "-")) = ?', [strtolower($slug)])
-              ->orWhereRaw('LOWER(title) = ?', [strtolower(str_replace('-', ' ', $slug))]);
-    })->first();
-    
-    if (!$kegiatan) {
-        abort(404);
+Route::get('/blog-single/{id?}', function ($id = null) {
+    $kegiatan = null;
+    if ($id) {
+        $kegiatan = \App\Models\LandingKegiatan::find($id);
+        if (! $kegiatan) {
+            abort(404);
+        }
     }
-    
-    // Get related kegiatans
-    $relatedKegiatans = \App\Models\LandingKegiatan::where('id', '!=', $kegiatan->id)
-        ->where('status', 'active')
-        ->orderBy('created_at', 'desc')
-        ->limit(5)
-        ->get();
-    
-    return view('frontend.blog-single', compact('kegiatan', 'relatedKegiatans'));
+    return view('frontend.blog-single', compact('kegiatan'));
 })->name('frontend.blog-single');
 
 // Contact form endpoint (frontend)
@@ -171,13 +159,6 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Update authenticated user's personal information
     Route::post('/user/profile', [LoginController::class, 'updateProfile'])->name('admin.api.user.profile');
     Route::post('/user/password', [LoginController::class, 'changePassword'])->name('admin.api.user.password');
-
-    // Push subscriptions
-    Route::post('/push-subscriptions', [PushSubscriptionController::class, 'store'])->name('admin.api.push-subscriptions.store');
-    Route::delete('/push-subscriptions', [PushSubscriptionController::class, 'destroy'])->name('admin.api.push-subscriptions.destroy');
-    // Test push via OneSignal for current user
-    Route::post('/onesignal/test', [PushSubscriptionController::class, 'test'])->name('admin.api.onesignal.test');
-    Route::post('/onesignal/register', [PushSubscriptionController::class, 'registerOneSignal'])->name('admin.api.onesignal.register');
     
     // Dashboard API
     Route::get('/dashboard/stats', [\App\Http\Controllers\DashboardController::class, 'stats'])->name('admin.api.dashboard.stats');
@@ -266,13 +247,6 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Custom export endpoint for program-focused CSV export
     Route::get('transaksi/export-program', [TransaksiController::class, 'exportProgram']);
     Route::apiResource('transaksi', TransaksiController::class);
-
-    // Laporan Keuangan API (aggregated totals + transactions)
-    Route::get('laporan/keuangan', [\App\Http\Controllers\LaporanKeuanganController::class, 'index']);
-    Route::get('laporan/mitra', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraList']);
-    // Detail must come before the 'transaksi' sub-route to avoid catching it
-    Route::get('laporan/mitra/{mitra}', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraDetail']);
-    Route::get('laporan/mitra/{mitra}/transaksi', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraTransactions']);
     
     // Pengajuan Dana API
     Route::get('pengajuan-dana/options', [PengajuanDanaController::class, 'options']);

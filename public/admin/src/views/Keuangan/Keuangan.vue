@@ -84,54 +84,54 @@
         </div>
       </div>
 
-      <div class="relative" style="width: 100%; height: 450px;">
-        <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 100%;">
-              <ag-grid-vue
-                ref="agGridRef"
-                @grid-ready="onGridReady"
-                @first-data-rendered="onFirstDataRendered"
-                class="ag-theme-alpine"
-                style="width: 100%; height: 100%;"
-              :columnDefs="columnDefs"
-              :defaultColDef="defaultColDef"
-              :pinnedBottomRowData="pinnedBottomRowData"
-              :rowData="rowDataArray"
-              :suppressSorting="false"
-              theme="legacy"
-              :animateRows="true"
-              :suppressHorizontalScroll="false"
-              @sortChanged="onSortChanged"
-          />
+      <!-- Per-Program Breakdown (form-style layout similar to JabatanForm) -->
+      <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div class="mb-4 flex items-center justify-between">
+          <h4 class="font-semibold text-gray-800 dark:text-white/90">Per-Program Breakdown</h4>
+          <div class="flex items-center gap-3">
+            <button @click="handleRefresh" class="h-9 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">Refresh</button>
+            <button @click="handleExportExcel" class="h-9 rounded-lg bg-green-500 px-3 py-1.5 text-sm text-white hover:bg-green-600">Export Excel</button>
+          </div>
         </div>
-        
-        <!-- Custom empty state overlay -->
-        <div
-          v-if="showEmptyState"
-          class="absolute inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 rounded-lg z-50 pointer-events-none"
-          style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"
-        >
-          <svg class="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              v-if="filterPIC || filterKantorCabang || filterTanggalKeuangan || filterJumlahMin || filterJumlahMax"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            ></path>
-            <path
-              v-else
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            ></path>
-          </svg>
-                  <p class="text-gray-600 dark:text-gray-400 text-lg font-medium mb-1">
-                    {{ filterTanggalKeuangan ? 'Tidak ada data ditemukan' : 'Tidak ada data' }}
-                  </p>
-                  <p class="text-gray-500 dark:text-gray-500 text-sm">
-                    {{ filterTanggalKeuangan ? 'Coba ubah filter pencarian Anda' : 'Belum ada data yang tersedia' }}
-                  </p>
+
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div v-for="p in programsList" :key="p.program_id" class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="bg-gray-100 dark:bg-gray-800/50 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+              <div class="flex items-center justify-between">
+                <h4 class="font-semibold text-gray-800 dark:text-white/90">{{ p.program_name || 'Program' }}</h4>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-800/30">
+                  <tr>
+                    <th class="sticky left-0 z-10 min-w-[200px] border-r border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800/30 dark:text-gray-300">Pembagian</th>
+                    <th class="border-r border-gray-200 px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-300"><div class="flex flex-col items-center gap-1"><span>Total</span></div></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/20">
+                    <td class="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">Nominal Transaksi</td>
+                    <td class="border-r border-gray-200 px-4 py-3 text-center dark:border-gray-700">{{ formatCurrency(p?.total_transaksi || 0) }}</td>
+                  </tr>
+
+                  <tr v-for="(k, idx) in activeShareKeys" :key="`share-row-${p.program_id}-${k}-${idx}`" class="hover:bg-gray-50 dark:hover:bg-gray-800/20">
+                    <td class="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">
+                      {{ shareTypeLabels.value?.[k] || getShareLabel(k, programsList.value) }}
+                      <span v-if="p?.shares_meta && p.shares_meta[k] && (p.shares_meta[k].type === 'percentage' && p.shares_meta[k].value !== null)" class="text-xs text-gray-500 ml-2">({{ formatPercent(p.shares_meta[k].value) }})</span>
+                      <span v-else-if="p?.shares_meta && p.shares_meta[k] && (p.shares_meta[k].type === 'nominal' && p.shares_meta[k].value !== null)" class="text-xs text-gray-500 ml-2">({{ formatCurrency(p.shares_meta[k].value) }})</span>
+                    </td>
+                    <td class="border-r border-gray-200 px-4 py-3 text-center dark:border-gray-700">{{ formatCurrency(p?.[k] || 0) }}</td>
+                  </tr>
+
+                  <tr v-if="computeUnallocated(p) > 0" class="hover:bg-gray-50 dark:hover:bg-gray-800/20">
+                    <td class="sticky left-0 z-10 border-r border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90">Sisa Belum Teralokasi</td>
+                    <td class="border-r border-gray-200 px-4 py-3 text-center dark:border-gray-700">{{ formatCurrency(computeUnallocated(p)) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -237,6 +237,16 @@ const formatCurrency = (v: number) => {
   return currencyFormatter({ value: v })
 }
 
+// Format percentage values: show no decimals for whole numbers (e.g. 20 -> "20%"),
+// otherwise show up to 2 decimals (e.g. 20.23 -> "20.23%").
+const formatPercent = (raw: any) => {
+  if (raw === null || raw === undefined) return ''
+  const num = Number(raw)
+  if (!Number.isFinite(num)) return `${String(raw)}%`
+  if (Number.isInteger(num)) return `${num}%`
+  return `${parseFloat(num.toFixed(2))}%`
+}
+
 // Map share key to header label
 function toHeader(key: string) {
   switch ((key || '').toString()) {
@@ -259,32 +269,55 @@ function toHeader(key: string) {
   }
 }
 
-// Get a friendly label for a share key. Prefer known mappings (toHeader), then
-// try program metadata (shares_meta), otherwise fall back to a humanized key.
+// Normalize keys by removing custom_ prefix
+function stripKey(key: any) {
+  return String(key || '').replace(/^custom_/, '')
+}
+
+// Get a friendly label for a share key. Prefer: server-provided mapping, then program metadata, then humanized fallback.
 function getShareLabel(key: string, programs: any[]) {
-  const basic = toHeader(key)
-  if (basic && basic !== String(key)) return basic
+  const cleaned = stripKey(key)
+
+  // Prefer global mapping if available
+  try {
+    if (shareTypeLabels.value && (shareTypeLabels.value[key] || shareTypeLabels.value[cleaned])) {
+      return shareTypeLabels.value[key] || shareTypeLabels.value[cleaned]
+    }
+  } catch (e) { /* ignore */ }
+
+  // Known header names (dp, ops_1, etc.)
+  const basic = toHeader(cleaned)
+  if (basic && basic !== String(cleaned)) return basic
 
   try {
     for (const p of (programs || [])) {
-      const meta = p?.shares_meta?.[key]
+      if (!p) continue
+      // try exact key then cleaned key
+      const meta = p?.shares_meta?.[key] || p?.shares_meta?.[cleaned]
       if (meta) {
         if (typeof meta === 'string') return meta
         if (meta.label || meta.name || meta.title) return meta.label || meta.name || meta.title
       }
       // Some payloads may provide label mappings on the program object directly
-      if (p && p.share_labels && p.share_labels[key]) return p.share_labels[key]
+      if (p && p.share_labels && (p.share_labels[key] || p.share_labels[cleaned])) return p.share_labels[key] || p.share_labels[cleaned]
     }
   } catch (e) { /* ignore */ }
 
-  // Fallback: remove custom_ prefix and humanize
-  let label = String(key).replace(/^custom_/, '').replace(/_/g, ' ')
+  // Fallback: humanize cleaned key
+  let label = String(cleaned).replace(/_/g, ' ')
   label = label.replace(/\b\w/g, (c) => c.toUpperCase())
   return label
 }
 
 // Pinned bottom rows for totals
 const pinnedBottomRowData = ref<any[]>([])
+
+// Programs and share keys for form-style layout
+const programsList = ref<any[]>([])
+const activeShareKeys = ref<string[]>([])
+
+// Global mapping of share key -> friendly name provided by the API
+const shareTypeLabels = ref<Record<string,string>>({})
 
 // Summary boxes shown above the grid (dynamically built from program summaries)
 const summaryBoxes = ref<any[]>([])
@@ -374,77 +407,59 @@ const cancelDelete = () => {
   deleteId.value = null
 }
 
+// Helper: compute unallocated amount for a program safely
+const computeUnallocated = (p: any) => {
+  if (!p) return 0
+  const total = Number(p.total_transaksi || 0)
+  const allocated = (activeShareKeys.value || []).reduce((s: number, k: string) => {
+    const v = Number(p?.[k] || 0)
+    return s + (Number.isFinite(v) ? v : 0)
+  }, 0)
+  return Math.max(0, total - allocated)
+}
+
+// Refresh handler for form layout
+const handleRefresh = async () => {
+  try {
+    await fetchSummary()
+    refreshGrid(true)
+    toast.success('Data berhasil diperbarui')
+  } catch (e) {
+    toast.error('Gagal memperbarui data')
+  }
+}
+
 // Handle export to Excel - export exactly the AG Grid view including pinned rows
 const handleExportExcel = () => {
-  // Build flattened fields and a two-row header with merges for program groups
-  const fields: string[] = []
-  const headerRow1: any[] = []
-  const headerRow2: any[] = []
-  const merges: any[] = []
+  // Export the current Per-Program Breakdown table
+  const headers: string[] = ['Program', 'Nominal Transaksi', ...activeShareKeys.value.map((k: string) => (shareTypeLabels.value[k] || toHeader(k)))]
 
-  // iterate top-level columnDefs in order
-  let colIndex = 0
-  columnDefs.forEach((c: any) => {
-    if (c.field) {
-      // single column (e.g., Tanggal Transaksi, Nominal Transaksi) -> merge vertically across 2 rows
-      const title = c.headerName || c.field
-      headerRow1.push(title)
-      headerRow2.push('')
-      // merge rows 0..1 at this column
-      merges.push({ s: { r: 0, c: colIndex }, e: { r: 1, c: colIndex } })
-      fields.push(c.field)
-      colIndex += 1
-    } else if (c.children && Array.isArray(c.children)) {
-      const groupTitle = c.headerName || ''
-      const childCount = c.children.length
-      // place group title spanning childCount columns in headerRow1
-      for (let i = 0; i < childCount; i++) {
-        headerRow1.push(i === 0 ? groupTitle : '')
-      }
-      // merge the group title across the children columns
-      merges.push({ s: { r: 0, c: colIndex }, e: { r: 0, c: colIndex + childCount - 1 } })
-
-      // second header row contains child headers
-      c.children.forEach((ch: any) => {
-        headerRow2.push(ch.headerName || ch.field)
-        fields.push(ch.field)
-        colIndex += 1
-      })
-    }
-  })
-
-  // Build AOA rows: headerRow1, headerRow2, then data rows
   const aoa: any[] = []
-  aoa.push(headerRow1)
-  aoa.push(headerRow2)
+  aoa.push(headers)
 
-  // add data rows in display order
-  rowDataArray.value.forEach((r: any) => {
+  // rows per program
+  programsList.value.forEach((p: any) => {
     const row: any[] = []
-    fields.forEach((f: string) => {
-      const raw = r[f]
-      row.push((typeof raw === 'number') ? raw : (raw ?? ''))
+    row.push(p?.program_name || '')
+    row.push(Number(p?.total_transaksi || 0))
+    activeShareKeys.value.forEach((k: string) => {
+      row.push(Number(p?.[k] || 0))
     })
     aoa.push(row)
   })
 
-  // append pinned rows
-  if (pinnedBottomRowData.value && pinnedBottomRowData.value.length) {
-    pinnedBottomRowData.value.forEach((pr: any) => {
-      const prow: any[] = []
-      fields.forEach((f: string) => {
-        const raw = pr[f]
-        prow.push((typeof raw === 'number') ? raw : (raw ?? ''))
-      })
-      aoa.push(prow)
-    })
-  }
+  // add totals row
+  const totalsRow: any[] = []
+  totalsRow.push('TOTAL')
+  const totalNominal = programsList.value.reduce((s: number, p: any) => s + Number(p?.total_transaksi || 0), 0)
+  totalsRow.push(totalNominal)
+  activeShareKeys.value.forEach((k: string) => {
+    const sum = programsList.value.reduce((s: number, p: any) => s + Number(p?.[k] || 0), 0)
+    totalsRow.push(sum)
+  })
+  aoa.push(totalsRow)
 
   const worksheet = XLSX.utils.aoa_to_sheet(aoa)
-  // apply merges
-  worksheet['!merges'] = worksheet['!merges'] || []
-  merges.forEach((m: any) => worksheet['!merges'].push(m))
-
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Keuangan')
   const now = new Date()
@@ -574,6 +589,10 @@ const fetchSummary = async () => {
     const programs = payload.data.rows || []
     const shareKeys = payload.data.columns && payload.data.columns.length ? payload.data.columns : ['dp','ops_1','ops_2','program','fee_mitra','bonus','championship']
 
+    // Save into reactive refs used by the form layout
+    programsList.value = (programs || []).filter(Boolean)
+    activeShareKeys.value = shareKeys
+
     // Build dynamic columnDefs: first column is a summary label (left pinned), then one group column per program with children for each share key
     const dynamicCols: any[] = []
     dynamicCols.push({ headerName: 'Ringkasan', field: 'summary_label', pinned: 'left', width: 250 })
@@ -581,9 +600,10 @@ const fetchSummary = async () => {
       dynamicCols.push({ headerName: 'Nominal Transaksi Keseluruhan', field: 'nominal', pinned: 'left', width: 160, valueFormatter: currencyFormatter, resizable: true })
 
     // Global mapping of share key -> friendly name provided by the API
-    const shareTypeLabels: Record<string, string> = (payload.data && payload.data.share_type_labels) ? payload.data.share_type_labels : {}
+    shareTypeLabels.value = (payload.data && payload.data.share_type_labels) ? payload.data.share_type_labels : {}
 
     programs.forEach((p: any) => {
+      if (!p) return
       // build children starting with per-program nominal transaksi
       const children: any[] = []
       children.push({ headerName: 'Nominal Transaksi', field: `p_${p.program_id || p.id}_nominal`, valueFormatter: currencyFormatter, resizable: true, width: 160 })
@@ -595,20 +615,14 @@ const fetchSummary = async () => {
           const meta = sharesMeta[k] || sharesMeta[k.toString()] || null
           if (meta) {
             if (meta.type === 'percentage' && meta.value !== null && meta.value !== undefined) {
-              const num = Number(meta.value)
-              if (!Number.isFinite(num)) {
-                childMeta = ` (${meta.value}%)`
-              } else {
-                // show integer when whole, otherwise show up to 2 decimals
-                childMeta = Number.isInteger(num) ? ` (${num}%)` : ` (${num % 1 === 0 ? num : parseFloat(num.toFixed(2))}%)`
-              }
+              childMeta = ` (${formatPercent(meta.value)})`
             } else if (meta.type === 'nominal' && meta.value !== null && meta.value !== undefined) {
               childMeta = ` (${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(meta.value)})`
             }
           }
         } catch (e) { /* ignore */ }
 
-        const labelName = shareTypeLabels[k] || getShareLabel(k, programs)
+        const labelName = shareTypeLabels.value[k] || getShareLabel(k, programs)
 
         return {
           headerName: `${labelName}${childMeta}`,
@@ -661,14 +675,15 @@ const fetchSummary = async () => {
     // Build a single totals row (summary across the selected date range)
     const totalsRow: any = { summary_label: 'TOTAL' }
     // total nominal can be taken from program totals
-    const totalNominal = programs.reduce((s: number, p: any) => s + (p.total_transaksi || 0), 0)
+    const totalNominal = programs.reduce((s: number, p: any) => s + Number(p?.total_transaksi || 0), 0)
 
     programs.forEach((p: any) => {
+      if (!p) return
       const nominalFld = `p_${p.program_id || p.id}_nominal`
-      totalsRow[nominalFld] = p.total_transaksi || 0
+      totalsRow[nominalFld] = Number(p.total_transaksi || 0)
       shareKeys.forEach((k: string) => {
         const fld = `p_${p.program_id || p.id}_${k}`
-        totalsRow[fld] = p[k] || 0
+        totalsRow[fld] = Number(p?.[k] || 0)
       })
     })
 
@@ -682,8 +697,8 @@ const fetchSummary = async () => {
     // Note: These represent allocated amounts per share type across all programs
     let totalSharesSum = 0
     shareKeys.forEach((k: string) => {
-      const sum = programs.reduce((s: number, p: any) => s + (Number(p[k] || 0) || 0), 0)
-      const labelName = shareTypeLabels[k] || getShareLabel(k, programs)
+      const sum = programs.reduce((s: number, p: any) => s + Number(p?.[k] || 0), 0)
+      const labelName = shareTypeLabels.value[k] || getShareLabel(k, programs)
       boxes.push({ label: `Nominal All ${labelName}`, value: sum })
       totalSharesSum += sum
     })

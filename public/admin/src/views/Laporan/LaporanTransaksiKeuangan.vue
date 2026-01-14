@@ -188,6 +188,16 @@ function currencyFormatter(params: any) {
   return ''
 }
 
+// Format percentage values: show no decimals for whole numbers (e.g. 20 -> "20%"),
+// otherwise show up to 2 decimals (e.g. 20.23 -> "20.23%").
+const formatPercent = (raw: any) => {
+  if (raw === null || raw === undefined) return ''
+  const num = Number(raw)
+  if (!Number.isFinite(num)) return `${String(raw)}%`
+  if (Number.isInteger(num)) return `${num}%`
+  return `${parseFloat(num.toFixed(2))}%`
+} 
+
 // Map share key to header label
 function toHeader(key: string) {
   switch ((key || '').toString()) {
@@ -514,21 +524,17 @@ const fetchSummary = async () => {
           const meta = sharesMeta[k] || sharesMeta[k.toString()] || null
           if (meta) {
             if (meta.type === 'percentage' && meta.value !== null && meta.value !== undefined) {
-              const num = Number(meta.value)
-              if (!Number.isFinite(num)) {
-                childMeta = ` (${meta.value}%)`
-              } else {
-                // show integer when whole, otherwise show up to 2 decimals
-                childMeta = Number.isInteger(num) ? ` (${num}%)` : ` (${num % 1 === 0 ? num : parseFloat(num.toFixed(2))}%)`
-              }
+              childMeta = ` (${formatPercent(meta.value)})`
             } else if (meta.type === 'nominal' && meta.value !== null && meta.value !== undefined) {
               childMeta = ` (${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(meta.value)})`
             }
           }
         } catch (e) { /* ignore */ }
 
+        const cleanedKey = (k || '').toString().replace(/^custom_/, '')
+        const labelName = shareTypeLabels[k] || shareTypeLabels[cleanedKey] || (p?.shares_meta && (p.shares_meta[k] || p.shares_meta[cleanedKey]) && ((p.shares_meta[k] && (p.shares_meta[k].label || p.shares_meta[k].name)) || (p.shares_meta[cleanedKey] && (p.shares_meta[cleanedKey].label || p.shares_meta[cleanedKey].name)))) || toHeader(cleanedKey || k)
         return {
-          headerName: `${shareTypeLabels[k] || toHeader(k)}${childMeta}`,
+          headerName: `${labelName}${childMeta}`,
           field: `p_${p.program_id || p.id}_${k}`,
           valueFormatter: currencyFormatter,
           resizable: true,

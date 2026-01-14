@@ -99,7 +99,9 @@ async function fetchSummary() {
     defs.push({ headerName: 'Total Transaksi', field: 'total_transaksi', flex: 1, valueFormatter: currencyFormatter })
     const shareTypeLabels: Record<string, string> = (data.data && data.data.share_type_labels) ? data.data.share_type_labels : {}
     ;(data.data.columns ?? []).forEach((c: string) => {
-      defs.push({ headerName: shareTypeLabels[c] || toHeader(c), field: c, flex: 1, valueFormatter: currencyFormatter })
+      const cleaned = String(c || '').replace(/^custom_/, '')
+      const header = shareTypeLabels[c] || shareTypeLabels[cleaned] || toHeader(cleaned)
+      defs.push({ headerName: header, field: c, flex: 1, valueFormatter: currencyFormatter })
     })
 
     columnDefs.value = defs
@@ -118,7 +120,10 @@ async function fetchSummary() {
 function toHeader(key: string) {
   // simple mapping for known keys
   const map: any = { dp: 'DP', ops_1: 'OPS 1', ops_2: 'OPS 2', program: 'Program', fee_mitra: 'Fee Mitra', bonus: 'Bonus', championship: 'Championship' }
-  return map[key] || key.replace(/_/g, ' ').toUpperCase()
+  if (map[key]) return map[key]
+  // Remove custom_ prefix and make a human-friendly title case label
+  const cleaned = String(key || '').replace(/^custom_/, '').replace(/_/g, ' ').trim()
+  return cleaned.replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 onMounted(() => {

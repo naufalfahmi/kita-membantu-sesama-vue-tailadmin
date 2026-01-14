@@ -426,7 +426,10 @@ class ProgramController extends Controller
                     $inflowQuery->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()]);
                 }
                 if ($fundraiserId) {
-                    $inflowQuery->where('fundraiser_id', $fundraiserId);
+                    // Filter by fundraiser via donaturs.pic
+                    $inflowQuery->whereHas('donatur', function($q) use ($fundraiserId) {
+                        $q->where('pic', $fundraiserId);
+                    });
                 }
                 if ($mitraId) {
                     $inflowQuery->where('mitra_id', $mitraId);
@@ -523,7 +526,10 @@ class ProgramController extends Controller
                 $transQuery->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()]);
             }
             if ($fundraiserId) {
-                $transQuery->where('fundraiser_id', $fundraiserId);
+                // Filter by fundraiser via donaturs.pic
+                $transQuery->whereHas('donatur', function($q) use ($fundraiserId) {
+                    $q->where('pic', $fundraiserId);
+                });
             }
             if ($mitraId) {
                 $transQuery->where('mitra_id', $mitraId);

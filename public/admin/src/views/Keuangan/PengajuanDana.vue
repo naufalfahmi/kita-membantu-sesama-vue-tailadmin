@@ -305,18 +305,18 @@ const columnDefs = [
     // flex: 1,
   },
   {
-    headerName: 'Tanggal Pemakaian',
-    field: 'tanggalPemakaian',
+    headerName: 'Jumlah Dana',
+    field: 'jumlahDana',
     sortable: true,
     filter: false,
     // flex: 1,
     valueFormatter: (params: any) => {
       if (params.value) {
-        return new Date(params.value).toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
+        return new Intl.NumberFormat('id-ID', {
+          style: 'currency',
+          currency: 'IDR',
+          minimumFractionDigits: 0,
+        }).format(params.value)
       }
       return ''
     },
@@ -349,18 +349,18 @@ const columnDefs = [
     },
   },
   {
-    headerName: 'Jumlah Dana',
-    field: 'jumlahDana',
+    headerName: 'Tanggal Pemakaian',
+    field: 'tanggalPemakaian',
     sortable: true,
     filter: false,
     // flex: 1,
     valueFormatter: (params: any) => {
       if (params.value) {
-        return new Intl.NumberFormat('id-ID', {
-          style: 'currency',
-          currency: 'IDR',
-          minimumFractionDigits: 0,
-        }).format(params.value)
+        return new Date(params.value).toLocaleDateString('id-ID', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
       }
       return ''
     },

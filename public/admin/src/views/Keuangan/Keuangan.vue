@@ -635,12 +635,21 @@ const fetchSummary = async () => {
     const boxes: any[] = []
     boxes.push({ label: 'Nominal Keseluruhan Transaksi', value: totalNominal })
 
-    // Include aggregated totals for each share key (dynamic)
+    // Include aggregated totals for each share key
+    // Note: These represent allocated amounts per share type across all programs
+    let totalSharesSum = 0
     shareKeys.forEach((k: string) => {
       const sum = programs.reduce((s: number, p: any) => s + (Number(p[k] || 0) || 0), 0)
       const labelName = shareTypeLabels[k] || getShareLabel(k, programs)
       boxes.push({ label: `Nominal All ${labelName}`, value: sum })
+      totalSharesSum += sum
     })
+    
+    // Calculate unallocated (remainder)
+    const unallocated = totalNominal - totalSharesSum
+    if (unallocated > 0) {
+      boxes.push({ label: 'Sisa Belum Teralokasi', value: unallocated })
+    }
 
     summaryBoxes.value = boxes
 

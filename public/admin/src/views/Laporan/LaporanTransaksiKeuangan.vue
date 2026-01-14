@@ -489,6 +489,9 @@ const fetchSummary = async () => {
       return
     }
 
+    // Extract share type labels from API response
+    const shareTypeLabels: Record<string, string> = (payload.data && payload.data.share_type_labels) ? payload.data.share_type_labels : {}
+
     // Pivot: build group columns per program and rows per share key
     const programs = payload.data.rows || []
     const shareKeys = payload.data.columns && payload.data.columns.length ? payload.data.columns : ['dp','ops_1','ops_2','program','fee_mitra','bonus','championship']
@@ -525,7 +528,7 @@ const fetchSummary = async () => {
         } catch (e) { /* ignore */ }
 
         return {
-          headerName: `${toHeader(k)}${childMeta}`,
+          headerName: `${shareTypeLabels[k] || toHeader(k)}${childMeta}`,
           field: `p_${p.program_id || p.id}_${k}`,
           valueFormatter: currencyFormatter,
           resizable: true,

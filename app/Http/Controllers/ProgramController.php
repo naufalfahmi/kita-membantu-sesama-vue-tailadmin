@@ -434,46 +434,45 @@ class ProgramController extends Controller
                 }
 
                 // compute allocated per share based on inflow (same logic as balance)
+                $totalAllocated = 0;
+                $hasPercentageShares = false;
+                
                 foreach ($program->shares as $s) {
                     $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
                     $key = $pst->key ?? ($s->program_share_type_key ?? null) ?? 'unknown';
-                    $allocated = $inflow;
+                    $allocated = 0;
+                    
                     if ($s->type === 'percentage' && $s->value !== null) {
                         $allocated = (int) floor($inflow * (float)$s->value / 100);
+                        $hasPercentageShares = true;
                     } elseif ($s->type === 'nominal' && $s->value !== null) {
                         $allocated = (int) $s->value;
                     }
+                    
                     if (! isset($row[$key])) $row[$key] = 0;
                     $row[$key] = $row[$key] + $allocated;
+                    $totalAllocated += $allocated;
                 }
-
-                // compute disbursed amounts per submission_type mapping
-                // map share keys to submission_type
-                $map = ['program' => 'program', 'ops_1' => 'gaji karyawan', 'ops_2' => 'operasional'];
-
-                $disbursedQuery = \App\Models\PengajuanDanaDisbursement::where('program_id', $program->id);
-                if ($start && $end) {
-                    $disbursedQuery->whereBetween('tanggal_disburse', [$start->toDateString(), $end->toDateString()]);
-                }
-                $disbursedRows = $disbursedQuery->selectRaw('pengajuan_dana_id, SUM(amount) as total')
-                    ->groupBy('pengajuan_dana_id')
-                    ->get();
-
-                // attach disbursed amounts to corresponding share keys by looking up pengajuan submission_type
-                foreach ($disbursedRows as $dr) {
-                    $peng = \App\Models\PengajuanDana::find($dr->pengajuan_dana_id);
-                    $stype = $peng ? ($peng->submission_type ?? null) : null;
-                    // find key for this submission_type
-                    $keyFor = array_search($stype, $map, true);
-                    if ($keyFor === false) {
-                        // if not mapped, try to map common names
-                        if ($stype === 'operasional') $keyFor = 'ops_2';
-                        elseif ($stype === 'gaji karyawan') $keyFor = 'ops_1';
-                        else $keyFor = 'program';
+                
+                // If there's unallocated amount and program has 'program' share with no specific config,
+                // allocate the remainder to it
+                $unallocated = $inflow - $totalAllocated;
+                if ($unallocated > 0 && isset($row['program'])) {
+                    // Check if 'program' share has no specific percentage/nominal set
+                    $programShare = $program->shares->first(function($s) {
+                        $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                        $key = $pst->key ?? ($s->program_share_type_key ?? null) ?? 'unknown';
+                        return $key === 'program' && ($s->type === null || $s->value === null);
+                    });
+                    
+                    if ($programShare || $row['program'] == 0) {
+                        // Allocate remainder to program share
+                        $row['program'] += $unallocated;
                     }
-                    if (! isset($row[$keyFor])) $row[$keyFor] = 0;
-                    $row[$keyFor] += (int) $dr->total;
                 }
+
+                // Note: Disbursed amounts are tracked separately in disbursedTotals
+                // and should not be added to allocated amounts to avoid double-counting
 
                 // accumulate totals
                 $totals['total_transaksi'] += $row['total_transaksi'];
@@ -521,13 +520,14 @@ class ProgramController extends Controller
                 // compute allocation for the program that owns this transaksi
                 if (! empty($t->program_id) && isset($programMap[$t->program_id])) {
                     $prog = $programMap[$t->program_id];
+                    $totalAllocated = 0;
 
                     // For each share of this program, compute allocated amount for this transaksi
                     foreach ($prog->shares as $s) {
                         $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
                         $key = $pst->key ?? ($s->program_share_type_key ?? null) ?? 'program';
 
-                        $allocatedForTrans = (int) $t->nominal;
+                        $allocatedForTrans = 0;
                         if ($s->type === 'percentage' && $s->value !== null) {
                             $allocatedForTrans = (int) floor((int)$t->nominal * (float)$s->value / 100);
                         } elseif ($s->type === 'nominal' && $s->value !== null) {
@@ -536,10 +536,29 @@ class ProgramController extends Controller
 
                         $fldShare = 'p_' . ($t->program_id) . '_' . $key;
                         $prow[$fldShare] = $allocatedForTrans;
+                        $totalAllocated += $allocatedForTrans;
 
                         // If this share represents the 'program' pool, also set legacy per-program field
                         if ($key === 'program') {
                             $prow['p_' . ($t->program_id)] = $allocatedForTrans;
+                        }
+                    }
+                    
+                    // Allocate remainder to 'program' share if exists and has no value
+                    $unallocated = (int)$t->nominal - $totalAllocated;
+                    if ($unallocated > 0) {
+                        $programShareKey = 'p_' . ($t->program_id) . '_program';
+                        if (isset($prow[$programShareKey])) {
+                            $programShare = $prog->shares->first(function($s) {
+                                $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                                $key = $pst->key ?? ($s->program_share_type_key ?? null) ?? 'unknown';
+                                return $key === 'program' && ($s->type === null || $s->value === null);
+                            });
+                            
+                            if ($programShare || $prow[$programShareKey] == 0) {
+                                $prow[$programShareKey] += $unallocated;
+                                $prow['p_' . ($t->program_id)] += $unallocated;
+                            }
                         }
                     }
                 }

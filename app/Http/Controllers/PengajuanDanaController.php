@@ -310,8 +310,94 @@ class PengajuanDanaController extends Controller
                     if ($stype === 'operasional') $shareKey = 'ops_2';
                     elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                     else $shareKey = 'program';
-                    // use default lookback = 1 (previous month)
-                    $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), null, $shareKey, 1);
+
+                    // If caller provided explicit date range, compute remaining in that window
+                    if ($request->filled('start_date') && $request->filled('end_date')) {
+                        $start = \Carbon\Carbon::parse($request->input('start_date'))->startOfDay();
+                        $end = \Carbon\Carbon::parse($request->input('end_date'))->endOfDay();
+
+                        // compute inflow in range
+                        $inflow = \App\Models\Transaksi::where('program_id', $request->input('program_id'))
+                            ->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()])
+                            ->sum('nominal');
+
+                        // determine allocation share
+                        $program = \App\Models\Program::with('shares.type')->find($request->input('program_id'));
+                        $allocation = null;
+                        if ($program) {
+                            foreach ($program->shares as $s) {
+                                $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                                if ($pst && ($pst->key ?? null) === $shareKey) { $allocation = $s; break; }
+                            }
+                            if (! $allocation && count($program->shares) > 0) $allocation = $program->shares[0];
+                        }
+
+                        $allocated = $inflow;
+                        if ($allocation) {
+                            if ($allocation->type === 'percentage' && $allocation->value !== null) {
+                                $allocated = (int) floor($inflow * (float)$allocation->value / 100);
+                            } elseif ($allocation->type === 'nominal' && $allocation->value !== null) {
+                                $allocated = (int) $allocation->value;
+                            }
+                        }
+
+                        $outflow = \App\Models\PengajuanDanaDisbursement::where('program_id', $request->input('program_id'))
+                            ->whereBetween('tanggal_disburse', [$start->toDateString(), $end->toDateString()])
+                            ->whereHas('pengajuan', function ($q) use ($stype) {
+                                $q->where('submission_type', $stype);
+                            })->sum('amount');
+
+                        $remaining = max(0, $allocated - $outflow);
+
+                    } else {
+                        // If caller did not provide explicit range, mimic the balance endpoint behavior:
+                        // - if the program has transaksi, compute across full history (min..max)
+                        // - otherwise fall back to previous-month lookback (lookback = 1)
+                        $minDate = \App\Models\Transaksi::where('program_id', $request->input('program_id'))->min('tanggal_transaksi');
+                        $maxDate = \App\Models\Transaksi::where('program_id', $request->input('program_id'))->max('tanggal_transaksi');
+
+                        if ($minDate && $maxDate) {
+                            $start = \Carbon\Carbon::parse($minDate)->startOfDay();
+                            $end = \Carbon\Carbon::parse($maxDate)->endOfDay();
+
+                            // compute inflow for full history
+                            $inflow = \App\Models\Transaksi::where('program_id', $request->input('program_id'))
+                                ->whereBetween('tanggal_transaksi', [$start->toDateString(), $end->toDateString()])
+                                ->sum('nominal');
+
+                            // determine allocation share
+                            $program = \App\Models\Program::with('shares.type')->find($request->input('program_id'));
+                            $allocation = null;
+                            if ($program) {
+                                foreach ($program->shares as $s) {
+                                    $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                                    if ($pst && ($pst->key ?? null) === $shareKey) { $allocation = $s; break; }
+                                }
+                                if (! $allocation && count($program->shares) > 0) $allocation = $program->shares[0];
+                            }
+
+                            $allocated = $inflow;
+                            if ($allocation) {
+                                if ($allocation->type === 'percentage' && $allocation->value !== null) {
+                                    $allocated = (int) floor($inflow * (float)$allocation->value / 100);
+                                } elseif ($allocation->type === 'nominal' && $allocation->value !== null) {
+                                    $allocated = (int) $allocation->value;
+                                }
+                            }
+
+                            $outflow = \App\Models\PengajuanDanaDisbursement::where('program_id', $request->input('program_id'))
+                                ->whereBetween('tanggal_disburse', [$start->toDateString(), $end->toDateString()])
+                                ->whereHas('pengajuan', function ($q) use ($stype) {
+                                    $q->where('submission_type', $stype);
+                                })->sum('amount');
+
+                            $remaining = max(0, $allocated - $outflow);
+                        } else {
+                            // fallback: use previous month lookback
+                            $remaining = $this->computeProgramRemaining($request->input('program_id'), $request->input('used_at'), null, $shareKey, 1);
+                        }
+                    }
+
                     if ((int)$request->input('amount') > $remaining) {
                         return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan', 'remaining' => $remaining], 422);
                     }

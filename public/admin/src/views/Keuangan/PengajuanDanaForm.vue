@@ -565,7 +565,7 @@ const handleSave = async () => {
       return
     }
 
-    const payload = {
+    const payload: any = {
       fundraiser_id: formData.applicant,
       submission_type: formData.submissionType,
       program_id: formData.programId || null,
@@ -574,6 +574,24 @@ const handleSave = async () => {
       used_at: formData.usedAt,
       purpose: formData.purpose,
       kantor_cabang_id: formData.branchId,
+    }
+
+    // If user selected an explicit allocation range, include it so backend validates against same window
+    if (allocationRange && Array.isArray(allocationRange.value) && allocationRange.value.length >= 2) {
+      const toIso = (v: any) => {
+        if (!v) return null
+        if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return v
+        const dt = new Date(v)
+        if (isNaN(dt.getTime())) return null
+        return dt.toISOString().split('T')[0]
+      }
+      const [s, e] = allocationRange.value
+      const startIso = toIso(s)
+      const endIso = toIso(e)
+      if (startIso && endIso) {
+        payload.start_date = startIso
+        payload.end_date = endIso
+      }
     }
 
     const csrf = await getCsrfTokenSafe()

@@ -57,6 +57,10 @@ class PengajuanDanaController extends Controller
             $query->where('status', $request->input('status'));
         }
 
+        if ($request->filled('submission_type')) {
+            $query->where('submission_type', $request->input('submission_type'));
+        }
+
         if ($request->filled('tanggal')) {
             $tanggal = $request->input('tanggal');
             $query->whereDate('created_at', $tanggal);

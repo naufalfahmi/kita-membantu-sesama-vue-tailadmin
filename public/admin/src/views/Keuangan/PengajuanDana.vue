@@ -120,13 +120,14 @@
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Jumlah Dana Min
+              Tipe Penyaluran
             </label>
-            <input
-              type="number"
-              v-model="filterJumlahMin"
-              placeholder="Jumlah minimum..."
-              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            <SearchableSelect
+              v-model="filterTipePenyaluran"
+              :options="tipePenyaluranOptions"
+              placeholder="Semua Tipe"
+              :search-input="tipePenyaluranSearchInput"
+              @update:search-input="tipePenyaluranSearchInput = $event"
             />
           </div>
         </div>
@@ -228,6 +229,14 @@ const statusFilterOptions = [
    { value: 'Draft', label: 'Draft' },
 ]
 const statusFilterSearchInput = ref('')
+
+const tipePenyaluranOptions = [
+   { value: '', label: 'Semua' },
+   { value: 'program', label: 'Program' },
+   { value: 'operasional', label: 'Operasional' },
+   { value: 'gaji karyawan', label: 'Gaji Karyawan' },
+]
+const tipePenyaluranSearchInput = ref('')
 
 const resolveApprovalLabel = (record: any): string => {
   if (!record) return '-'
@@ -502,7 +511,7 @@ const rowDataArray = ref<PengajuanDanaRow[]>([])
 const filterNamaPengaju = ref('')
 const filterStatus = ref('')
 const filterTanggal = ref('')
-const filterJumlahMin = ref('')
+const filterTipePenyaluran = ref('')
 const filterJumlahMax = ref('')
 
 // Filtered data based on filter
@@ -536,12 +545,9 @@ const filteredData = computed(() => {
     })
   }
   
-  // Filter by Jumlah Dana Min
-  if (filterJumlahMin.value) {
-    const minAmount = parseFloat(filterJumlahMin.value)
-    if (!isNaN(minAmount)) {
-      filtered = filtered.filter((item) => item.jumlahDana >= minAmount)
-    }
+  // Filter by Tipe Penyaluran
+  if (filterTipePenyaluran.value) {
+    filtered = filtered.filter((item) => item.submissionType === filterTipePenyaluran.value)
   }
   
   // Filter by Jumlah Dana Max
@@ -611,7 +617,7 @@ const handleExportExcel = () => {
   if (filterNamaPengaju.value) qp.search = filterNamaPengaju.value
   if (filterStatus.value) qp.status = filterStatus.value
   if (filterTanggal.value) qp.tanggal = filterTanggal.value
-  if (filterJumlahMin.value) qp.amount_min = filterJumlahMin.value
+  if (filterTipePenyaluran.value) qp.submission_type = filterTipePenyaluran.value
   if (filterJumlahMax.value) qp.amount_max = filterJumlahMax.value
 
   const queryString = Object.keys(qp).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(qp[k])).join('&')
@@ -705,7 +711,7 @@ const createDataSource = (): IDatasource => {
       if (filterNamaPengaju.value) qp.search = filterNamaPengaju.value
       if (filterStatus.value) qp.status = filterStatus.value
       if (filterTanggal.value) qp.tanggal = filterTanggal.value
-      if (filterJumlahMin.value) qp.amount_min = filterJumlahMin.value
+      if (filterTipePenyaluran.value) qp.submission_type = filterTipePenyaluran.value
       if (filterJumlahMax.value) qp.amount_max = filterJumlahMax.value
 
       // Sorting: map first sortModel entry
@@ -866,7 +872,7 @@ const onSortChanged = () => {
 let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 // Watch for filter changes and refresh grid with debounce
-watch([filterNamaPengaju, filterStatus, filterTanggal, filterJumlahMin, filterJumlahMax], () => {
+watch([filterNamaPengaju, filterStatus, filterTanggal, filterTipePenyaluran, filterJumlahMax], () => {
   // Clear existing timer
   if (filterDebounceTimer) {
     clearTimeout(filterDebounceTimer)
@@ -883,7 +889,7 @@ const resetFilter = () => {
   filterNamaPengaju.value = ''
   filterStatus.value = ''
   filterTanggal.value = ''
-  filterJumlahMin.value = ''
+  filterTipePenyaluran.value = ''
   filterJumlahMax.value = ''
 }
 </script>

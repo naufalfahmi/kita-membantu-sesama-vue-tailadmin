@@ -25,6 +25,29 @@ class PengajuanDanaController extends Controller
             'latestApproval.approver:id,name',
         ]);
 
+        // Apply data visibility based on user role and permissions
+        $user = auth()->user();
+        if ($user) {
+            $isAdmin = $user->hasRole('Admin');
+            $hasApprovalPermission = $user->can('approve pengajuan dana') || $user->can('approval pengajuan dana');
+            
+            if (!$isAdmin) {
+                if ($hasApprovalPermission) {
+                    // Users with approval permission can see data from their kantor_cabang
+                    if ($user->kantor_cabang_id) {
+                        $query->where('kantor_cabang_id', $user->kantor_cabang_id);
+                    } else {
+                        // If no kantor_cabang assigned, only see own data
+                        $query->where('fundraiser_id', $user->id);
+                    }
+                } else {
+                    // Regular users can only see their own data
+                    $query->where('fundraiser_id', $user->id);
+                }
+            }
+            // Admin can see all data (no filter applied)
+        }
+
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             $query->whereHas('fundraiser', fn($q) => $q->where('name', 'like', "%{$search}%"));

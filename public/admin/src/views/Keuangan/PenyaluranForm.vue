@@ -55,11 +55,13 @@
           <!-- Tipe Kredit -->
           <div class="lg:col-span-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe Penyaluran <span class="text-red-500">*</span></label>
-            <select v-model="formData.submissionType" class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800">
-              <option value="program">Program</option>
-              <option value="operasional">Operasional</option>
-              <option value="gaji karyawan">Gaji Karyawan</option>
-            </select>
+            <SearchableSelect
+              v-model="formData.submissionType"
+              :options="submissionTypeList"
+              placeholder="Pilih tipe penyaluran"
+              :search-input="submissionTypeSearchInput"
+              @update:search-input="submissionTypeSearchInput = $event"
+            />
             <p class="mt-2 text-sm text-gray-600">Sisa kredit untuk <span class="font-medium">{{ formData.submissionType }}</span>: <span class="font-medium">{{ formattedCreditTotal }}</span></p>
           </div>
 
@@ -380,9 +382,56 @@ const fetchKantorCabangOptions = async () => {
   }
 }
 
+// Fetch submission types from API (same as PengajuanDanaForm)
+const fetchSubmissionTypes = async () => {
+  try {
+    const res = await fetch('/admin/api/program-share-types/submission-types', {
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    const json = await res.json()
+    if (json.success && Array.isArray(json.data)) {
+      submissionTypeList.value = json.data.map((item: any) => ({
+        value: item.value,
+        label: item.value,
+      }))
+      
+      // Set default submission type to first item if not already set
+      if (!formData.submissionType && submissionTypeList.value.length > 0) {
+        formData.submissionType = submissionTypeList.value[0].value
+      }
+    } else {
+      // Fallback to hardcoded values if API fails
+      submissionTypeList.value = [
+        { value: 'Program', label: 'Program' },
+        { value: 'Operasional', label: 'Operasional' },
+        { value: 'Gaji Karyawan', label: 'Gaji Karyawan' },
+      ]
+      if (!formData.submissionType) {
+        formData.submissionType = 'Program'
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching submission types', err)
+    // Fallback to hardcoded values
+    submissionTypeList.value = [
+      { value: 'Program', label: 'Program' },
+      { value: 'Operasional', label: 'Operasional' },
+      { value: 'Gaji Karyawan', label: 'Gaji Karyawan' },
+    ]
+    if (!formData.submissionType) {
+      formData.submissionType = 'Program'
+    }
+  }
+}
+
 // Search input refs
 const programSearchInput = ref('')
 const kantorCabangSearchInput = ref('')
+const submissionTypeSearchInput = ref('')
+
+// Submission types from API
+const submissionTypeList = ref<Array<{ value: string; label: string }>>([])
 
 // Current user
 const currentUser = ref<any>(null)
@@ -416,7 +465,7 @@ const selectedFiles = ref<File[]>([])
 const formData = reactive({
   amount: null as number | null,
   program: '',
-  submissionType: 'program',
+  submissionType: '',
   pic: '',
   village: '',
   district: '',
@@ -630,6 +679,7 @@ const handleSave = async () => {
 }
 
 onMounted(async () => {
+  await fetchSubmissionTypes()
   await fetchCurrentUser()
   const pengajuanId = route.query.pengajuan_id
   if (pengajuanId) {
@@ -641,6 +691,15 @@ onMounted(async () => {
         // remember pengajuan id so we send it when saving
         formData.pengajuanId = String(pengajuanId)
         formData.submissionType = d.submission_type || formData.submissionType
+        
+        // If submission type from API is not in the list, add it as an option
+        if (d.submission_type && !submissionTypeList.value.find(st => st.value === d.submission_type)) {
+          submissionTypeList.value.unshift({ 
+            value: d.submission_type, 
+            label: d.submission_type,
+          })
+        }
+        
         formData.program = (d.program && (d.program.nama || d.program.nama_program)) || formData.program
         formData.pic = d.fundraiser ? d.fundraiser.name : formData.pic
         formData.amount = (typeof d.amount !== 'undefined' && d.amount !== null) ? Number(d.amount) : formData.amount

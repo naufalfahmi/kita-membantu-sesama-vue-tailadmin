@@ -200,7 +200,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, computed, ref, onMounted, watch } from 'vue'
+import { reactive, computed, ref, onMounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import flatPickr from 'vue-flatpickr-component'
 import 'flatpickr/dist/flatpickr.css'
@@ -569,9 +569,24 @@ const loadData = async () => {
       if (data.fundraiser && !applicantList.value.find(a => a.value === String(data.fundraiser.id))) {
         applicantList.value.unshift({ value: String(data.fundraiser.id), label: data.fundraiser.name || (data.fundraiser.nama || '') })
       }
+    
+    // Set submission type - ensure it exists in submissionTypeList
     formData.submissionType = data.submission_type
+    // If submission type from API is not in the list, add it as an option
+    if (data.submission_type && !submissionTypeList.value.find(st => st.value === data.submission_type)) {
+      submissionTypeList.value.unshift({ 
+        value: data.submission_type, 
+        label: data.submission_type,
+        share_key: '' // Unknown share key for legacy data
+      })
+    }
+    
     formData.amount = data.amount
-    formData.usedAt = data.used_at
+    // Extract date only from used_at (might be datetime or date string)
+    if (data.used_at) {
+      const dateStr = String(data.used_at).split(' ')[0] // Get date part only (Y-m-d)
+      formData.usedAt = dateStr
+    }
     formData.purpose = data.purpose || ''
     formData.branchId = data.kantor_cabang ? data.kantor_cabang.id : ''
       formData.programId = data.program ? String(data.program.id) : ''
@@ -714,16 +729,23 @@ const handleSave = async () => {
 }
 
 onMounted(async () => {
+  // Fetch submission types first
   await fetchSubmissionTypes()
+  
+  // Load options (applicants, branches, programs)
   await loadOptions()
-  await loadData()
-})
-
-// Default usedAt to today when creating new pengajuan
-onMounted(() => {
-  const today = new Date().toISOString().split('T')[0]
-  if (!isEditMode.value && (!formData.usedAt || String(formData.usedAt).trim() === '')) {
-    formData.usedAt = today
+    // Wait for next tick to ensure flatpickr is rendered before setting value
+    await nextTick()
+  
+  // Load existing data if in edit mode
+  if (isEditMode.value) {
+    await loadData()
+  } else {
+    // Default usedAt to today when creating new pengajuan
+    const today = new Date().toISOString().split('T')[0]
+    if (!formData.usedAt || String(formData.usedAt).trim() === '') {
+      formData.usedAt = today
+    }
   }
 })
 </script>

@@ -230,12 +230,9 @@ const statusFilterOptions = [
 ]
 const statusFilterSearchInput = ref('')
 
-const tipePenyaluranOptions = [
+const tipePenyaluranOptions = ref<Array<{ value: string; label: string }>>([
    { value: '', label: 'Semua' },
-   { value: 'program', label: 'Program' },
-   { value: 'operasional', label: 'Operasional' },
-   { value: 'gaji karyawan', label: 'Gaji Karyawan' },
-]
+])
 const tipePenyaluranSearchInput = ref('')
 
 const resolveApprovalLabel = (record: any): string => {
@@ -815,9 +812,35 @@ const refreshGrid = (scrollToTop = false) => {
   })
 }
 
+// Fetch submission types from API (same as PengajuanDanaForm)
+const fetchSubmissionTypes = async () => {
+  try {
+    const res = await fetch('/admin/api/program-share-types/submission-types', {
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    const json = await res.json()
+    if (json.success && Array.isArray(json.data)) {
+      // Map API data to filter options, always keep "Semua" at the top
+      const options = json.data.map((item: any) => ({
+        value: item.value,
+        label: item.value,
+      }))
+      tipePenyaluranOptions.value = [
+        { value: '', label: 'Semua' },
+        ...options
+      ]
+    }
+  } catch (err) {
+    console.error('Error fetching submission types', err)
+    // Keep default "Semua" option if API fails
+  }
+}
+
 // Set datasource after component is mounted
 onMounted(() => {
   fetchUser()
+  fetchSubmissionTypes()
   refreshGrid()
 })
 

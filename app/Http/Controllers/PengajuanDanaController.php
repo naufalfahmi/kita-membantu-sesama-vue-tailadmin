@@ -723,7 +723,7 @@ class PengajuanDanaController extends Controller
 
         $validator = Validator::make($request->all(), [
             'fundraiser_id' => 'nullable|exists:users,id',
-            'submission_type' => ['required', 'string', Rule::in(['program','operasional','gaji karyawan'])],
+            'submission_type' => 'required|string',  // Changed: no longer restricted to hardcoded values
             'program_id' => 'nullable|uuid|exists:program,id',
             'amount' => 'required|integer|min:1',
             'used_at' => 'nullable|date',

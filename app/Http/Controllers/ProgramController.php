@@ -126,12 +126,28 @@ class ProgramController extends Controller
 
                         if (!empty($s['program_share_type_id'])) {
                             $pst = ProgramShareType::find($s['program_share_type_id']);
-                            if ($pst) $pstId = $pst->id;
+                            if ($pst) {
+                                $pstId = $pst->id;
+                                // Update alias if provided in the share data
+                                if (isset($s['alias']) && $s['alias'] !== $pst->alias) {
+                                    $pst->alias = $s['alias'];
+                                    $pst->updated_by = auth()->id();
+                                    $pst->save();
+                                }
+                            }
                         }
 
                         if (!$pstId && !empty($s['program_share_type_key'])) {
                             $pst = ProgramShareType::where('key', $s['program_share_type_key'])->first();
-                            if ($pst) $pstId = $pst->id;
+                            if ($pst) {
+                                $pstId = $pst->id;
+                                // Update alias if provided in the share data
+                                if (isset($s['alias']) && $s['alias'] !== $pst->alias) {
+                                    $pst->alias = $s['alias'];
+                                    $pst->updated_by = auth()->id();
+                                    $pst->save();
+                                }
+                            }
                         }
 
                         // create custom program share type when name provided and no existing type
@@ -139,6 +155,7 @@ class ProgramController extends Controller
                             $new = ProgramShareType::create([
                                 'name' => $s['name'],
                                 'key' => $s['program_share_type_key'] ?? Str::slug($s['name']) . '-' . Str::random(4),
+                                'alias' => $s['alias'] ?? null,
                                 'default_type' => $s['type'] ?? 'percentage',
                                 'program_id' => $program->id,
                                 'orders' => $s['orders'] ?? null,
@@ -208,6 +225,7 @@ class ProgramController extends Controller
                 'program_share_type_id' => $s->program_share_type_id,
                 'program_share_type_key' => $pst->key ?? null,
                 'name' => $pst->name ?? null,
+                'alias' => $pst->alias ?? null,
                 'type' => $s->type,
                 'value' => $s->value,
             ];
@@ -231,7 +249,13 @@ class ProgramController extends Controller
         }
         $month = $request->get('month');
         // allow caller to request a specific share key (e.g. 'ops_1','ops_2','program')
+        // Support both direct share_key and alias mapping
         $shareKey = $request->get('share_key', 'program');
+        $alias = $request->get('alias');
+        if ($alias) {
+            $mappedKey = \App\Http\Controllers\ProgramShareTypeController::getShareKeyFromAlias($alias);
+            if ($mappedKey) $shareKey = $mappedKey;
+        }
         // lookback: how many months before the provided month to take inflow from (default 1 => previous month)
         $lookback = (int) $request->get('lookback', 1);
         // allow explicit date range (start_date, end_date) to compute allocation across arbitrary ranges
@@ -748,18 +772,35 @@ class ProgramController extends Controller
 
                         if (!empty($s['program_share_type_id'])) {
                             $pst = ProgramShareType::find($s['program_share_type_id']);
-                            if ($pst) $pstId = $pst->id;
+                            if ($pst) {
+                                $pstId = $pst->id;
+                                // Update alias if provided in the share data
+                                if (isset($s['alias']) && $s['alias'] !== $pst->alias) {
+                                    $pst->alias = $s['alias'];
+                                    $pst->updated_by = auth()->id();
+                                    $pst->save();
+                                }
+                            }
                         }
 
                         if (!$pstId && !empty($s['program_share_type_key'])) {
                             $pst = ProgramShareType::where('key', $s['program_share_type_key'])->first();
-                            if ($pst) $pstId = $pst->id;
+                            if ($pst) {
+                                $pstId = $pst->id;
+                                // Update alias if provided in the share data
+                                if (isset($s['alias']) && $s['alias'] !== $pst->alias) {
+                                    $pst->alias = $s['alias'];
+                                    $pst->updated_by = auth()->id();
+                                    $pst->save();
+                                }
+                            }
                         }
 
                         if (!$pstId && !empty($s['name'])) {
                             $new = ProgramShareType::create([
                                 'name' => $s['name'],
                                 'key' => $s['program_share_type_key'] ?? Str::slug($s['name']) . '-' . Str::random(4),
+                                'alias' => $s['alias'] ?? null,
                                 'default_type' => $s['type'] ?? 'percentage',
                                 'program_id' => $program->id,
                                 'orders' => $s['orders'] ?? null,
@@ -825,5 +866,149 @@ class ProgramController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan',
             ], 500);
         }
+    }
+
+    /**
+     * Get aggregate balance across all programs for a specific submission type
+     * Returns total inflow, allocated, outflow, and remaining with program breakdown
+     */
+    public function aggregateBalance(Request $request)
+    {
+        $shareKey = $request->input('share_key', 'program');
+        $alias = $request->input('alias');
+        
+        // Map alias to share_key (new dynamic approach)
+        if ($alias) {
+            $mappedKey = \App\Http\Controllers\ProgramShareTypeController::getShareKeyFromAlias($alias);
+            if ($mappedKey) $shareKey = $mappedKey;
+        }
+        
+        // Fallback: backward compatibility with old submission_type mapping
+        $submissionType = $request->input('submission_type');
+        if ($submissionType && !$alias) {
+            if ($submissionType === 'operasional') {
+                $shareKey = 'ops_2';
+            } elseif ($submissionType === 'gaji karyawan') {
+                $shareKey = 'ops_1';
+            } elseif ($submissionType === 'program') {
+                $shareKey = 'program';
+            }
+        }
+
+        // Date range handling: Use full history if no explicit range provided (matching single program balance behavior)
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $month = $request->input('month');
+        $lookback = (int) $request->input('lookback', 1);
+
+        if ($startDate && $endDate) {
+            $start = \Carbon\Carbon::parse($startDate)->startOfDay()->toDateString();
+            $end = \Carbon\Carbon::parse($endDate)->endOfDay()->toDateString();
+        } else {
+            // Use full history: earliest transaksi to latest transaksi across all programs
+            $minDate = \App\Models\Transaksi::min('tanggal_transaksi');
+            $maxDate = \App\Models\Transaksi::max('tanggal_transaksi');
+            
+            if ($minDate && $maxDate) {
+                $start = \Carbon\Carbon::parse($minDate)->startOfDay()->toDateString();
+                $end = \Carbon\Carbon::parse($maxDate)->endOfDay()->toDateString();
+            } elseif ($month) {
+                // Fallback to month-based if no transaksi exist
+                $base = \Carbon\Carbon::parse($month)->startOfMonth()->subMonths($lookback);
+                $start = $base->toDateString();
+                $end = (clone $base)->endOfMonth()->toDateString();
+            } else {
+                // Fallback to lookback from now
+                $base = \Carbon\Carbon::now()->startOfMonth()->subMonths($lookback);
+                $start = $base->toDateString();
+                $end = (clone $base)->endOfMonth()->toDateString();
+            }
+        }
+
+        // Get all programs with shares matching the share_key
+        $programs = Program::with(['shares.type'])->get();
+        
+        $totalInflow = 0;
+        $totalAllocated = 0;
+        $totalOutflow = 0;
+        $programBreakdown = [];
+
+        foreach ($programs as $program) {
+            // Calculate inflow for this program
+            $inflow = \App\Models\Transaksi::where('program_id', $program->id)
+                ->whereBetween('tanggal_transaksi', [$start, $end])
+                ->sum('nominal');
+
+            // Find allocation share
+            $allocation = null;
+            foreach ($program->shares as $s) {
+                $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                if ($pst && ($pst->key ?? null) === $shareKey) {
+                    $allocation = $s;
+                    break;
+                }
+            }
+
+            // Skip programs without valid allocation for this share type
+            // A valid allocation requires: allocation exists AND value is not null/empty AND value > 0
+            if (!$allocation || $allocation->value === null || trim((string)$allocation->value) === '' || (float)$allocation->value <= 0) {
+                continue;
+            }
+
+            // Calculate allocated amount
+            $allocated = 0;
+            if ($allocation->type === 'percentage') {
+                $allocated = (int) floor($inflow * (float)$allocation->value / 100);
+            } elseif ($allocation->type === 'nominal') {
+                $allocated = (int) $allocation->value;
+            }
+
+            // Calculate outflow (disbursements)
+            $outflow = \App\Models\PengajuanDanaDisbursement::where('program_id', $program->id)
+                ->whereBetween('tanggal_disburse', [$start, $end])
+                ->sum('amount');
+
+            $remaining = max(0, $allocated - $outflow);
+
+            // Include ALL programs in breakdown, even if remaining is 0 (for visibility)
+            $totalInflow += (int) $inflow;
+            $totalAllocated += (int) $allocated;
+            $totalOutflow += (int) $outflow;
+
+            // Only add to breakdown if there's something to show
+            if ($inflow > 0 || $allocated > 0 || $remaining > 0) {
+                $programBreakdown[] = [
+                    'program_id' => $program->id,
+                    'program_name' => $program->nama_program,
+                    'inflow' => (int) $inflow,
+                    'allocated' => (int) $allocated,
+                    'outflow' => (int) $outflow,
+                    'remaining' => (int) $remaining,
+                    'share_type' => $allocation ? $allocation->type : null,
+                    'share_value' => $allocation ? $allocation->value : null,
+                ];
+            }
+        }
+
+        // Sort by remaining DESC so programs with most balance are first
+        usort($programBreakdown, function($a, $b) {
+            return $b['remaining'] - $a['remaining'];
+        });
+
+        $totalRemaining = max(0, $totalAllocated - $totalOutflow);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'share_key' => $shareKey,
+                'start_date' => $start,
+                'end_date' => $end,
+                'inflow' => $totalInflow,
+                'allocated' => $totalAllocated,
+                'outflow' => $totalOutflow,
+                'remaining' => $totalRemaining,
+                'program_breakdown' => $programBreakdown,
+            ],
+        ]);
     }
 }

@@ -28,7 +28,8 @@ class PengajuanDanaController extends Controller
         // Apply data visibility based on user role and permissions
         $user = auth()->user();
         if ($user) {
-            $isAdmin = $user->hasRole('Admin');
+            // role name is used elsewhere as 'admin' (lowercase), check both for safety
+            $isAdmin = $user->hasRole('admin') || $user->hasRole('Admin');
             $hasApprovalPermission = $user->can('approve pengajuan dana') || $user->can('approval pengajuan dana');
             
             if (!$isAdmin) {
@@ -265,6 +266,177 @@ class PengajuanDanaController extends Controller
     }
 
     /**
+     * Calculate aggregate balance across all programs for a specific share key
+     * Returns array with inflow, allocated, outflow, remaining, and program_breakdown
+     */
+    private function calculateAggregateBalance(string $shareKey, $usedAt, ?string $startDate = null, ?string $endDate = null): array
+    {
+        // Date range handling
+        if ($startDate && $endDate) {
+            $start = \Carbon\Carbon::parse($startDate)->startOfDay()->toDateString();
+            $end = \Carbon\Carbon::parse($endDate)->endOfDay()->toDateString();
+        } else {
+            // Default: use previous month lookback
+            $base = \Carbon\Carbon::parse($usedAt)->startOfMonth()->subMonths(1);
+            $start = $base->toDateString();
+            $end = (clone $base)->endOfMonth()->toDateString();
+        }
+
+        $programs = \App\Models\Program::with(['shares.type'])->get();
+        $totalInflow = 0;
+        $totalAllocated = 0;
+        $totalOutflow = 0;
+        $programBreakdown = [];
+
+        foreach ($programs as $program) {
+            $inflow = \App\Models\Transaksi::where('program_id', $program->id)
+                ->whereBetween('tanggal_transaksi', [$start, $end])
+                ->sum('nominal');
+
+            if ($inflow <= 0) continue;
+
+            // Find allocation share
+            $allocation = null;
+            foreach ($program->shares as $s) {
+                $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                if ($pst && ($pst->key ?? null) === $shareKey) {
+                    $allocation = $s;
+                    break;
+                }
+            }
+
+            $allocated = $inflow;
+            if ($allocation) {
+                if ($allocation->type === 'percentage' && $allocation->value !== null) {
+                    $allocated = (int) floor($inflow * (float)$allocation->value / 100);
+                } elseif ($allocation->type === 'nominal' && $allocation->value !== null) {
+                    $allocated = (int) $allocation->value;
+                }
+            }
+
+            $outflow = PengajuanDanaDisbursement::where('program_id', $program->id)
+                ->whereBetween('tanggal_disburse', [$start, $end])
+                ->sum('amount');
+
+            $remaining = max(0, $allocated - $outflow);
+
+            if ($remaining > 0) {
+                $programBreakdown[] = [
+                    'program_id' => $program->id,
+                    'program_name' => $program->nama_program,
+                    'remaining' => (int) $remaining,
+                    'inflow' => (int) $inflow,
+                    'allocated' => (int) $allocated,
+                    'outflow' => (int) $outflow,
+                ];
+            }
+
+            $totalInflow += (int) $inflow;
+            $totalAllocated += (int) $allocated;
+            $totalOutflow += (int) $outflow;
+        }
+
+        // Sort by remaining DESC
+        usort($programBreakdown, function($a, $b) {
+            return $b['remaining'] - $a['remaining'];
+        });
+
+        return [
+            'inflow' => $totalInflow,
+            'allocated' => $totalAllocated,
+            'outflow' => $totalOutflow,
+            'remaining' => max(0, $totalAllocated - $totalOutflow),
+            'program_breakdown' => $programBreakdown,
+            'start_date' => $start,
+            'end_date' => $end,
+        ];
+    }
+
+    /**
+     * Allocate disbursements from multiple programs (FIFO by remaining balance)
+     * Used when program_id is NULL - automatically allocates from programs with highest balance
+     */
+    private function allocateFromMultiplePrograms(string $pengajuanId, string $shareKey, $usedAt, int $amount, ?int $createdBy = null, ?string $startDate = null, ?string $endDate = null): void
+    {
+        $aggData = $this->calculateAggregateBalance($shareKey, $usedAt, $startDate, $endDate);
+        $programBreakdown = $aggData['program_breakdown'];
+
+        $need = $amount;
+
+        foreach ($programBreakdown as $prog) {
+            if ($need <= 0) break;
+
+            $programId = $prog['program_id'];
+            $available = $prog['remaining'];
+
+            $take = min($available, $need);
+
+            // Allocate from this program's transaksi FIFO
+            $start = $aggData['start_date'];
+            $end = $aggData['end_date'];
+
+            $transaksis = \App\Models\Transaksi::where('program_id', $programId)
+                ->whereBetween('tanggal_transaksi', [$start, $end])
+                ->orderBy('tanggal_transaksi')
+                ->lockForUpdate()
+                ->get(['id','nominal','tanggal_transaksi']);
+
+            $programNeed = $take;
+
+            // Find allocation share for this program
+            $program = \App\Models\Program::with('shares.type')->find($programId);
+            $allocation = null;
+            if ($program) {
+                foreach ($program->shares as $s) {
+                    $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                    if ($pst && ($pst->key ?? null) === $shareKey) {
+                        $allocation = $s;
+                        break;
+                    }
+                }
+            }
+
+            foreach ($transaksis as $t) {
+                if ($programNeed <= 0) break;
+
+                $used = PengajuanDanaDisbursement::where('transaksi_id', $t->id)->sum('amount');
+
+                $nominal = (int)$t->nominal;
+                $allocatedForTransaksi = $nominal;
+                if ($allocation) {
+                    if ($allocation->type === 'percentage' && $allocation->value !== null) {
+                        $allocatedForTransaksi = (int) floor($nominal * (float)$allocation->value / 100);
+                    } elseif ($allocation->type === 'nominal' && $allocation->value !== null) {
+                        $allocatedForTransaksi = min($nominal, (int)$allocation->value);
+                    }
+                }
+
+                $availableFromTransaksi = max(0, $allocatedForTransaksi - (int)$used);
+                if ($availableFromTransaksi <= 0) continue;
+
+                $takeFromTransaksi = min($availableFromTransaksi, $programNeed);
+
+                PengajuanDanaDisbursement::create([
+                    'pengajuan_dana_id' => $pengajuanId,
+                    'transaksi_id' => $t->id,
+                    'program_id' => $programId,
+                    'amount' => $takeFromTransaksi,
+                    'tanggal_disburse' => $t->tanggal_transaksi ?? $usedAt,
+                    'created_by' => $createdBy,
+                ]);
+
+                $programNeed -= $takeFromTransaksi;
+            }
+
+            $need -= $take;
+        }
+
+        if ($need > 0) {
+            throw new \Exception('Failed to allocate full amount from available programs');
+        }
+    }
+
+    /**
      * Return options for frontend form: eligible fundraisers (self + descendants)
      * and user's kantor cabang assignments.
      */
@@ -312,7 +484,7 @@ class PengajuanDanaController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'fundraiser_id' => 'nullable|exists:users,id',
-            'submission_type' => ['required', 'string', Rule::in(['program','operasional','gaji karyawan'])],
+            'submission_type' => 'required|string',  // Changed: no longer restricted to hardcoded values
             'program_id' => 'nullable|uuid|exists:program,id',
             'amount' => 'required|integer|min:1',
             'used_at' => 'nullable|date',
@@ -331,12 +503,27 @@ class PengajuanDanaController extends Controller
 
         try {
             // Pre-save validation: if program, operasional, or gaji karyawan submission, ensure amount <= remaining
-            if (in_array($request->input('submission_type'), ['program','operasional','gaji karyawan']) && $request->filled('program_id') && $request->filled('used_at')) {
+            if ($request->filled('used_at')) {
                 try {
                     $stype = $request->input('submission_type');
-                    if ($stype === 'operasional') $shareKey = 'ops_2';
-                    elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
-                    else $shareKey = 'program';
+                    
+                    // Map submission_type to share_key
+                    // Try alias mapping first (new dynamic approach)
+                    $shareKey = \App\Http\Controllers\ProgramShareTypeController::getShareKeyFromAlias($stype);
+                    
+                    // Fallback to old hardcoded mapping for backward compatibility
+                    if (!$shareKey) {
+                        if ($stype === 'operasional') $shareKey = 'ops_2';
+                        elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
+                        elseif ($stype === 'program') $shareKey = 'program';
+                        else $shareKey = 'program'; // default fallback
+                    }
+
+                    // Determine if single program or all programs
+                    $isSingleProgram = $request->filled('program_id');
+
+                    if ($isSingleProgram) {
+                        // EXISTING LOGIC: Single program validation
 
                     // If caller provided explicit date range, compute remaining in that window
                     if ($request->filled('start_date') && $request->filled('end_date')) {
@@ -428,6 +615,15 @@ class PengajuanDanaController extends Controller
                     if ((int)$request->input('amount') > $remaining) {
                         return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan', 'remaining' => $remaining], 422);
                     }
+                    } else {
+                        // ALL PROGRAMS: Calculate aggregate remaining across all programs
+                        $aggData = $this->calculateAggregateBalance($shareKey, $request->input('used_at'), $request->input('start_date'), $request->input('end_date'));
+                        $remaining = $aggData['remaining'];
+
+                        if ((int)$request->input('amount') > $remaining) {
+                            return response()->json(['success' => false, 'message' => 'nominal melebihi batas tidak dapat menyimpan dari semua program', 'remaining' => $remaining], 422);
+                        }
+                    }
                 } catch (\Exception $e) {
                     // fallback: allow save but log
                 }
@@ -450,14 +646,20 @@ class PengajuanDanaController extends Controller
 
                 // If program/operasional/gaji_karyawan submission and already approved, allocate disbursements
                 // Do NOT allocate for drafts/pending states — allocations should only be created when pengajuan is approved
-                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->program_id && $p->used_at) {
+                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->used_at) {
                     if (is_string($p->status) && strtolower(trim($p->status)) === 'approved') {
                         $stype = $p->submission_type;
                         if ($stype === 'operasional') $shareKey = 'ops_2';
                         elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                         else $shareKey = 'program';
-                        // allocate using default lookback = 1 (previous month)
-                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey, 1);
+                        
+                        if ($p->program_id) {
+                            // Single program: use existing allocation logic
+                            $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey, 1);
+                        } else {
+                            // Multi-program: allocate from programs with highest balance first
+                            $this->allocateFromMultiplePrograms($p->id, $shareKey, $p->used_at, $p->amount, auth()->id(), $request->input('start_date'), $request->input('end_date'));
+                        }
                     }
                 }
 

@@ -43,6 +43,7 @@
                 <thead class="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th class="text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300">Nama</th>
+                    <th class="text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300">Alias (Tipe Pengajuan)</th>
                     <th class="text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300">Tipe</th>
                     <th class="text-left px-4 py-2 text-sm text-gray-600 dark:text-gray-300">Nilai</th>
                   </tr>
@@ -50,6 +51,14 @@
                 <tbody>
                   <tr v-for="type in programShareTypes" :key="type.key" class="border-t border-gray-100 dark:border-gray-800">
                     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-400">{{ type.name }}</td>
+                    <td class="px-4 py-3">
+                      <input 
+                        type="text" 
+                        v-model="formData.shares[type.key].alias" 
+                        :placeholder="type.alias || 'Masukkan alias'"
+                        class="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-300"
+                      />
+                    </td>
                     <td class="px-4 py-3">
                       <SearchableSelect
                         v-model="formData.shares[type.key].type"
@@ -161,13 +170,13 @@ const formData = reactive({
   tipe_pembagian_marketing: '',
   jumlah_persentase: null as number | null,
   // shares will be an object keyed by program_share_type key
-  shares: {} as Record<string, { type: string | null; value: number | null }>,
+  shares: {} as Record<string, { type: string | null; value: number | null; alias: string | null }>,
   // custom rows added per-program
   customRows: [] as Array<{ key: string; name: string; type: string; value: number | null }> ,
 })
 
 // Available program share types loaded from API
-const programShareTypes = ref<Array<{ id: string; name: string; key: string; default_type: string; orders?: number }>>([])
+const programShareTypes = ref<Array<{ id: string; name: string; key: string; alias: string | null; default_type: string; orders?: number }>>([])
 
 // per-row search inputs for SearchableSelect
 const shareSearchInputs = reactive<Record<string, string>>({})
@@ -226,7 +235,7 @@ const fetchProgramShareTypes = async () => {
       // initialize shares structure with defaults and search inputs
       for (const t of programShareTypes.value) {
         if (!formData.shares[t.key]) {
-          formData.shares[t.key] = { type: t.default_type || 'percentage', value: null }
+          formData.shares[t.key] = { type: t.default_type || 'percentage', value: null, alias: t.alias || null }
         }
         if (shareSearchInputs[t.key] === undefined) {
           shareSearchInputs[t.key] = ''
@@ -310,7 +319,7 @@ const loadData = async () => {
           for (const s of data.shares) {
             const key = s.program_share_type_key || (s.program_share_type_id ? programShareTypes.value.find((t) => t.id === s.program_share_type_id)?.key : null)
             if (key && formData.shares[key] !== undefined) {
-              formData.shares[key] = { type: s.type || 'percentage', value: s.value !== null ? parseFloat(s.value) : null }
+              formData.shares[key] = { type: s.type || 'percentage', value: s.value !== null ? parseFloat(s.value) : null, alias: s.alias || null }
             } else {
               // treat as custom row (program-specific)
               const rkey = s.program_share_type_key || `custom_${Date.now()}_${Math.floor(Math.random()*1000)}`
@@ -367,6 +376,7 @@ const handleSave = async () => {
           name: t.name,
           type: s?.type || t.default_type || 'percentage',
           value: s?.value !== undefined ? (s?.value ?? null) : null,
+          alias: s?.alias || null,
           orders: t.orders ?? null,
         })
     }

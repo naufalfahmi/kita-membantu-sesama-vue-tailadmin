@@ -186,10 +186,14 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Program API
     // Program balance endpoint (per-month allocation/balance)
     Route::get('program/{id}/balance', [ProgramController::class, 'balance']);
+    // Aggregate balance across all programs for submission type
+    Route::get('programs/aggregate-balance', [ProgramController::class, 'aggregateBalance']);
     // Program shares summary for Keuangan grid
     Route::get('keuangan/program-shares-summary', [ProgramController::class, 'programSharesSummary']);
     Route::apiResource('program', ProgramController::class);
     // Program share types (for frontend dynamic shares)
+    // IMPORTANT: Specific routes MUST come before general routes
+    Route::get('program-share-types/submission-types', [\App\Http\Controllers\ProgramShareTypeController::class, 'submissionTypes']);
     Route::get('program-share-types', [\App\Http\Controllers\ProgramShareTypeController::class, 'index']);
     // Pangkat API
     Route::apiResource('pangkat', \App\Http\Controllers\PangkatController::class);

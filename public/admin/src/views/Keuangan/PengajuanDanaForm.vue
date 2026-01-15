@@ -21,9 +21,30 @@
 
           <div class="lg:col-span-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
-            <SearchableSelect v-model="formData.programId" :options="programList" placeholder="Pilih program" />
-            
-            <!-- <div v-if="loadingBalance" class="mt-2 text-sm text-gray-500">Memuat saldo...</div> -->
+            <div class="flex items-center gap-2">
+              <div class="flex-1">
+                <div v-if="loadingProgramList" class="h-11 flex items-center rounded-lg border border-gray-300 bg-gray-50 px-4 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                  <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Memuat data program...
+                </div>
+                <SearchableSelect v-else v-model="formData.programId" :options="programList" placeholder="Pilih program" />
+              </div>
+              <button
+                v-if="formData.programId"
+                type="button"
+                title="Hapus pilihan program"
+                @click="formData.programId = ''"
+                class="h-11 w-11 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div class="lg:col-span-1">
@@ -83,8 +104,19 @@
 
           
 
-          <div v-if="programDetail" class="lg:col-span-2">
-            <div class="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/40">
+          <div v-if="programDetail || loadingBalance" class="lg:col-span-2">
+            <!-- Loading indicator when submission type changes -->
+            <div v-if="loadingBalance" class="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/40">
+              <div class="flex items-center justify-center py-8">
+                <svg class="animate-spin h-8 w-8 text-brand-500 dark:text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="ml-3 text-gray-600 dark:text-gray-400">Memuat detail program...</span>
+              </div>
+            </div>
+
+            <div v-else-if="programDetail" class="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-900/40">
               <div class="flex items-center justify-between">
                 <div>
                   <div class="text-xs text-gray-500">Program</div>
@@ -135,6 +167,17 @@
                 <div class="mt-3 text-sm text-gray-700">
                   <div>Estimasi sisa setelah pengajuan: <span class="font-medium">{{ formatCurrency((programBalance.remaining || 0) - (formData.amount || 0)) }}</span></div>
                   <div v-if="(formData.amount || 0) > (programBalance.remaining || 0)" class="mt-1 text-xs text-red-500">Kekurangan: {{ formatCurrency((formData.amount || 0) - (programBalance.remaining || 0)) }}</div>
+                </div>
+
+                <!-- Program Breakdown for aggregate balance -->
+                <div v-if="programBalance.program_breakdown && programBalance.program_breakdown.length > 0" class="mt-3 border-t pt-3">
+                  <div class="text-sm font-medium text-gray-700 mb-2">Detail Program:</div>
+                  <div class="space-y-1 max-h-48 overflow-y-auto">
+                    <div v-for="prog in programBalance.program_breakdown" :key="prog.program_id" class="flex items-center justify-between text-xs bg-gray-50 dark:bg-gray-800/20 rounded px-2 py-1">
+                      <div class="font-medium">{{ prog.program_name }}</div>
+                      <div class="text-gray-600">{{ formatCurrency(prog.remaining) }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -200,17 +243,14 @@ const flatpickrRangeConfig = {
 }
 
 const applicantList: Ref<Array<{ value: string; label: string }>> = ref([])
-const submissionTypeList = [
-  { value: 'program', label: 'Program' },
-  { value: 'operasional', label: 'Operasional' },
-  { value: 'gaji karyawan', label: 'Gaji Karyawan' },
-]
+const submissionTypeList: Ref<Array<{ value: string; label: string; share_key?: string }>> = ref([])
 const kantorCabangList: Ref<Array<{ value: string; label: string }>> = ref([])
 const programList: Ref<Array<{ value: string; label: string }>> = ref([])
 
 const applicantSearchInput = ref('')
 const submissionTypeSearchInput = ref('')
 const kantorCabangSearchInput = ref('')
+const loadingProgramList = ref(false)
 const allocationRange = ref([] as any)
 
 const currentUserId = ref('')
@@ -233,7 +273,7 @@ const formErrors = reactive({
 const isSubmitting = ref(false)
 
 const isAmountExceeding = computed(() => {
-  if (!(formData.submissionType === 'program' || formData.submissionType === 'operasional')) return false
+  // Check balance validation for all submission types
   if (!programBalance || !programBalance.value) return false
   const rem = Number(programBalance.value.remaining || 0)
   const amt = Number(formData.amount || 0)
@@ -294,11 +334,9 @@ const clearAllocationRange = () => {
 
 const programShares = computed(() => {
   if (!programDetail.value || !Array.isArray(programDetail.value.shares)) return []
-  // choose share key based on submission type
-  const st = String(formData.submissionType || '')
-  let wanted = 'program'
-  if (st === 'operasional') wanted = 'ops_2'
-  else if (st === 'gaji karyawan') wanted = 'ops_1'
+  // Get share_key from selected submission type
+  const selectedType = submissionTypeList.value.find(t => t.value === formData.submissionType)
+  const wanted = selectedType?.share_key || 'program'
 
   // prefer the wanted key, fallback to 'program', else return first matching
   const shares = programDetail.value.shares.map((s: any) => ({
@@ -316,16 +354,14 @@ const programShares = computed(() => {
 })
 
 const loadProgramBalance = async () => {
-  if (!formData.programId) {
-    programBalance.value = null
-    return
-  }
   loadingBalance.value = true
   try {
-    // choose share_key based on submission type
-    let shareKey = 'program'
-    if (String(formData.submissionType) === 'operasional') shareKey = 'ops_2'
-    if (String(formData.submissionType) === 'gaji karyawan') shareKey = 'ops_1'
+    // Get share_key from submissionTypeList based on selected alias
+    const selectedType = submissionTypeList.value.find(t => t.value === formData.submissionType)
+    const shareKey = selectedType?.share_key || 'program'
+    
+    // Send alias to backend for mapping
+    const alias = formData.submissionType
 
     // if allocationRange selected (two dates), use start_date & end_date
     let url = ''
@@ -368,19 +404,38 @@ const loadProgramBalance = async () => {
       selectedStart = s
       selectedEnd = e
     }
-    if (selectedStart && selectedEnd) {
-      url = `/admin/api/program/${formData.programId}/balance?start_date=${encodeURIComponent(selectedStart)}&end_date=${encodeURIComponent(selectedEnd)}&share_key=${encodeURIComponent(shareKey)}`
-    } else {
-      // month param in YYYY-MM (fallback to usedAt)
-      const d = new Date(formData.usedAt)
-      if (isNaN(d.getTime())) {
-        programBalance.value = null
-        loadingBalance.value = false
-        return
+
+    // Determine if single program or aggregate (all programs)
+    if (formData.programId) {
+      // Single program balance
+      if (selectedStart && selectedEnd) {
+        url = `/admin/api/program/${formData.programId}/balance?start_date=${encodeURIComponent(selectedStart)}&end_date=${encodeURIComponent(selectedEnd)}&alias=${encodeURIComponent(alias)}`
+      } else {
+        const d = new Date(formData.usedAt)
+        if (isNaN(d.getTime())) {
+          programBalance.value = null
+          loadingBalance.value = false
+          return
+        }
+        const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        url = `/admin/api/program/${formData.programId}/balance?month=${month}&alias=${encodeURIComponent(alias)}&lookback=1`
       }
-      const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      url = `/admin/api/program/${formData.programId}/balance?month=${month}&share_key=${encodeURIComponent(shareKey)}&lookback=1`
+    } else {
+      // Aggregate balance across all programs
+      if (selectedStart && selectedEnd) {
+        url = `/admin/api/programs/aggregate-balance?start_date=${encodeURIComponent(selectedStart)}&end_date=${encodeURIComponent(selectedEnd)}&alias=${encodeURIComponent(alias)}`
+      } else {
+        const d = new Date(formData.usedAt)
+        if (isNaN(d.getTime())) {
+          programBalance.value = null
+          loadingBalance.value = false
+          return
+        }
+        const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        url = `/admin/api/programs/aggregate-balance?month=${month}&alias=${encodeURIComponent(alias)}`
+      }
     }
+
 
     const res = await fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
     const json = await res.json()
@@ -404,7 +459,11 @@ const loadProgramBalance = async () => {
 
 const loadProgramDetail = async () => {
   if (!formData.programId) {
-    programDetail.value = null
+    // No specific program selected = "All Programs"
+    programDetail.value = {
+      nama_program: 'Semua Program',
+      shares: [] // Will be filled from aggregate response if needed
+    }
     return
   }
   try {
@@ -415,6 +474,41 @@ const loadProgramDetail = async () => {
   } catch (err) {
     console.error('Error loading program detail', err)
     programDetail.value = null
+  }
+}
+
+// Fetch submission types from API (dynamic based on program_share_types.alias)
+const fetchSubmissionTypes = async () => {
+  try {
+    const res = await fetch('/admin/api/program-share-types/submission-types', {
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    const json = await res.json()
+    if (json.success && Array.isArray(json.data)) {
+      // Use alias only for label
+      submissionTypeList.value = json.data.map((item: any) => ({
+        value: item.value,
+        label: item.value,
+        share_key: item.share_key,
+        name: item.name
+      }))
+    } else {
+      // Fallback to hardcoded values if API fails
+      submissionTypeList.value = [
+        { value: 'Program', label: 'Program', share_key: 'program' },
+        { value: 'Operasional', label: 'Operasional', share_key: 'ops_2' },
+        { value: 'Gaji Karyawan', label: 'Gaji Karyawan', share_key: 'ops_1' },
+      ]
+    }
+  } catch (err) {
+    console.error('Error fetching submission types', err)
+    // Fallback to hardcoded values
+    submissionTypeList.value = [
+      { value: 'Program', label: 'Program', share_key: 'program' },
+      { value: 'Operasional', label: 'Operasional', share_key: 'ops_2' },
+      { value: 'Gaji Karyawan', label: 'Gaji Karyawan', share_key: 'ops_1' },
+    ]
   }
 }
 
@@ -435,19 +529,15 @@ watch([
 // When user selects 'program' as submission type, clear nominal so they enter it manually
 watch(() => formData.submissionType, (val) => {
   const v = String(val)
-  if (v === 'program' && !isEditMode.value) {
+  // Clear amount when changing submission type (user enters manually)
+  if (!isEditMode.value) {
     formData.amount = null
   }
-  // when submission type changes to one that displays program, refresh program details/balance
-  if (['program','operasional','gaji karyawan'].includes(v)) {
-    // if programId exists, reload detail/balance; otherwise clear programDetail
-    if (formData.programId) {
-      loadProgramDetail()
-      loadProgramBalance()
-    } else {
-      programDetail.value = null
-      programBalance.value = null
-    }
+  // when submission type changes, refresh program details/balance
+  if (submissionTypeList.value.some(t => t.value === v)) {
+    // Always load detail/balance (handles both single program and aggregate)
+    loadProgramDetail()
+    loadProgramBalance()
   } else {
     programDetail.value = null
     programBalance.value = null
@@ -504,6 +594,7 @@ const loadData = async () => {
 }
 
 const loadOptions = async () => {
+  loadingProgramList.value = true
   try {
     const userObj = await fetchUser()
     currentUserId.value = userObj?.id ? String(userObj.id) : ''
@@ -527,6 +618,8 @@ const loadOptions = async () => {
   } catch (err) {
     console.error('Error loading options', err)
     toast.error('Gagal memuat opsi form')
+  } finally {
+    loadingProgramList.value = false
   }
 }
 
@@ -621,6 +714,7 @@ const handleSave = async () => {
 }
 
 onMounted(async () => {
+  await fetchSubmissionTypes()
   await loadOptions()
   await loadData()
 })

@@ -14,7 +14,7 @@ class ProgramShareType extends Model
 
     protected $table = 'program_share_types';
 
-    protected $fillable = ['name', 'key', 'default_type', 'orders', 'program_id', 'created_by', 'updated_by', 'deleted_by'];
+    protected $fillable = ['name', 'key', 'alias', 'default_type', 'orders', 'program_id', 'created_by', 'updated_by', 'deleted_by'];
 
     protected $casts = [
         'orders' => 'integer',

@@ -3,20 +3,16 @@
     <div
       class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
     >
-      <!-- Top credit boxes (responsive) -->
+      <!-- Top credit boxes (responsive, dynamic) -->
       <div class="mb-6">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="rounded-lg border border-gray-200 bg-white p-4 flex flex-col sm:items-center">
-            <div class="text-xs text-gray-500">Program</div>
-            <div class="text-lg font-medium text-gray-800 dark:text-white/90 mt-1">{{ formattedCreditProgram }}</div>
-          </div>
-          <div class="rounded-lg border border-gray-200 bg-white p-4 flex flex-col sm:items-center">
-            <div class="text-xs text-gray-500">Operasional</div>
-            <div class="text-lg font-medium text-gray-800 dark:text-white/90 mt-1">{{ formattedCreditOperasional }}</div>
-          </div>
-          <div class="rounded-lg border border-gray-200 bg-white p-4 flex flex-col sm:items-center">
-            <div class="text-xs text-gray-500">Gaji Karyawan</div>
-            <div class="text-lg font-medium text-gray-800 dark:text-white/90 mt-1">{{ formattedCreditGaji }}</div>
+          <div
+            v-for="credit in dynamicCredits"
+            :key="credit.type"
+            class="rounded-lg border border-gray-200 bg-white p-4 flex flex-col sm:items-center"
+          >
+            <div class="text-xs text-gray-500">{{ credit.label }}</div>
+            <div class="text-lg font-medium text-gray-800 dark:text-white/90 mt-1">{{ credit.formatted }}</div>
           </div>
         </div>
       </div>
@@ -326,17 +322,24 @@ const defaultColDef = {
 // Row data will come from `penyalurans` table via API
 const rowDataArray = ref<PenyaluranRow[]>([])
 const myCredit = ref<number>(0)
+// Dynamic credits storage
+interface CreditInfo {
+  type: string
+  label: string
+  value: number
+  formatted: string
+}
+const dynamicCredits = ref<CreditInfo[]>([])
+
+// Backward compatibility refs (deprecated, use dynamicCredits instead)
 const creditProgram = ref<number>(0)
 const creditOperasional = ref<number>(0)
 const creditGaji = ref<number>(0)
+
 // program select options for filter
 const programOptions = ref<Array<{value:string,label:string}>>([])
-// tipe options for searchable select
-const typeOptions = ref<Array<{value:string,label:string}>>([
-  { value: 'program', label: 'Program' },
-  { value: 'operasional', label: 'Operasional' },
-  { value: 'gaji karyawan', label: 'Gaji Karyawan' },
-])
+// tipe options for searchable select (dynamic from API)
+const typeOptions = ref<Array<{value:string,label:string}>>([])
 
 const formattedMyCredit = computed(() => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(myCredit.value)
@@ -672,22 +675,66 @@ onMounted(() => {
 
 const loadMyCredit = async () => {
   try {
-    // fetch three types in parallel
-    const types = ['program', 'operasional', 'gaji karyawan']
-    const promises = types.map((t) => fetch(`/admin/api/penyaluran/my-credit?type=${encodeURIComponent(t)}`, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json()).catch(() => null))
+    // First fetch submission types from API
+    const typesRes = await fetch('/admin/api/program-share-types/submission-types', {
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    const typesJson = await typesRes.json()
+    
+    let types: Array<{value: string, label: string}> = []
+    if (typesJson.success && Array.isArray(typesJson.data)) {
+      types = typesJson.data.map((item: any) => ({ value: item.value, label: item.value }))
+    } else {
+      // Fallback to hardcoded if API fails
+      types = [
+        { value: 'Program', label: 'Program' },
+        { value: 'Operasional', label: 'Operasional' },
+        { value: 'Gaji Karyawan', label: 'Gaji Karyawan' },
+      ]
+    }
+    
+    // Update typeOptions for filter
+    typeOptions.value = types
+    
+    // Fetch credits for each type in parallel
+    const promises = types.map((t) => 
+      fetch(`/admin/api/penyaluran/my-credit?type=${encodeURIComponent(t.value)}`, { 
+        credentials: 'same-origin', 
+        headers: { 'X-Requested-With': 'XMLHttpRequest' } 
+      })
+      .then(r => r.json())
+      .catch(() => null)
+    )
     const results = await Promise.all(promises)
-    // program
-    const p = results[0]
-    creditProgram.value = (p && p.success && p.data && typeof p.data.remaining !== 'undefined') ? Number(p.data.remaining) || 0 : 0
-    // operasional
-    const o = results[1]
-    creditOperasional.value = (o && o.success && o.data && typeof o.data.remaining !== 'undefined') ? Number(o.data.remaining) || 0 : 0
-    // gaji karyawan
-    const g = results[2]
-    creditGaji.value = (g && g.success && g.data && typeof g.data.remaining !== 'undefined') ? Number(g.data.remaining) || 0 : 0
-
-    // set combined myCredit as sum of all (for backward compatibility where needed)
-    myCredit.value = Math.max(0, creditProgram.value + creditOperasional.value + creditGaji.value)
+    
+    // Build dynamic credits array
+    dynamicCredits.value = types.map((t, idx) => {
+      const result = results[idx]
+      const value = (result && result.success && result.data && typeof result.data.remaining !== 'undefined') 
+        ? Number(result.data.remaining) || 0 
+        : 0
+      const formatted = new Intl.NumberFormat('id-ID', { 
+        style: 'currency', 
+        currency: 'IDR', 
+        minimumFractionDigits: 0 
+      }).format(value)
+      
+      return {
+        type: t.value,
+        label: t.label,
+        value,
+        formatted
+      }
+    })
+    
+    // Backward compatibility: set individual refs for first 3 items
+    if (dynamicCredits.value.length > 0) creditProgram.value = dynamicCredits.value[0].value
+    if (dynamicCredits.value.length > 1) creditOperasional.value = dynamicCredits.value[1].value
+    if (dynamicCredits.value.length > 2) creditGaji.value = dynamicCredits.value[2].value
+    
+    // set combined myCredit as sum of all
+    myCredit.value = dynamicCredits.value.reduce((sum, c) => sum + c.value, 0)
   } catch (err) {
     console.error('Error loading my credit', err)
   }

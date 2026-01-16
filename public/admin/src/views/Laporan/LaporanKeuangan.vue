@@ -47,21 +47,21 @@
           id="tabpanel-balance"
           aria-labelledby="tab-balance"
         >
-          <!-- Filter Tanggal (Rentang) - cleaner responsive layout -->
+          <!-- 1. Top Filter Section -->
           <div class="mb-6">
             <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
-              <!-- Range picker spans larger area on md+ -->
+              <!-- Range picker -->
               <div class="md:col-span-4">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal</label>
                 <flat-pickr
                   v-model="balanceRange"
                   :config="rangePickrConfig"
-                  class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300"
+                  class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
                   placeholder="Pilih rentang tanggal"
                 />
               </div>
 
-              <!-- Program select (wider) -->
+              <!-- Program select -->
               <div class="md:col-span-3">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
                 <SearchableSelect
@@ -73,7 +73,7 @@
                 />
               </div>
 
-              <!-- Kantor Cabang select (wider) -->
+              <!-- Kantor Cabang select -->
               <div class="md:col-span-3">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
                 <SearchableSelect
@@ -85,152 +85,340 @@
                 />
               </div>
 
-              <!-- Buttons aligned to right and bottom -->
+              <!-- Reset button -->
               <div class="md:col-span-2 flex items-end justify-end">
-                <div class="flex gap-2">
-                  <button
-                    @click="resetBalanceFilter"
-                    class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Reset
-                  </button>
+                <button
+                  @click="resetBalanceFilter"
+                  class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03]"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Main Stats Row - Pemasukan & Pengeluaran -->
+          <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <!-- Total Pemasukan (Green gradient) -->
+            <div class="rounded-lg border border-gray-200 bg-gradient-to-br from-green-500 to-green-600 p-6 shadow-lg dark:border-gray-700 dark:from-green-600 dark:to-green-700">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="mb-1 text-sm font-medium text-white/80">Total Pemasukan</p>
+                  <h3 class="text-3xl font-bold text-white">{{ formatCurrency(balanceTotals.totalMasuk || 0) }}</h3>
+                </div>
+                <div class="flex h-14 w-14 items-center justify-center rounded-lg bg-white/20">
+                  <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
                 </div>
               </div>
             </div>
 
-
-          </div>
-
-
-
-          <!-- Saldo Card -->
-          <div class="mb-6 rounded-lg border border-gray-200 bg-gradient-to-br from-brand-500 to-brand-600 p-6 shadow-lg dark:border-gray-700 dark:from-brand-600 dark:to-brand-700">
-            <div class="text-center">
-              <p class="mb-2 text-sm font-medium text-white/80">Total Saldo</p>
-              <h2 class="text-4xl font-bold text-white sm:text-5xl">
-                {{ formatCurrency(balanceTotals.saldo_akhir || 0) }}
-              </h2>
-              <p class="mt-2 text-sm text-white/80">Saldo awal: {{ formatCurrency(balanceTotals.saldo_awal || 0) }}</p>
+            <!-- Total Pengeluaran (Red gradient) -->
+            <div class="rounded-lg border border-gray-200 bg-gradient-to-br from-red-500 to-red-600 p-6 shadow-lg dark:border-gray-700 dark:from-red-600 dark:to-red-700">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="mb-1 text-sm font-medium text-white/80">Total Pengeluaran</p>
+                  <h3 class="text-3xl font-bold text-white">{{ formatCurrency(balanceTotals.totalKeluar || 0) }}</h3>
+                </div>
+                <div class="flex h-14 w-14 items-center justify-center rounded-lg bg-white/20">
+                  <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Accordion (moved to appear ABOVE the stats) -->
-          <div v-if="accordionOpen" ref="accordionRef" class="mb-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
-            <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Transaksi ({{ accordionFilterLabel }})</h3>
-              <div class="flex items-center gap-2">
-                <button @click="handleExportDisplayed" class="h-10 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600">Export Excel</button>
-                <button @click="accordionOpen = false" class="h-10 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm">Tutup</button>
+          <!-- 3. Breakdown Section - Pengajuan Dana & Penyaluran -->
+          <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <!-- Pengajuan Dana (Orange) -->
+            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">Pengajuan Dana</p>
+                  <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    {{ formatCurrency(balanceBreakdown.pengajuan_dana || 0) }}
+                  </p>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">
+                    {{ balanceBreakdown.pengajuan_dana_percentage || 0 }}% dari total pengeluaran
+                  </p>
+                </div>
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-500/10">
+                  <svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
               </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <!-- Penyaluran (Purple) -->
+            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+              <div class="flex items-center justify-between">
+                <div>
+                  <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">Penyaluran</p>
+                  <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {{ formatCurrency(balanceBreakdown.penyaluran || 0) }}
+                  </p>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">
+                    {{ balanceBreakdown.penyaluran_percentage || 0 }}% dari total pengeluaran
+                  </p>
+                </div>
+                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/10">
+                  <svg class="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Charts Row - Donut Chart & Saldo Card -->
+          <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <!-- Donut Chart for Breakdown -->
+            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+              <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown Pengeluaran</h3>
+              <div class="flex items-center justify-center">
+                <VueApexCharts
+                  type="donut"
+                  height="280"
+                  :options="breakdownChartOptions"
+                  :series="breakdownChartSeries"
+                />
+              </div>
+            </div>
+
+            <!-- Saldo Card -->
+            <div class="rounded-lg border border-gray-200 bg-gradient-to-br from-brand-500 to-brand-600 p-6 shadow-lg dark:border-gray-700 dark:from-brand-600 dark:to-brand-700">
+              <h3 class="mb-4 text-lg font-semibold text-white/90">Saldo</h3>
+              <div class="space-y-4">
+                <div>
+                  <p class="text-sm text-white/80">Saldo Akhir</p>
+                  <p class="text-3xl font-bold text-white">{{ formatCurrency(balanceTotals.saldo_akhir || 0) }}</p>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/20 pt-4">
+                  <div>
+                    <p class="text-xs text-white/70">Saldo Awal</p>
+                    <p class="text-lg font-semibold text-white">{{ formatCurrency(balanceTotals.saldo_awal || 0) }}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-xs text-white/70">Selisih</p>
+                    <p class="text-lg font-semibold" :class="(balanceTotals.saldo_akhir - balanceTotals.saldo_awal) >= 0 ? 'text-green-200' : 'text-red-200'">
+                      {{ formatCurrency(Math.abs(balanceTotals.saldo_akhir - balanceTotals.saldo_awal)) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Timeline Chart - Area Chart -->
+          <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Tren Harian</h3>
+            <VueApexCharts
+              type="area"
+              height="320"
+              :options="timelineChartOptions"
+              :series="timelineChartSeries"
+            />
+          </div>
+
+          <!-- 6. Program Breakdown Table -->
+          <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown per Program</h3>
+              <button
+                @click="handleExportProgramBreakdown"
+                :disabled="programBreakdownData.length === 0"
+                class="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export Excel
+              </button>
+            </div>
+            <div class="relative overflow-x-auto">
+              <!-- Loading State for Program Breakdown -->
+              <div
+                v-if="isLoadingProgramBreakdown"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
+              >
+                <div class="flex flex-col items-center gap-3">
+                  <div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500"></div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Memuat data program...</p>
+                </div>
+              </div>
+
               <table class="w-full table-auto">
                 <thead>
-                  <tr class="text-sm font-semibold text-left text-gray-600">
-                    <th class="px-4 py-2">Tanggal</th>
-                    <th class="px-4 py-2">Keterangan</th>
-                    <th class="px-4 py-2 text-right">Masuk</th>
-                    <th class="px-4 py-2 text-right">Keluar</th>
-                    <th class="px-4 py-2 text-right">Saldo</th>
+                  <tr class="border-b border-gray-200 text-left text-sm font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-400">
+                    <th class="px-4 py-3">Program</th>
+                    <th class="px-4 py-3 text-right">Pemasukan</th>
+                    <th class="px-4 py-3 text-right">Pengajuan Dana</th>
+                    <th class="px-4 py-3 text-right">Penyaluran</th>
+                    <th class="px-4 py-3 text-right">Total Pengeluaran</th>
+                    <th class="px-4 py-3 text-right">Saldo</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="tx in displayedTransactions" :key="tx.id" class="border-t">
-                    <td class="px-4 py-3 text-sm text-gray-700">{{ tx.tanggal }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-700">{{ tx.keterangan }}</td>
-                    <td class="px-4 py-3 text-sm text-right text-green-600">{{ tx.masuk > 0 ? formatCurrency(tx.masuk) : '-' }}</td>
-                    <td class="px-4 py-3 text-sm text-right text-red-600">{{ tx.keluar > 0 ? formatCurrency(tx.keluar) : '-' }}</td>
-                    <td class="px-4 py-3 text-sm text-right">{{ formatCurrency(tx.saldo) }}</td>
+                  <tr
+                    v-for="program in programBreakdownData"
+                    :key="program.id || 'null-program'"
+                    class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]"
+                  >
+                    <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                      <span v-if="program.id === null" class="inline-flex items-center gap-2">
+                        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        {{ program.nama }}
+                      </span>
+                      <span v-else>{{ program.nama }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(program.pemasukan || 0) }}</td>
+                    <td class="px-4 py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(program.pengajuan_dana || 0) }}</td>
+                    <td class="px-4 py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(program.penyaluran || 0) }}</td>
+                    <td class="px-4 py-3 text-right text-sm font-semibold text-red-600 dark:text-red-400">{{ formatCurrency(program.total_pengeluaran || 0) }}</td>
+                    <td class="px-4 py-3 text-right text-sm font-bold" :class="(program.saldo || 0) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.saldo || 0) }}</td>
+                  </tr>
+                  <tr v-if="programBreakdownData.length === 0 && !isLoadingProgramBreakdown">
+                    <td colspan="6" class="px-4 py-12 text-center">
+                      <div class="flex flex-col items-center justify-center gap-3">
+                        <svg class="h-16 w-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Tidak ada data program</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500">Belum ada aktivitas keuangan untuk periode ini</p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 7. Transaction Detail Table with Filter Tabs -->
+          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Detail Transaksi</h3>
+              <button
+                @click="handleExportTransactions"
+                class="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-sm font-medium text-white hover:bg-green-600"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export Excel
+              </button>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="mb-4 flex gap-2 border-b border-gray-200 dark:border-gray-700">
+              <button
+                v-for="filter in transactionFilters"
+                :key="filter.value"
+                @click="activeTransactionFilter = filter.value"
+                class="px-4 py-2 text-sm font-medium transition-colors"
+                :class="activeTransactionFilter === filter.value 
+                  ? 'border-b-2 border-brand-500 text-brand-600 dark:text-brand-400' 
+                  : 'text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300'"
+              >
+                {{ filter.label }}
+              </button>
+            </div>
+
+            <!-- Transaction Table -->
+            <div class="relative overflow-x-auto">
+              <!-- Loading Overlay -->
+              <div
+                v-if="isLoadingTransactionFilter"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
+              >
+                <div class="flex flex-col items-center gap-3">
+                  <div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500"></div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Memuat data...</p>
+                </div>
+              </div>
+
+              <table class="w-full table-auto">
+                <thead>
+                  <tr class="border-b border-gray-200 text-left text-sm font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-400">
+                    <th class="px-4 py-3">Tanggal</th>
+                    <th class="px-4 py-3">Keterangan</th>
+                    <th class="px-4 py-3">Tipe</th>
+                    <th class="px-4 py-3 text-right">Masuk</th>
+                    <th class="px-4 py-3 text-right">Keluar</th>
+                    <th class="px-4 py-3 text-right">Saldo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="tx in filteredTransactions"
+                    :key="tx.id"
+                    class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]"
+                  >
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ tx.tanggal }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ tx.keterangan }}</td>
+                    <td class="px-4 py-3">
+                      <span
+                        class="inline-flex rounded-full px-2 py-1 text-xs font-medium"
+                        :class="{
+                          'bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400': tx.masuk > 0,
+                          'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400': tx.keluar > 0
+                        }"
+                      >
+                        {{ tx.masuk > 0 ? 'Pemasukan' : 'Pengeluaran' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">
+                      {{ tx.masuk > 0 ? formatCurrency(tx.masuk) : '-' }}
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm font-semibold text-red-600 dark:text-red-400">
+                      {{ tx.keluar > 0 ? formatCurrency(tx.keluar) : '-' }}
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm font-medium text-gray-800 dark:text-white/90">
+                      {{ formatCurrency(tx.saldo) }}
+                    </td>
+                  </tr>
+                  <tr v-if="filteredTransactions.length === 0 && !isLoadingTransactionFilter">
+                    <td colspan="6" class="px-4 py-12 text-center">
+                      <div class="flex flex-col items-center justify-center gap-3">
+                        <svg class="h-16 w-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Tidak ada transaksi</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500">Belum ada data transaksi untuk filter ini</p>
+                      </div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div class="mt-4 flex items-center justify-between">
-              <div class="text-sm text-gray-600">Menampilkan halaman {{ balancePagination.current_page }} dari {{ balancePagination.last_page }} — total {{ balancePagination.total }} transaksi</div>
+            <!-- Pagination -->
+            <div v-if="filteredTransactions.length > 0" class="mt-4 flex items-center justify-between">
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                Menampilkan halaman {{ balancePagination.current_page }} dari {{ balancePagination.last_page }} — total {{ balancePagination.total }} transaksi
+              </div>
               <div class="flex gap-2">
-                <button :disabled="balancePagination.current_page <= 1" @click="( () => { balancePagination.current_page = Math.max(1, balancePagination.current_page - 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Sebelumnya</button>
-                <button :disabled="balancePagination.current_page >= balancePagination.last_page" @click="( () => { balancePagination.current_page = Math.min(balancePagination.last_page, balancePagination.current_page + 1); fetchBalanceData(balancePagination.current_page); } )()" class="h-10 rounded-lg border px-3 bg-white">Selanjutnya</button>
+                <button
+                  :disabled="balancePagination.current_page <= 1"
+                  @click="() => { balancePagination.current_page = Math.max(1, balancePagination.current_page - 1); fetchBalanceData(balancePagination.current_page); }"
+                  class="h-10 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03]"
+                >
+                  Sebelumnya
+                </button>
+                <button
+                  :disabled="balancePagination.current_page >= balancePagination.last_page"
+                  @click="() => { balancePagination.current_page = Math.min(balancePagination.last_page, balancePagination.current_page + 1); fetchBalanceData(balancePagination.current_page); }"
+                  class="h-10 rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03]"
+                >
+                  Selanjutnya
+                </button>
               </div>
             </div>
           </div>
-
-          <!-- Stats Grid -->
-          <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <!-- Total Saldo Masuk (clickable to expand transactions) -->
-            <button @click.prevent="toggleAccordion('masuk')" class="w-full text-left rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-white/[0.03]">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">Total Saldo Masuk</p>
-                  <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ formatCurrency(balanceTotals.totalMasuk || 0) }}</p>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100 dark:bg-green-500/10">
-                    <svg class="h-6 w-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                  </div>
-                  <svg :class="['h-5 w-5 transition-transform', accordionOpen && accordionFilter === 'masuk' ? 'rotate-180' : 'rotate-0']" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-
-            <!-- Total Saldo Keluar (clickable) -->
-            <button @click.prevent="toggleAccordion('keluar')" class="w-full text-left rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:border-brand-300 focus:outline-none dark:border-gray-700 dark:bg-white/[0.03]">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">Total Saldo Keluar</p>
-                  <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ formatCurrency(balanceTotals.totalKeluar || 0) }}</p>
-                </div>
-                <div class="flex items-center gap-3">
-                  <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/10">
-                    <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-                    </svg>
-                  </div>
-                  <svg :class="['h-5 w-5 transition-transform', accordionOpen && accordionFilter === 'keluar' ? 'rotate-180' : 'rotate-0']" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          <!-- Progress Ring -->
-          <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
-            <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">
-              Persentase Pemasukan vs Pengeluaran
-            </h3>
-            <div class="flex flex-col items-center justify-center">
-              <div class="relative w-full max-w-[300px]">
-                <VueApexCharts
-                  type="radialBar"
-                  height="300"
-                  :options="progressChartOptions"
-                  :series="progressChartSeries"
-                />
-              </div>
-              <div class="mt-4 flex gap-6 text-center">
-                <div>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">Pemasukan</p>
-                  <p class="text-lg font-semibold text-green-600 dark:text-green-400">
-                    {{ persentaseMasukFormatted }}%
-                  </p>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-600 dark:text-gray-400">Pengeluaran</p>
-                  <p class="text-lg font-semibold text-red-600 dark:text-red-400">
-                    {{ persentaseKeluarFormatted }}%
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
 
         </div>
 
@@ -562,6 +750,189 @@ watch([selectedProgram, selectedKantor], () => {
   scheduleFetch()
 })
 
+// NEW: Additional balance breakdown data
+const balanceBreakdown = ref({
+  pengajuan_dana: 0,
+  pengajuan_dana_percentage: 0,
+  penyaluran: 0,
+  penyaluran_percentage: 0,
+})
+
+const programBreakdownData = ref([])
+const timelineData = ref([])
+const isLoadingTransactionFilter = ref(false)
+const isLoadingProgramBreakdown = ref(false)
+const isLoadingTimeline = ref(false)
+
+// NEW: Transaction filter tabs
+const transactionFilters = [
+  { value: 'all', label: 'Semua' },
+  { value: 'masuk', label: 'Pemasukan' },
+  { value: 'pengajuan_dana', label: 'Pengajuan Dana' },
+  { value: 'penyaluran', label: 'Penyaluran' },
+]
+
+const activeTransactionFilter = ref('all')
+
+// Watch for transaction filter changes and add loading animation
+watch(activeTransactionFilter, () => {
+  isLoadingTransactionFilter.value = true
+  setTimeout(() => {
+    isLoadingTransactionFilter.value = false
+  }, 300)
+})
+
+// NEW: Filtered transactions based on active filter
+const filteredTransactions = computed(() => {
+  if (!balanceTransactions.value) return []
+  
+  switch (activeTransactionFilter.value) {
+    case 'masuk':
+      return balanceTransactions.value.filter(t => t.masuk > 0)
+    case 'pengajuan_dana':
+      return balanceTransactions.value.filter(t => t.keluar > 0 && t.keterangan.toLowerCase().includes('pengajuan'))
+    case 'penyaluran':
+      return balanceTransactions.value.filter(t => t.keluar > 0 && t.keterangan.toLowerCase().includes('penyalur'))
+    default:
+      return balanceTransactions.value
+  }
+})
+
+// NEW: Breakdown Donut Chart
+const breakdownChartOptions = computed(() => ({
+  chart: {
+    fontFamily: 'Outfit, sans-serif',
+    type: 'donut',
+  },
+  colors: ['#f97316', '#a855f7'],
+  labels: ['Pengajuan Dana', 'Penyaluran'],
+  legend: {
+    position: 'bottom',
+    labels: {
+      colors: '#6B7280',
+    },
+  },
+  dataLabels: {
+    enabled: true,
+    formatter: function (val: number) {
+      return val.toFixed(1) + '%'
+    },
+  },
+  plotOptions: {
+    pie: {
+      donut: {
+        size: '70%',
+        labels: {
+          show: true,
+          name: {
+            show: true,
+            fontSize: '14px',
+            fontWeight: 600,
+            color: '#374151',
+          },
+          value: {
+            show: true,
+            fontSize: '24px',
+            fontWeight: 700,
+            color: '#1F2937',
+            formatter: function (val: any) {
+              return formatCurrency(parseFloat(val))
+            },
+          },
+          total: {
+            show: true,
+            label: 'Total',
+            fontSize: '14px',
+            fontWeight: 600,
+            color: '#6B7280',
+            formatter: function (w: any) {
+              const total = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0)
+              return formatCurrency(total)
+            },
+          },
+        },
+      },
+    },
+  },
+}))
+
+const breakdownChartSeries = computed(() => [
+  balanceBreakdown.value.pengajuan_dana || 0,
+  balanceBreakdown.value.penyaluran || 0,
+])
+
+// NEW: Timeline Area Chart
+const timelineChartOptions = computed(() => ({
+  chart: {
+    fontFamily: 'Outfit, sans-serif',
+    type: 'area',
+    toolbar: {
+      show: false,
+    },
+  },
+  colors: ['#10b981', '#ef4444'],
+  dataLabels: {
+    enabled: false,
+  },
+  stroke: {
+    curve: 'smooth',
+    width: 2,
+  },
+  fill: {
+    type: 'gradient',
+    gradient: {
+      opacityFrom: 0.6,
+      opacityTo: 0.1,
+    },
+  },
+  xaxis: {
+    type: 'datetime',
+    labels: {
+      style: {
+        colors: '#6B7280',
+      },
+    },
+  },
+  yaxis: {
+    labels: {
+      style: {
+        colors: '#6B7280',
+      },
+      formatter: function (val: number) {
+        return formatCurrency(val)
+      },
+    },
+  },
+  tooltip: {
+    x: {
+      format: 'dd MMM yyyy',
+    },
+    y: {
+      formatter: function (val: number) {
+        return formatCurrency(val)
+      },
+    },
+  },
+  legend: {
+    position: 'top',
+    horizontalAlign: 'right',
+    labels: {
+      colors: '#6B7280',
+    },
+  },
+}))
+
+const timelineChartSeries = computed(() => [
+  {
+    name: 'Pemasukan',
+    data: timelineData.value.map((d: any) => [new Date(d.tanggal).getTime(), d.pemasukan || 0]),
+  },
+  {
+    name: 'Pengeluaran',
+    data: timelineData.value.map((d: any) => [new Date(d.tanggal).getTime(), d.pengeluaran || 0]),
+  },
+])
+
 // Accordion state
 const accordionOpen = ref(false)
 const accordionFilter = ref('all')
@@ -709,8 +1080,84 @@ const fetchBalanceData = async (page = 1) => {
     balanceTotals.value = data.totals || { saldo_awal: 0, totalMasuk: 0, totalKeluar: 0, saldo_akhir: 0 }
     balanceTransactions.value = data.transactions || []
     balancePagination.value = { ...(data.pagination || {}), per_page: (data.pagination && data.pagination.per_page) || 20 }
+    
+    // NEW: Set breakdown data from API response
+    if (data.breakdown) {
+      balanceBreakdown.value = {
+        pengajuan_dana: data.breakdown.pengajuan_dana || 0,
+        pengajuan_dana_percentage: data.breakdown.pengajuan_dana_percentage || 0,
+        penyaluran: data.breakdown.penyaluran || 0,
+        penyaluran_percentage: data.breakdown.penyaluran_percentage || 0,
+      }
+    }
+    
+    // Fetch program breakdown and timeline data
+    await Promise.all([
+      fetchProgramBreakdown(),
+      fetchTimelineData(),
+    ])
   } catch (err) {
     console.error('Exception fetching laporan keuangan', err)
+  }
+}
+
+// NEW: Fetch program breakdown
+const fetchProgramBreakdown = async () => {
+  try {
+    isLoadingProgramBreakdown.value = true
+    const params = new URLSearchParams()
+    params.append('start', balanceStart.value)
+    params.append('end', balanceEnd.value)
+    if (selectedProgram.value) params.append('program_id', selectedProgram.value)
+    if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
+
+    const res = await fetch(`/admin/api/laporan/keuangan/program-breakdown?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+    })
+
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) {
+      programBreakdownData.value = json.data || []
+    }
+  } catch (err) {
+    console.error('Error fetching program breakdown', err)
+  } finally {
+    isLoadingProgramBreakdown.value = false
+  }
+}
+
+// NEW: Fetch timeline data
+const fetchTimelineData = async () => {
+  try {
+    isLoadingTimeline.value = true
+    const params = new URLSearchParams()
+    params.append('start', balanceStart.value)
+    params.append('end', balanceEnd.value)
+    if (selectedProgram.value) params.append('program_id', selectedProgram.value)
+    if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
+
+    const res = await fetch(`/admin/api/laporan/keuangan/timeline?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+    })
+
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) {
+      timelineData.value = json.data || []
+    }
+  } catch (err) {
+    console.error('Error fetching timeline data', err)
+  } finally {
+    isLoadingTimeline.value = false
   }
 }
 
@@ -781,6 +1228,43 @@ const handleExportBalance = () => {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan')
   const filename = `Laporan_Keuangan_${balanceStart.value}_${balanceEnd.value}.xlsx`
+  XLSX.writeFile(wb, filename)
+}
+
+// NEW: Export program breakdown
+const handleExportProgramBreakdown = () => {
+  const data = programBreakdownData.value.map((p) => ({
+    'Program': p.program_nama,
+    'Pemasukan': formatCurrency(p.pemasukan || 0),
+    'Pengajuan Dana': formatCurrency(p.pengajuan_dana || 0),
+    'Penyaluran': formatCurrency(p.penyaluran || 0),
+    'Total Pengeluaran': formatCurrency((p.pengajuan_dana || 0) + (p.penyaluran || 0)),
+    'Saldo': formatCurrency(p.saldo || 0),
+  }))
+  
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Breakdown Program')
+  const filename = `Breakdown_Program_${balanceStart.value}_${balanceEnd.value}.xlsx`
+  XLSX.writeFile(wb, filename)
+}
+
+// NEW: Export filtered transactions
+const handleExportTransactions = () => {
+  const data = filteredTransactions.value.map((tx) => ({
+    'Tanggal': tx.tanggal,
+    'Keterangan': tx.keterangan,
+    'Tipe': tx.masuk > 0 ? 'Pemasukan' : 'Pengeluaran',
+    'Masuk': tx.masuk > 0 ? formatCurrency(tx.masuk) : '-',
+    'Keluar': tx.keluar > 0 ? formatCurrency(tx.keluar) : '-',
+    'Saldo': formatCurrency(tx.saldo),
+  }))
+  
+  const ws = XLSX.utils.json_to_sheet(data)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Detail Transaksi')
+  const filterLabel = transactionFilters.find(f => f.value === activeTransactionFilter.value)?.label || 'Semua'
+  const filename = `Transaksi_${filterLabel}_${balanceStart.value}_${balanceEnd.value}.xlsx`
   XLSX.writeFile(wb, filename)
 }
 

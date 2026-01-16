@@ -273,6 +273,14 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::post('absensi/clock-out', [AbsensiController::class, 'clockOut'])->name('admin.api.absensi.clock-out');
     Route::get('absensi/report', [AbsensiController::class, 'report'])->name('admin.api.absensi.report');
     Route::apiResource('absensi', AbsensiController::class);
+
+    // Laporan Keuangan API
+    Route::get('laporan/keuangan', [\App\Http\Controllers\LaporanKeuanganController::class, 'index'])->name('admin.api.laporan.keuangan');
+    Route::get('laporan/keuangan/program-breakdown', [\App\Http\Controllers\LaporanKeuanganController::class, 'programBreakdown'])->name('admin.api.laporan.keuangan.program-breakdown');
+    Route::get('laporan/keuangan/timeline', [\App\Http\Controllers\LaporanKeuanganController::class, 'timeline'])->name('admin.api.laporan.keuangan.timeline');
+    Route::get('laporan/mitra', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraList'])->name('admin.api.laporan.mitra');
+    Route::get('laporan/mitra/{id}', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraDetail'])->name('admin.api.laporan.mitra.detail');
+    Route::get('laporan/mitra/{id}/transactions', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraTransactions'])->name('admin.api.laporan.mitra.transactions');
 });
 
 // Admin Signin Route - Public (no auth required, must be before protected routes)

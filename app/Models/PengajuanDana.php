@@ -70,6 +70,11 @@ class PengajuanDana extends Model
         return $this->hasMany(PengajuanDanaDisbursement::class, 'pengajuan_dana_id');
     }
 
+    public function penyalurans(): HasMany
+    {
+        return $this->hasMany(Penyaluran::class, 'pengajuan_dana_id');
+    }
+
     public function approvals(): HasMany
     {
         return $this->hasMany(PengajuanDanaApproval::class, 'pengajuan_dana_id');

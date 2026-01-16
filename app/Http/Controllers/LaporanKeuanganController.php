@@ -109,6 +109,14 @@ class LaporanKeuanganController extends Controller
         $saldoAwal = (float)$incomingBefore - (float)$outgoingBefore;
         $saldoAkhir = $saldoAwal + (float)$incomingInRange - (float)$outgoingInRange;
 
+        // Breakdown data for comprehensive reporting
+        $breakdown = [
+            'pengajuan_dana' => (float)$disbursementsInRange,
+            'penyaluran' => (float)$penyaluranInRange,
+            'pengajuan_percentage' => $outgoingInRange > 0 ? round(($disbursementsInRange / $outgoingInRange) * 100, 2) : 0,
+            'penyaluran_percentage' => $outgoingInRange > 0 ? round(($penyaluranInRange / $outgoingInRange) * 100, 2) : 0,
+        ];
+
         // Build transactions list (incoming and outgoing unified)
         $incomingRowsQuery = Transaksi::whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])->orderBy('tanggal_transaksi', 'asc');
         if ($programId) {
@@ -209,6 +217,7 @@ class LaporanKeuanganController extends Controller
                     'totalKeluar' => (float)$outgoingInRange,
                     'saldo_akhir' => (float)$saldoAkhir,
                 ],
+                'breakdown' => $breakdown,
                 'transactions' => $paginator->items(),
                 'pagination' => [
                     'current_page' => $paginator->currentPage(),
@@ -217,6 +226,185 @@ class LaporanKeuanganController extends Controller
                     'total' => $paginator->total(),
                 ],
             ],
+        ]);
+    }
+
+    /**
+     * Return program-wise breakdown of transactions and disbursements.
+     */
+    public function programBreakdown(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->can('view laporan keuangan')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $start = $request->query('start');
+        $end = $request->query('end');
+        
+        try {
+            $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
+        }
+
+        // Get all active programs
+        $programs = \App\Models\Program::all();
+
+        $programData = [];
+        
+        // Add "Semua Program" (NULL program_id) entry first for transactions without program
+        $pemasukanNull = Transaksi::whereNull('program_id')
+            ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('nominal');
+        
+        $pengajuanNull = \App\Models\PengajuanDanaDisbursement::whereNull('program_id')
+            ->whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('amount');
+        
+        $penyaluranNull = \App\Models\Penyaluran::whereHas('pengajuan', function($q) {
+            $q->whereNull('program_id');
+        })->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+        ->sum('amount');
+
+        if ($pemasukanNull > 0 || $pengajuanNull > 0 || $penyaluranNull > 0) {
+            $programData[] = [
+                'id' => null,
+                'nama' => 'Semua Program',
+                'pemasukan' => (float)$pemasukanNull,
+                'pengajuan_dana' => (float)$pengajuanNull,
+                'penyaluran' => (float)$penyaluranNull,
+                'total_pengeluaran' => (float)($pengajuanNull + $penyaluranNull),
+                'saldo' => (float)($pemasukanNull - ($pengajuanNull + $penyaluranNull)),
+            ];
+        }
+
+        foreach ($programs as $program) {
+            $pemasukan = $program->transaksis()
+                ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+                ->sum('nominal');
+            
+            $pengajuan = \App\Models\PengajuanDanaDisbursement::where('program_id', $program->id)
+                ->whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
+                ->sum('amount');
+            
+            $penyaluran = \App\Models\Penyaluran::whereHas('pengajuan', function($q) use ($program) {
+                $q->where('program_id', $program->id);
+            })->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('amount');
+
+            // Only include programs with activity
+            if ($pemasukan > 0 || $pengajuan > 0 || $penyaluran > 0) {
+                $programData[] = [
+                    'id' => $program->id,
+                    'nama' => $program->nama_program,
+                    'pemasukan' => (float)$pemasukan,
+                    'pengajuan_dana' => (float)$pengajuan,
+                    'penyaluran' => (float)$penyaluran,
+                    'total_pengeluaran' => (float)($pengajuan + $penyaluran),
+                    'saldo' => (float)($pemasukan - ($pengajuan + $penyaluran)),
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $programData,
+        ]);
+    }
+
+    /**
+     * Return timeline data (daily aggregates) for chart visualization.
+     */
+    public function timeline(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->can('view laporan keuangan')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $start = $request->query('start');
+        $end = $request->query('end');
+        $programId = $request->query('program_id');
+        $kantorCabangId = $request->query('kantor_cabang_id');
+
+        try {
+            $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
+        }
+
+        // Daily aggregates for pemasukan
+        $pemasukanQuery = Transaksi::selectRaw('DATE(tanggal_transaksi) as date, SUM(nominal) as total')
+            ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+            ->groupBy('date');
+        
+        if ($programId) {
+            $pemasukanQuery->where('program_id', $programId);
+        }
+        if ($kantorCabangId) {
+            $pemasukanQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+        
+        $pemasukanData = $pemasukanQuery->get()->keyBy('date');
+
+        // Daily aggregates for pengajuan dana
+        $pengajuanQuery = PengajuanDanaDisbursement::selectRaw('DATE(tanggal_disburse) as date, SUM(amount) as total')
+            ->whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
+            ->groupBy('date');
+        
+        if ($programId) {
+            $pengajuanQuery->where('program_id', $programId);
+        }
+        if ($kantorCabangId) {
+            $pengajuanQuery->whereHas('pengajuan', function ($q) use ($kantorCabangId) {
+                $q->where('kantor_cabang_id', $kantorCabangId);
+            });
+        }
+        
+        $pengajuanData = $pengajuanQuery->get()->keyBy('date');
+
+        // Daily aggregates for penyaluran
+        $penyaluranQuery = Penyaluran::selectRaw('DATE(created_at) as date, SUM(amount) as total')
+            ->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+            ->groupBy('date');
+        
+        if ($programId) {
+            $penyaluranQuery->whereHas('pengajuan', function ($q) use ($programId) {
+                $q->where('program_id', $programId);
+            });
+        }
+        if ($kantorCabangId) {
+            $penyaluranQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+        
+        $penyaluranData = $penyaluranQuery->get()->keyBy('date');
+
+        // Build timeline array with all dates in range
+        $timeline = [];
+        $current = $startDate->copy();
+        while ($current <= $endDate) {
+            $dateStr = $current->toDateString();
+            $pemasukan = isset($pemasukanData[$dateStr]) ? (float)$pemasukanData[$dateStr]->total : 0;
+            $pengajuan = isset($pengajuanData[$dateStr]) ? (float)$pengajuanData[$dateStr]->total : 0;
+            $penyaluran = isset($penyaluranData[$dateStr]) ? (float)$penyaluranData[$dateStr]->total : 0;
+            
+            $timeline[] = [
+                'date' => $dateStr,
+                'pemasukan' => $pemasukan,
+                'pengajuan_dana' => $pengajuan,
+                'penyaluran' => $penyaluran,
+                'pengeluaran' => $pengajuan + $penyaluran,
+            ];
+            
+            $current->addDay();
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $timeline,
         ]);
     }
 

@@ -53,4 +53,20 @@ class Program extends Model
     {
         return $this->hasMany(ProgramShare::class, 'program_id');
     }
+
+    /**
+     * Get all transaksis for this program.
+     */
+    public function transaksis(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Transaksi::class, 'program_id');
+    }
+
+    /**
+     * Get all pengajuan danas for this program.
+     */
+    public function pengajuanDanas(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\PengajuanDana::class, 'program_id');
+    }
 }

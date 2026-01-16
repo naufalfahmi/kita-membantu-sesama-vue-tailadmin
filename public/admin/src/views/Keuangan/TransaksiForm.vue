@@ -91,7 +91,7 @@
             />
           </div>
 
-          <div v-if="programBreakdown.length > 0" class="lg:col-span-2">
+          <div v-if="false" class="lg:col-span-2">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rincian Pembagian Program</label>
             <div class="overflow-x-auto rounded-lg border border-gray-300 bg-white dark:border-gray-700">
               <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">

@@ -3,11 +3,11 @@
     <div
       class="min-h-screen rounded-2xl border border-gray-200 bg-white px-5 py-7 dark:border-gray-800 dark:bg-white/[0.03] xl:px-10 xl:py-12"
     >
-      <!-- Top credit boxes (responsive, dynamic) -->
-      <div class="mb-6">
+      <!-- Top credit boxes (responsive, dynamic) - only show boxes with credit > 0 -->
+      <div class="mb-6" v-if="visibleCredits.length > 0">
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div
-            v-for="credit in dynamicCredits"
+            v-for="credit in visibleCredits"
             :key="credit.type"
             class="rounded-lg border border-gray-200 bg-white p-4 flex flex-col sm:items-center"
           >
@@ -342,6 +342,9 @@ interface CreditInfo {
   formatted: string
 }
 const dynamicCredits = ref<CreditInfo[]>([])
+
+// Only show credits that have a positive remaining value
+const visibleCredits = computed(() => dynamicCredits.value.filter((c) => Number(c.value) > 0))
 
 // Backward compatibility refs (deprecated, use dynamicCredits instead)
 const creditProgram = ref<number>(0)

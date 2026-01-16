@@ -16,6 +16,33 @@ class PenyaluranController extends Controller
         // Eager-load pengajuan relations (program, fundraiser) so frontend can read nested program data
         $query = Penyaluran::with(['pengajuan.program', 'pengajuan.fundraiser', 'images', 'kantorCabang']);
 
+        // Apply data visibility based on user role and permissions (same logic as PengajuanDanaController)
+        $user = auth()->user();
+        if ($user) {
+            $isAdmin = $user->hasRole('admin') || $user->hasRole('Admin');
+            $hasApprovalPermission = $user->can('approve pengajuan dana') || $user->can('approval pengajuan dana');
+            
+            if (!$isAdmin) {
+                if ($hasApprovalPermission) {
+                    // Users with approval permission can see data from their kantor_cabang
+                    if ($user->kantor_cabang_id) {
+                        $query->where('kantor_cabang_id', $user->kantor_cabang_id);
+                    } else {
+                        // If no kantor_cabang assigned, only see own data (via pengajuan relationship)
+                        $query->whereHas('pengajuan', function($q) use ($user) {
+                            $q->where('fundraiser_id', $user->id);
+                        });
+                    }
+                } else {
+                    // Regular users can only see their own penyaluran (via pengajuan relationship)
+                    $query->whereHas('pengajuan', function($q) use ($user) {
+                        $q->where('fundraiser_id', $user->id);
+                    });
+                }
+            }
+            // Admin can see all data (no filter applied)
+        }
+
         // Date range filter: optional start_date and end_date (YYYY-MM-DD)
         if ($request->filled('start_date') || $request->filled('end_date')) {
             $start = $request->filled('start_date') ? Carbon::parse($request->input('start_date'))->startOfDay() : null;

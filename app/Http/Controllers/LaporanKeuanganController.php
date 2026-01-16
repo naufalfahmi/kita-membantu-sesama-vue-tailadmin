@@ -269,6 +269,64 @@ class LaporanKeuanganController extends Controller
         ->sum('amount');
 
         if ($pemasukanNull > 0 || $pengajuanNull > 0 || $penyaluranNull > 0) {
+            // Get detailed breakdown for "Semua Program" - FIFO based
+            // These show where the "unassigned" transactions actually came from
+            $pemasukanBreakdown = [];
+            $pengajuanBreakdown = [];
+            $penyaluranBreakdown = [];
+
+            // For "Semua Program" (NULL program_id), we show ALL transactions grouped by program
+            // to give visibility on where the money came from/went to
+            
+            // Breakdown pemasukan by actual programs (FIFO - earliest first)
+            $pemasukanWithProgram = Transaksi::selectRaw('transaksis.program_id, program.nama_program, SUM(transaksis.nominal) as total')
+                ->leftJoin('program', 'transaksis.program_id', '=', 'program.id')
+                ->whereNotNull('transaksis.program_id')
+                ->whereBetween('transaksis.tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+                ->groupBy('transaksis.program_id', 'program.nama_program')
+                ->orderBy(DB::raw('MIN(transaksis.tanggal_transaksi)'), 'asc') // FIFO
+                ->get();
+            
+            foreach ($pemasukanWithProgram as $item) {
+                $pemasukanBreakdown[] = [
+                    'program_nama' => $item->nama_program ?: 'Unknown',
+                    'amount' => (float)$item->total,
+                ];
+            }
+
+            // Breakdown pengajuan dana by program (FIFO)
+            $pengajuanDetails = \App\Models\PengajuanDanaDisbursement::selectRaw('pengajuan_dana_disbursements.program_id, program.nama_program, SUM(pengajuan_dana_disbursements.amount) as total')
+                ->leftJoin('program', 'pengajuan_dana_disbursements.program_id', '=', 'program.id')
+                ->whereNotNull('pengajuan_dana_disbursements.program_id')
+                ->whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
+                ->groupBy('pengajuan_dana_disbursements.program_id', 'program.nama_program')
+                ->orderBy(DB::raw('MIN(tanggal_disburse)'), 'asc') // FIFO
+                ->get();
+            
+            foreach ($pengajuanDetails as $item) {
+                $pengajuanBreakdown[] = [
+                    'program_nama' => $item->nama_program ?: 'Unknown',
+                    'amount' => (float)$item->total,
+                ];
+            }
+
+            // Breakdown penyaluran by program (FIFO)
+            $penyaluranDetails = \App\Models\Penyaluran::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(penyalurans.amount) as total')
+                ->join('pengajuan_danas', 'penyalurans.pengajuan_dana_id', '=', 'pengajuan_danas.id')
+                ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
+                ->whereNotNull('pengajuan_danas.program_id')
+                ->whereBetween(DB::raw('DATE(penyalurans.created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+                ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
+                ->orderBy(DB::raw('MIN(penyalurans.created_at)'), 'asc') // FIFO
+                ->get();
+            
+            foreach ($penyaluranDetails as $item) {
+                $penyaluranBreakdown[] = [
+                    'program_nama' => $item->nama_program ?: 'Unknown',
+                    'amount' => (float)$item->total,
+                ];
+            }
+
             $programData[] = [
                 'id' => null,
                 'nama' => 'Semua Program',
@@ -277,6 +335,11 @@ class LaporanKeuanganController extends Controller
                 'penyaluran' => (float)$penyaluranNull,
                 'total_pengeluaran' => (float)($pengajuanNull + $penyaluranNull),
                 'saldo' => (float)($pemasukanNull - ($pengajuanNull + $penyaluranNull)),
+                'breakdown' => [
+                    'pemasukan' => $pemasukanBreakdown,
+                    'pengajuan_dana' => $pengajuanBreakdown,
+                    'penyaluran' => $penyaluranBreakdown,
+                ],
             ];
         }
 
@@ -405,6 +468,101 @@ class LaporanKeuanganController extends Controller
         return response()->json([
             'success' => true,
             'data' => $timeline,
+        ]);
+    }
+
+    /**
+     * Return penyaluran breakdown by alias (submission type).
+     * Groups penyaluran by their submission_type alias.
+     */
+    public function penyaluranByAlias(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->can('view laporan keuangan')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $start = $request->query('start');
+        $end = $request->query('end');
+        $programId = $request->query('program_id');
+        $kantorCabangId = $request->query('kantor_cabang_id');
+
+        try {
+            $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
+        }
+
+        // Query penyaluran with filters
+        $query = Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()]);
+        
+        if ($programId) {
+            $query->whereHas('pengajuan', function($q) use ($programId) {
+                $q->where('program_id', $programId);
+            });
+        }
+        
+        if ($kantorCabangId) {
+            $query->where('kantor_cabang_id', $kantorCabangId);
+        }
+
+        // Get all penyaluran with submission types
+        $penyalurans = $query->with('pengajuan')->get();
+
+        // Group by submission_type (alias from program_share_types)
+        $aliasGroups = [];
+        $total = 0;
+
+        foreach ($penyalurans as $penyaluran) {
+            $submissionType = $penyaluran->pengajuan ? $penyaluran->pengajuan->submission_type : null;
+            
+            // Get alias from program_share_types (match by name, not id)
+            $alias = 'Lainnya';
+            if ($submissionType) {
+                $shareType = \App\Models\ProgramShareType::where('name', $submissionType)->first();
+                if ($shareType && $shareType->alias) {
+                    $alias = $shareType->alias;
+                } elseif ($shareType) {
+                    $alias = $shareType->name;
+                } else {
+                    // If not found in program_share_types, use submission_type as-is
+                    $alias = $submissionType;
+                }
+            }
+
+            $amount = (float)$penyaluran->amount;
+            $total += $amount;
+
+            if (!isset($aliasGroups[$alias])) {
+                $aliasGroups[$alias] = [
+                    'alias' => $alias,
+                    'amount' => 0,
+                    'count' => 0,
+                ];
+            }
+
+            $aliasGroups[$alias]['amount'] += $amount;
+            $aliasGroups[$alias]['count'] += 1;
+        }
+
+        // Calculate percentages and sort by amount desc
+        $breakdown = array_values($aliasGroups);
+        usort($breakdown, function($a, $b) {
+            return $b['amount'] <=> $a['amount'];
+        });
+
+        foreach ($breakdown as &$item) {
+            $item['percentage'] = $total > 0 ? round(($item['amount'] / $total) * 100, 2) : 0;
+        }
+        unset($item);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'total' => (float)$total,
+                'breakdown' => $breakdown,
+            ],
         ]);
     }
 

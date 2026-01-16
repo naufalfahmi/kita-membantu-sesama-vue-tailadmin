@@ -278,6 +278,7 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::get('laporan/keuangan', [\App\Http\Controllers\LaporanKeuanganController::class, 'index'])->name('admin.api.laporan.keuangan');
     Route::get('laporan/keuangan/program-breakdown', [\App\Http\Controllers\LaporanKeuanganController::class, 'programBreakdown'])->name('admin.api.laporan.keuangan.program-breakdown');
     Route::get('laporan/keuangan/timeline', [\App\Http\Controllers\LaporanKeuanganController::class, 'timeline'])->name('admin.api.laporan.keuangan.timeline');
+    Route::get('laporan/keuangan/penyaluran-by-alias', [\App\Http\Controllers\LaporanKeuanganController::class, 'penyaluranByAlias'])->name('admin.api.laporan.keuangan.penyaluran-by-alias');
     Route::get('laporan/mitra', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraList'])->name('admin.api.laporan.mitra');
     Route::get('laporan/mitra/{id}', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraDetail'])->name('admin.api.laporan.mitra.detail');
     Route::get('laporan/mitra/{id}/transactions', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraTransactions'])->name('admin.api.laporan.mitra.transactions');

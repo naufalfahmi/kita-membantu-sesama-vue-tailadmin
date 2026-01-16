@@ -173,6 +173,92 @@
             </div>
           </div>
 
+          <!-- NEW: Breakdown Penyaluran per Kategori -->
+          <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Penyaluran per Kategori</h3>
+              <div class="text-sm text-gray-600 dark:text-gray-400">
+                Total: <span class="font-bold text-purple-600 dark:text-purple-400">{{ formatCurrency(penyaluranByAliasData.total || 0) }}</span>
+              </div>
+            </div>
+
+            <!-- Top 3 Categories Cards -->
+            <div v-if="penyaluranByAliasData.breakdown && penyaluranByAliasData.breakdown.length > 0" class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div
+                v-for="(item, index) in penyaluranByAliasData.breakdown.slice(0, 3)"
+                :key="index"
+                class="rounded-lg border p-4"
+                :class="{
+                  'border-purple-200 bg-purple-50 dark:border-purple-500/20 dark:bg-purple-500/10': index === 0,
+                  'border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/10': index === 1,
+                  'border-green-200 bg-green-50 dark:border-green-500/20 dark:bg-green-500/10': index === 2,
+                }"
+              >
+                <div class="flex items-center justify-between">
+                  <div class="flex-1">
+                    <div class="mb-1 flex items-center gap-2">
+                      <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
+                        :class="{
+                          'bg-purple-200 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400': index === 0,
+                          'bg-blue-200 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400': index === 1,
+                          'bg-green-200 text-green-700 dark:bg-green-500/20 dark:text-green-400': index === 2,
+                        }"
+                      >
+                        {{ index + 1 }}
+                      </span>
+                      <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ item.alias }}</p>
+                    </div>
+                    <p class="text-lg font-bold"
+                      :class="{
+                        'text-purple-700 dark:text-purple-400': index === 0,
+                        'text-blue-700 dark:text-blue-400': index === 1,
+                        'text-green-700 dark:text-green-400': index === 2,
+                      }"
+                    >
+                      {{ formatCurrency(item.amount) }}
+                    </p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">
+                      {{ item.percentage }}% • {{ item.count }} transaksi
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Horizontal Bar Chart -->
+            <div class="relative">
+              <!-- Loading State -->
+              <div
+                v-if="isLoadingPenyaluranByAlias"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
+              >
+                <div class="flex flex-col items-center gap-3">
+                  <div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500"></div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Memuat data kategori...</p>
+                </div>
+              </div>
+
+              <VueApexCharts
+                v-if="penyaluranByAliasData.breakdown && penyaluranByAliasData.breakdown.length > 0"
+                type="bar"
+                height="300"
+                :options="penyaluranByAliasChartOptions"
+                :series="penyaluranByAliasChartSeries"
+              />
+
+              <!-- Empty State -->
+              <div v-if="!penyaluranByAliasData.breakdown || penyaluranByAliasData.breakdown.length === 0 && !isLoadingPenyaluranByAlias" class="py-12 text-center">
+                <div class="flex flex-col items-center justify-center gap-3">
+                  <svg class="h-16 w-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Tidak ada data penyaluran</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-500">Belum ada penyaluran untuk periode ini</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 4. Charts Row - Donut Chart & Saldo Card -->
           <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <!-- Donut Chart for Breakdown -->
@@ -262,26 +348,104 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr
-                    v-for="program in programBreakdownData"
-                    :key="program.id || 'null-program'"
-                    class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]"
-                  >
-                    <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                      <span v-if="program.id === null" class="inline-flex items-center gap-2">
-                        <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                        {{ program.nama }}
-                      </span>
-                      <span v-else>{{ program.nama }}</span>
-                    </td>
-                    <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(program.pemasukan || 0) }}</td>
-                    <td class="px-4 py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(program.pengajuan_dana || 0) }}</td>
-                    <td class="px-4 py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(program.penyaluran || 0) }}</td>
-                    <td class="px-4 py-3 text-right text-sm font-semibold text-red-600 dark:text-red-400">{{ formatCurrency(program.total_pengeluaran || 0) }}</td>
-                    <td class="px-4 py-3 text-right text-sm font-bold" :class="(program.saldo || 0) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.saldo || 0) }}</td>
-                  </tr>
+                  <template v-for="program in programBreakdownData" :key="program.id || 'null-program'">
+                    <!-- Main Row -->
+                    <tr
+                      class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]"
+                      :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': expandedProgramId === (program.id || 'null') }"
+                    >
+                      <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                        <div class="flex items-center gap-2">
+                          <!-- Expand button for Semua Program with breakdown -->
+                          <button
+                            v-if="program.id === null && program.breakdown"
+                            @click="expandedProgramId = expandedProgramId === 'null' ? null : 'null'"
+                            class="flex h-6 w-6 items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                          >
+                            <svg
+                              class="h-4 w-4 text-gray-600 dark:text-gray-400 transition-transform"
+                              :class="{ 'rotate-90': expandedProgramId === 'null' }"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                          <span v-if="program.id === null" class="inline-flex items-center gap-2">
+                            <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            {{ program.nama }}
+                          </span>
+                          <span v-else>{{ program.nama }}</span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(program.pemasukan || 0) }}</td>
+                      <td class="px-4 py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(program.pengajuan_dana || 0) }}</td>
+                      <td class="px-4 py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(program.penyaluran || 0) }}</td>
+                      <td class="px-4 py-3 text-right text-sm font-semibold text-red-600 dark:text-red-400">{{ formatCurrency(program.total_pengeluaran || 0) }}</td>
+                      <td class="px-4 py-3 text-right text-sm font-bold" :class="(program.saldo || 0) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.saldo || 0) }}</td>
+                    </tr>
+                    
+                    <!-- Expanded Detail Row for Semua Program -->
+                    <tr v-if="program.id === null && program.breakdown && expandedProgramId === 'null'" class="border-b border-gray-100 bg-blue-50/30 dark:border-gray-800 dark:bg-blue-900/5">
+                      <td colspan="6" class="px-4 py-4">
+                        <div class="ml-8 space-y-4">
+                          <div class="text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Detail Breakdown (FIFO)</div>
+                          
+                          <!-- Pemasukan Breakdown -->
+                          <div v-if="program.breakdown.pemasukan && program.breakdown.pemasukan.length > 0">
+                            <div class="mb-2 text-sm font-medium text-green-700 dark:text-green-400">Pemasukan dari Program:</div>
+                            <div class="space-y-1">
+                              <div
+                                v-for="(item, idx) in program.breakdown.pemasukan"
+                                :key="'pemasukan-' + idx"
+                                class="flex items-center justify-between rounded bg-white px-3 py-2 text-sm dark:bg-gray-800/50"
+                              >
+                                <span class="text-gray-700 dark:text-gray-300">{{ item.program_nama }}</span>
+                                <span class="font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(item.amount) }}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <!-- Pengajuan Dana Breakdown -->
+                          <div v-if="program.breakdown.pengajuan_dana && program.breakdown.pengajuan_dana.length > 0">
+                            <div class="mb-2 text-sm font-medium text-orange-700 dark:text-orange-400">Pengajuan Dana dari Program:</div>
+                            <div class="space-y-1">
+                              <div
+                                v-for="(item, idx) in program.breakdown.pengajuan_dana"
+                                :key="'pengajuan-' + idx"
+                                class="flex items-center justify-between rounded bg-white px-3 py-2 text-sm dark:bg-gray-800/50"
+                              >
+                                <span class="text-gray-700 dark:text-gray-300">{{ item.program_nama }}</span>
+                                <span class="font-semibold text-orange-600 dark:text-orange-400">{{ formatCurrency(item.amount) }}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <!-- Penyaluran Breakdown -->
+                          <div v-if="program.breakdown.penyaluran && program.breakdown.penyaluran.length > 0">
+                            <div class="mb-2 text-sm font-medium text-purple-700 dark:text-purple-400">Penyaluran dari Program:</div>
+                            <div class="space-y-1">
+                              <div
+                                v-for="(item, idx) in program.breakdown.penyaluran"
+                                :key="'penyaluran-' + idx"
+                                class="flex items-center justify-between rounded bg-white px-3 py-2 text-sm dark:bg-gray-800/50"
+                              >
+                                <span class="text-gray-700 dark:text-gray-300">{{ item.program_nama }}</span>
+                                <span class="font-semibold text-purple-600 dark:text-purple-400">{{ formatCurrency(item.amount) }}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div v-if="(!program.breakdown.pemasukan || program.breakdown.pemasukan.length === 0) && (!program.breakdown.pengajuan_dana || program.breakdown.pengajuan_dana.length === 0) && (!program.breakdown.penyaluran || program.breakdown.penyaluran.length === 0)" class="text-sm text-gray-500 dark:text-gray-500">
+                            Tidak ada detail breakdown untuk periode ini
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
                   <tr v-if="programBreakdownData.length === 0 && !isLoadingProgramBreakdown">
                     <td colspan="6" class="px-4 py-12 text-center">
                       <div class="flex flex-col items-center justify-center gap-3">
@@ -709,6 +873,9 @@ const scheduleFetch = (delay = 400) => {
   balanceFilterTimeout = setTimeout(() => {
     balancePagination.value.current_page = 1
     fetchBalanceData(1)
+    fetchProgramBreakdown()
+    fetchTimelineData()
+    fetchPenyaluranByAlias()
   }, delay)
 }
 
@@ -763,6 +930,13 @@ const timelineData = ref([])
 const isLoadingTransactionFilter = ref(false)
 const isLoadingProgramBreakdown = ref(false)
 const isLoadingTimeline = ref(false)
+
+// NEW: Expanded row state for program breakdown details
+const expandedProgramId = ref(null)
+
+// NEW: Penyaluran by Alias data
+const penyaluranByAliasData = ref({ total: 0, breakdown: [] })
+const isLoadingPenyaluranByAlias = ref(false)
 
 // NEW: Transaction filter tabs
 const transactionFilters = [
@@ -932,6 +1106,75 @@ const timelineChartSeries = computed(() => [
     data: timelineData.value.map((d: any) => [new Date(d.tanggal).getTime(), d.pengeluaran || 0]),
   },
 ])
+
+// NEW: Penyaluran by Alias Horizontal Bar Chart
+const penyaluranByAliasChartOptions = computed(() => ({
+  chart: {
+    fontFamily: 'Outfit, sans-serif',
+    type: 'bar',
+    toolbar: {
+      show: false,
+    },
+  },
+  colors: ['#8b5cf6'],
+  plotOptions: {
+    bar: {
+      horizontal: true,
+      barHeight: '70%',
+      dataLabels: {
+        position: 'top',
+      },
+    },
+  },
+  dataLabels: {
+    enabled: true,
+    formatter: function (val: number) {
+      return formatCurrency(val)
+    },
+    offsetX: 10,
+    style: {
+      fontSize: '12px',
+      colors: ['#8b5cf6'],
+    },
+  },
+  xaxis: {
+    categories: penyaluranByAliasData.value.breakdown.map((item: any) => item.alias),
+    labels: {
+      style: {
+        colors: '#6B7280',
+      },
+      formatter: function (val: number) {
+        return formatCurrency(val)
+      },
+    },
+  },
+  yaxis: {
+    labels: {
+      style: {
+        colors: '#6B7280',
+      },
+    },
+  },
+  tooltip: {
+    y: {
+      formatter: function (val: number, opts: any) {
+        const item = penyaluranByAliasData.value.breakdown[opts.dataPointIndex]
+        return `${formatCurrency(val)} (${item.percentage}% • ${item.count} transaksi)`
+      },
+    },
+  },
+  grid: {
+    borderColor: '#e5e7eb',
+  },
+}))
+
+const penyaluranByAliasChartSeries = computed(() => [
+  {
+    name: 'Jumlah Penyaluran',
+    data: penyaluranByAliasData.value.breakdown.map((item: any) => item.amount),
+  },
+])
+
 
 // Accordion state
 const accordionOpen = ref(false)
@@ -1119,10 +1362,15 @@ const fetchProgramBreakdown = async () => {
       credentials: 'same-origin',
     })
 
-    if (!res.ok) return
+    if (!res.ok) {
+      console.error('Program breakdown fetch failed:', res.status, res.statusText)
+      return
+    }
     const json = await res.json()
+    console.log('Program breakdown response:', json)
     if (json.success) {
       programBreakdownData.value = json.data || []
+      console.log('Program breakdown data loaded:', programBreakdownData.value.length, 'items')
     }
   } catch (err) {
     console.error('Error fetching program breakdown', err)
@@ -1158,6 +1406,36 @@ const fetchTimelineData = async () => {
     console.error('Error fetching timeline data', err)
   } finally {
     isLoadingTimeline.value = false
+  }
+}
+
+// NEW: Fetch penyaluran by alias
+const fetchPenyaluranByAlias = async () => {
+  try {
+    isLoadingPenyaluranByAlias.value = true
+    const params = new URLSearchParams()
+    params.append('start', balanceStart.value)
+    params.append('end', balanceEnd.value)
+    if (selectedProgram.value) params.append('program_id', selectedProgram.value)
+    if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
+
+    const res = await fetch(`/admin/api/laporan/keuangan/penyaluran-by-alias?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+    })
+
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) {
+      penyaluranByAliasData.value = json.data || { total: 0, breakdown: [] }
+    }
+  } catch (err) {
+    console.error('Error fetching penyaluran by alias', err)
+  } finally {
+    isLoadingPenyaluranByAlias.value = false
   }
 }
 
@@ -1210,9 +1488,14 @@ watch(activeTab, (v) => {
 onMounted(() => {
   if (activeTab.value === 'balance') {
     balanceRange.value = [balanceStart.value, balanceEnd.value]
-    fetchBalanceData(1)
-    fetchPrograms()
-    fetchKantorCabangs()
+    Promise.all([
+      fetchBalanceData(1),
+      fetchPrograms(),
+      fetchKantorCabangs(),
+      fetchProgramBreakdown(),
+      fetchTimelineData(),
+      fetchPenyaluranByAlias(),
+    ])
   }
 })
 

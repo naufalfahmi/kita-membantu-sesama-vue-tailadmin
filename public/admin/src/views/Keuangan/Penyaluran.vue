@@ -120,6 +120,17 @@
       </div>
 
       <div class="relative" style="width: 100%; height: 450px;">
+        <!-- Loading Overlay -->
+        <div
+          v-if="isLoadingGrid"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
+        >
+          <div class="flex flex-col items-center gap-3">
+            <div class="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500"></div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Memuat data...</p>
+          </div>
+        </div>
+        
         <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 100%;">
           <ag-grid-vue
             ref="agGridRef"
@@ -188,6 +199,7 @@ const route = useRoute()
 const router = useRouter()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Penyaluran')
 const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
+const isLoadingGrid = ref(true)
 const toast = useToast()
 const { fetchUser, hasPermission, isAdmin } = useAuth()
 const canCreate = computed(() => isAdmin() || hasPermission('create penyaluran'))
@@ -604,6 +616,8 @@ const createDataSource = (): IDatasource => {
         
         // Provide data to AG Grid
         params.successCallback(rowsThisPage, lastRow)
+        // Hide loading overlay after first successful load
+        isLoadingGrid.value = false
       }, 50)
     },
   }

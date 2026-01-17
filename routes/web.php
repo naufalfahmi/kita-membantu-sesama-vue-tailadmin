@@ -286,6 +286,8 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::get('laporan/mitra', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraList'])->name('admin.api.laporan.mitra');
     Route::get('laporan/mitra/{id}', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraDetail'])->name('admin.api.laporan.mitra.detail');
     Route::get('laporan/mitra/{id}/transactions', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraTransactions'])->name('admin.api.laporan.mitra.transactions');
+    // Alias Bahasa Indonesia untuk kompatibilitas frontend lama
+    Route::get('laporan/mitra/{id}/transaksi', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraTransactions'])->name('admin.api.laporan.mitra.transaksi');
 });
 
 // Admin Signin Route - Public (no auth required, must be before protected routes)

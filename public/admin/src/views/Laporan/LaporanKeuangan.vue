@@ -751,7 +751,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { AgGridVue } from 'ag-grid-vue3'
+// import { AgGridVue } from 'ag-grid-vue3'
 import VueApexCharts from 'vue3-apexcharts'
 import flatPickr from 'vue-flatpickr-component'
 import * as XLSX from 'xlsx'
@@ -759,7 +759,6 @@ import 'flatpickr/dist/flatpickr.css'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 
@@ -1110,65 +1109,82 @@ const timelineChartSeries = computed(() => [
 ])
 
 // NEW: Penyaluran by Alias Horizontal Bar Chart
-const penyaluranByAliasChartOptions = computed(() => ({
-  chart: {
-    fontFamily: 'Outfit, sans-serif',
-    type: 'bar',
-    toolbar: {
-      show: false,
-    },
-  },
-  colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#f97316'],
-  plotOptions: {
-    bar: {
-      horizontal: true,
-      barHeight: '70%',
-      dataLabels: {
-        position: 'top',
+// Helper function untuk generate array warna
+const generateColors = (count: number) => {
+  const baseColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#8b5cf6', '#06b6d4']
+  const colors = []
+  for (let i = 0; i < count; i++) {
+    colors.push(baseColors[i % baseColors.length])
+  }
+  return colors
+}
+
+// Kemudian di chartOptions
+const penyaluranByAliasChartOptions = computed(() => {
+  const dataCount = penyaluranByAliasData.value.breakdown.length
+  const dynamicColors = generateColors(dataCount)
+  
+  return {
+    chart: {
+      fontFamily: 'Outfit, sans-serif',
+      type: 'bar',
+      toolbar: {
+        show: false,
       },
     },
-  },
-  dataLabels: {
-    enabled: true,
-    formatter: function (val: number) {
-      return formatCurrency(val)
-    },
-    offsetX: 10,
-    style: {
-      fontSize: '12px',
-      colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#f97316'], // Array warna yang sama dengan chart colors
-    },
-  },
-  xaxis: {
-    categories: penyaluranByAliasData.value.breakdown.map((item: any) => item.alias),
-    labels: {
-      style: {
-        colors: '#6B7280',
-      },
-      formatter: function (val: number) {
-        return formatCurrency(val)
+    colors: dynamicColors,
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        barHeight: '70%',
+        distributed: true, // PENTING: Ini membuat setiap bar punya warna berbeda
       },
     },
-  },
-  yaxis: {
-    labels: {
-      style: {
-        colors: '#6B7280',
-      },
-    },
-  },
-  tooltip: {
-    y: {
+    dataLabels: {
+      enabled: true,
       formatter: function (val: number, opts: any) {
-        const item = penyaluranByAliasData.value.breakdown[opts.dataPointIndex]
-        return `${formatCurrency(val)} (${item.percentage}% • ${item.count} transaksi)`
+        const color = dynamicColors[opts.dataPointIndex]
+        return formatCurrency(val);
+      },
+      offsetX: 10,
+      style: {
+        fontSize: '12px',
       },
     },
-  },
-  grid: {
-    borderColor: '#e5e7eb',
-  },
-}))
+    xaxis: {
+      categories: penyaluranByAliasData.value.breakdown.map((item: any) => item.alias),
+      labels: {
+        style: {
+          colors: '#6B7280',
+        },
+        formatter: function (val: number) {
+          return formatCurrency(val)
+        },
+      },
+    },
+    yaxis: {
+      labels: {
+        style: {
+          colors: '#6B7280',
+        },
+      },
+    },
+    legend: {
+      show: false, // Karena pakai distributed, legend jadi tidak perlu
+    },
+    tooltip: {
+      y: {
+        formatter: function (val: number, opts: any) {
+          const item = penyaluranByAliasData.value.breakdown[opts.dataPointIndex]
+          return `${formatCurrency(val)} (${item.percentage}% • ${item.count} transaksi)`
+        },
+      },
+    },
+    grid: {
+      borderColor: '#e5e7eb',
+    },
+  }
+})
 
 const penyaluranByAliasChartSeries = computed(() => [
   {

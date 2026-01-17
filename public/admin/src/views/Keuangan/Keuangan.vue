@@ -94,11 +94,14 @@
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
           <div v-for="p in programsList" :key="p.program_id" class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="bg-gray-100 dark:bg-gray-800/50 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
               <div class="flex items-center justify-between">
-                <h4 class="font-semibold text-gray-800 dark:text-white/90">{{ p.program_name || 'Program' }}</h4>
+                <h4 class="font-semibold text-gray-800 dark:text-white/90">
+                  {{ p.program_name || 'Program' }}
+                  <span v-if="p.tipe_name" class="text-sm font-normal text-gray-600 dark:text-gray-400">({{ p.tipe_name }})</span>
+                </h4>
               </div>
             </div>
             <div class="overflow-x-auto">

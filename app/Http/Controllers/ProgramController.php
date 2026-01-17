@@ -481,6 +481,7 @@ class ProgramController extends Controller
                 $row = [
                     'program_id' => $program->id,
                     'program_name' => $program->nama_program ?? $program->nama ?? '',
+                    'tipe_name' => $program->tipe ? $program->tipe->name : null,
                     'total_transaksi' => $inflow,
                 ];
 

@@ -7,11 +7,12 @@
         <h3 class="font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">
           {{ currentPageTitle }}
         </h3>
-        <button
-          v-if="canCreate"
-          @click="handleAdd"
-          class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
-        >
+        <div class="flex items-center gap-3">
+          <button
+            v-if="canCreate"
+            @click="handleAdd"
+            class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600"
+          >
           <svg
             class="fill-current"
             width="20"
@@ -29,6 +30,15 @@
           </svg>
           Tambah Program
         </button>
+
+          <button
+            v-if="canCreate"
+            @click="() => router.push('/administrasi/program/tipe-program')"
+            class="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03]"
+          >
+            Atur Tipe Program
+          </button>
+        </div>
       </div>
 
       <!-- Filter Section -->
@@ -45,6 +55,12 @@
               class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
             />
           </div>
+
+          <div class="w-72">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe Program</label>
+            <SearchableSelect v-model="filterTipeId" :options="tipeOptions" placeholder="Filter tipe..." />
+          </div>
+
           <div class="flex items-end">
             <button
               @click="resetFilter"
@@ -97,6 +113,7 @@ import { useAuth } from '@/composables/useAuth'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -126,6 +143,25 @@ const columnDefs = [
     field: 'nama_program',
     sortable: true,
     flex: 1,
+  },
+  {
+    headerName: 'Tipe Program',
+    field: 'tipe_name',
+    sortable: true,
+    width: 220,
+    valueGetter: (params: any) => {
+      return params.data?.tipe?.name || ''
+    },
+  },
+  {
+    headerName: 'Urutan',
+    field: 'orders',
+    sortable: true,
+    width: 120,
+    valueGetter: (params: any) => {
+      return Number(params.data?.orders) || 0
+    },
+    cellStyle: { textAlign: 'center' },
   },
   {
     headerName: 'Persentase',
@@ -213,6 +249,32 @@ const defaultColDef = {
 // Create ref for rowData
 const rowData = ref<any[]>([])
 
+// Filter: tipe program
+const filterTipeId = ref<string>('')
+const tipeOptions = ref<Array<{ value: string; label: string }>>([])
+
+const fetchTipeOptions = async () => {
+  try {
+    const csrfToken = getCsrfToken()
+    const resp = await fetch('/admin/api/tipe-program?per_page=500', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': csrfToken,
+      },
+      credentials: 'same-origin',
+    })
+    const j = await resp.json()
+    if (j.success && Array.isArray(j.data)) {
+      tipeOptions.value = j.data.map((t: any) => ({ value: t.id, label: t.name }))
+    }
+  } catch (e) {
+    console.error('Failed to load tipe program options:', e)
+  }
+}
+
 // Fetch data from API
 const fetchData = async () => {
   loading.value = true
@@ -221,8 +283,12 @@ const fetchData = async () => {
     if (filterNamaProgram.value) {
       searchParams.append('search', filterNamaProgram.value)
     }
+    if (filterTipeId.value) {
+      searchParams.append('tipe_id', filterTipeId.value)
+    }
     
     const url = `/admin/api/program${searchParams.toString() ? '?' + searchParams.toString() : ''}`
+
     const csrfToken = getCsrfToken()
     const response = await fetch(url, {
       method: 'GET',
@@ -329,12 +395,23 @@ watch(filterNamaProgram, () => {
 // Reset filter
 const resetFilter = () => {
   filterNamaProgram.value = ''
+  filterTipeId.value = ''
   fetchData()
 }
 
 onMounted(() => {
   fetchData()
   fetchUser()
+  fetchTipeOptions()
+})
+
+// Watch filterTipeId changes with debounce
+let tipeFilterTimeout: ReturnType<typeof setTimeout> | null = null
+watch(filterTipeId, () => {
+  if (tipeFilterTimeout) clearTimeout(tipeFilterTimeout)
+  tipeFilterTimeout = setTimeout(() => {
+    fetchData()
+  }, 500)
 })
 </script>
 

@@ -38,6 +38,9 @@ class DatabaseSeeder extends Seeder
         // Seed tipe absensi
         $this->call(TipeAbsensiSeeder::class);
         
+        // Seed tipe program
+        $this->call(TipeProgramSeeder::class);
+
         // Seed kantor cabang
         $this->call(KantorCabangSeeder::class);
         

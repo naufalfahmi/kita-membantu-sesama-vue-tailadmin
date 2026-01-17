@@ -951,6 +951,8 @@ const activeTransactionFilter = ref('all')
 // Watch for transaction filter changes and add loading animation
 watch(activeTransactionFilter, () => {
   isLoadingTransactionFilter.value = true
+  // Reset to first page when changing filter
+  balancePagination.value.current_page = 1
   setTimeout(() => {
     isLoadingTransactionFilter.value = false
   }, 300)
@@ -1116,7 +1118,7 @@ const penyaluranByAliasChartOptions = computed(() => ({
       show: false,
     },
   },
-  colors: ['#8b5cf6'],
+  colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#f97316'],
   plotOptions: {
     bar: {
       horizontal: true,
@@ -1134,7 +1136,7 @@ const penyaluranByAliasChartOptions = computed(() => ({
     offsetX: 10,
     style: {
       fontSize: '12px',
-      colors: ['#8b5cf6'],
+      colors: ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#f97316'], // Array warna yang sama dengan chart colors
     },
   },
   xaxis: {
@@ -1328,10 +1330,16 @@ const fetchBalanceData = async (page = 1) => {
     if (data.breakdown) {
       balanceBreakdown.value = {
         pengajuan_dana: data.breakdown.pengajuan_dana || 0,
-        pengajuan_dana_percentage: data.breakdown.pengajuan_dana_percentage || 0,
+        pengajuan_dana_percentage: data.breakdown.pengajuan_percentage || 0,
         penyaluran: data.breakdown.penyaluran || 0,
         penyaluran_percentage: data.breakdown.penyaluran_percentage || 0,
       }
+      console.log('Balance breakdown loaded:', {
+        pengajuan_dana: balanceBreakdown.value.pengajuan_dana,
+        pengajuan_percentage: balanceBreakdown.value.pengajuan_dana_percentage,
+        penyaluran: balanceBreakdown.value.penyaluran,
+        penyaluran_percentage: balanceBreakdown.value.penyaluran_percentage,
+      })
     }
     
     // Fetch program breakdown and timeline data

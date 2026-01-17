@@ -298,6 +298,24 @@ const router = createRouter({
       meta: { title: 'Edit Program' },
     },
     {
+      path: '/administrasi/program/tipe-program',
+      name: 'Tipe Program',
+      component: () => import('../views/Administrasi/TipeProgram.vue'),
+      meta: { title: 'Tipe Program' },
+    },
+    {
+      path: '/administrasi/program/tipe-program/new',
+      name: 'Tambah Tipe Program',
+      component: () => import('../views/Administrasi/TipeProgramForm.vue'),
+      meta: { title: 'Tambah Tipe Program' },
+    },
+    {
+      path: '/administrasi/program/tipe-program/:id/edit',
+      name: 'Edit Tipe Program',
+      component: () => import('../views/Administrasi/TipeProgramForm.vue'),
+      meta: { title: 'Edit Tipe Program' },
+    },
+    {
       path: '/administrasi/jabatan',
       name: 'Jabatan',
       component: () => import('../views/Administrasi/Jabatan.vue'),

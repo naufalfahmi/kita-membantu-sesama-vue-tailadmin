@@ -19,6 +19,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\TipeAbsensiController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\TipeDonaturController;
+use App\Http\Controllers\TipeProgramController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\PengajuanDanaController;
 use App\Services\MenuService;
@@ -182,6 +183,9 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Tipe Absensi API
     Route::apiResource('tipe-absensi', TipeAbsensiController::class);
     Route::get('tipe-absensi-next-kode', [TipeAbsensiController::class, 'getNextKode'])->name('admin.api.tipe-absensi.next-kode');
+
+    // Tipe Program API
+    Route::apiResource('tipe-program', TipeProgramController::class);
     
     // Program API
     // Program balance endpoint (per-month allocation/balance)

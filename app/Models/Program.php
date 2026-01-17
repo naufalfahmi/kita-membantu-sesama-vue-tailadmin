@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\TipeProgram;
 
 class Program extends Model
 {
@@ -16,6 +17,8 @@ class Program extends Model
 
     protected $fillable = [
         'nama_program',
+        'tipe_id',
+        'orders',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -60,6 +63,14 @@ class Program extends Model
     public function transaksis(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Transaksi::class, 'program_id');
+    }
+
+    /**
+     * Get the tipe for this program.
+     */
+    public function tipe(): BelongsTo
+    {
+        return $this->belongsTo(TipeProgram::class, 'tipe_id');
     }
 
     /**

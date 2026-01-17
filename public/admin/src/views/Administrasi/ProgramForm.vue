@@ -18,7 +18,7 @@
       <form @submit.prevent="handleSave" class="flex flex-col">
         <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
           <!-- 1. Nama Program -->
-          <div class="lg:col-span-2">
+          <div class="lg:col-span-1">
             <label
               class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400"
             >
@@ -30,6 +30,39 @@
               placeholder="Masukkan nama program"
               required
               class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent bg-none px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+            />
+          </div>
+
+          <!-- 1.5 Tipe Program -->
+          <div class="lg:col-span-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe Program</label>
+            <div class="flex items-center gap-2">
+              <div class="flex-1">
+                <SearchableSelect v-model="formData.tipe_id" :options="tipeProgramOptions" placeholder="Pilih tipe program (opsional)" />
+              </div>
+              <button
+                type="button"
+                v-if="formData.tipe_id"
+                @click.prevent="formData.tipe_id = ''"
+                title="Hapus pilihan tipe program"
+                class="h-11 w-11 flex items-center justify-center rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Orders -->
+          <div class="lg:col-span-1">
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Urutan (orders)</label>
+            <input
+              type="number"
+              v-model.number="formData.orders"
+              placeholder="Urutan"
+              class="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 focus:border-brand-300"
             />
           </div>
 
@@ -167,10 +200,12 @@ const currentPageTitle = computed(() => {
 // Form data
 const formData = reactive({
   nama_program: '',
+  tipe_id: '' as string,
   tipe_pembagian_marketing: '',
   jumlah_persentase: null as number | null,
+  orders: null as number | null,
   // shares will be an object keyed by program_share_type key
-  shares: {} as Record<string, { type: string | null; value: number | null; alias: string | null }>,
+  shares: {} as Record<string, { type: string; value: number | null; alias: string | null }>,
   // custom rows added per-program
   customRows: [] as Array<{ key: string; name: string; type: string; value: number | null }> ,
 })
@@ -178,6 +213,21 @@ const formData = reactive({
 // Available program share types loaded from API
 const programShareTypes = ref<Array<{ id: string; name: string; key: string; alias: string | null; default_type: string; orders?: number }>>([])
 
+// Tipe program options
+const tipeProgramOptions = ref<Array<{ value: string; label: string }>>([])
+
+const fetchTipeProgramOptions = async () => {
+  try {
+    const response = await fetch('/admin/api/tipe-program?per_page=500', { credentials: 'same-origin' })
+    if (!response.ok) return
+    const res = await response.json()
+    if (res.success && Array.isArray(res.data)) {
+      tipeProgramOptions.value = res.data.map((t: any) => ({ value: t.id, label: t.name }))
+    }
+  } catch (e) {
+    console.error('Failed to load tipe program options:', e)
+  }
+}
 // per-row search inputs for SearchableSelect
 const shareSearchInputs = reactive<Record<string, string>>({})
 
@@ -312,6 +362,10 @@ const loadData = async () => {
         formData.nama_program = data.nama_program || ''
         formData.tipe_pembagian_marketing = data.tipe_pembagian_marketing || ''
         formData.jumlah_persentase = data.jumlah_persentase ? parseFloat(data.jumlah_persentase) : null
+        formData.orders = data.orders !== undefined && data.orders !== null ? Number(data.orders) : null
+
+        // tipe program
+        formData.tipe_id = data.tipe?.id ?? ''
 
         // map shares from API if available
         if (Array.isArray(data.shares)) {
@@ -363,8 +417,10 @@ const handleSave = async () => {
     // build payload including dynamic shares
     const payload: Record<string, any> = {
       nama_program: formData.nama_program,
+      tipe_id: formData.tipe_id || null,
       tipe_pembagian_marketing: formData.tipe_pembagian_marketing || null,
       jumlah_persentase: calculatedJumlahPersentase.value || null,
+      orders: formData.orders !== null ? formData.orders : null,
       shares: [],
     }
 
@@ -432,6 +488,7 @@ const handleSave = async () => {
 
 onMounted(async () => {
   await fetchProgramShareTypes()
+  await fetchTipeProgramOptions()
   await loadData()
 })
 </script>

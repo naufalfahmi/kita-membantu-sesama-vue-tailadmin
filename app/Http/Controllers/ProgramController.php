@@ -18,7 +18,7 @@ class ProgramController extends Controller
     public function index(Request $request)
     {
         // include shares so we can compute total percentage per program for list view
-        $query = Program::with(['creator', 'updater', 'shares']);
+        $query = Program::with(['creator', 'updater', 'shares', 'tipe']);
 
         // Search filter
         if ($request->has('search') && $request->search) {
@@ -31,6 +31,11 @@ class ProgramController extends Controller
         // Filter by tipe pembagian marketing
         if ($request->has('tipe_pembagian_marketing') && $request->tipe_pembagian_marketing) {
             $query->where('tipe_pembagian_marketing', $request->tipe_pembagian_marketing);
+        }
+
+        // Filter by Tipe Program (nullable)
+        if ($request->has('tipe_id') && $request->tipe_id) {
+            $query->where('tipe_id', $request->tipe_id);
         }
 
         $program = $query->orderBy('created_at', 'desc')
@@ -79,6 +84,7 @@ class ProgramController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nama_program' => 'required|string|max:255',
+            'tipe_id' => 'nullable|uuid|exists:tipe_program,id',
             'persentase_hak_program' => 'nullable|numeric|min:0|max:100',
             'persentase_hak_program_operasional' => 'nullable|numeric|min:0|max:100',
             'persentase_hak_championship' => 'nullable|numeric|min:0|max:100',
@@ -88,6 +94,7 @@ class ProgramController extends Controller
             'persentase_hak_iklan' => 'nullable|numeric|min:0|max:100',
             'persentase_hak_operasional_2' => 'nullable|numeric|min:0|max:100',
             'persentase_hak_operasional_3' => 'nullable|numeric|min:0|max:100',
+            'orders' => 'nullable|integer',
             'jumlah_persentase' => 'nullable|numeric|min:0|max:100',
         ]);
 
@@ -102,6 +109,7 @@ class ProgramController extends Controller
         try {
             $data = $request->only([
                 'nama_program',
+                'tipe_id',
                 'persentase_hak_program',
                 'persentase_hak_program_operasional',
                 'persentase_hak_championship',
@@ -111,6 +119,7 @@ class ProgramController extends Controller
                 'persentase_hak_iklan',
                 'persentase_hak_operasional_2',
                 'persentase_hak_operasional_3',
+                'orders',
                 'jumlah_persentase',
             ]);
 
@@ -180,7 +189,7 @@ class ProgramController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program berhasil ditambahkan',
-                'data' => $program->load(['creator']),
+                'data' => $program->load(['creator','tipe']),
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -196,7 +205,7 @@ class ProgramController extends Controller
      */
     public function show(string $id)
     {
-        $program = Program::with(['creator', 'updater', 'shares.type'])->find($id);
+        $program = Program::with(['creator', 'updater', 'shares.type', 'tipe'])->find($id);
 
         if (!$program) {
             return response()->json([
@@ -206,7 +215,7 @@ class ProgramController extends Controller
         }
 
         // return program with shares and their program_share_type object
-        $program->load('shares.type');
+        $program->load(['shares.type','tipe']);
         $data = $program->toArray();
         // normalize shares to include program_share_type fields at top-level for frontend convenience
         $data['shares'] = collect($program->shares)->map(function ($s) {
@@ -437,7 +446,16 @@ class ProgramController extends Controller
             $preferred = ['dp','ops_1','ops_2','program','fee_mitra','bonus','championship'];
             $columns = $preferred;
 
-            $programs = \App\Models\Program::with(['shares.type'])->orderBy('nama_program')->get();
+            // Order programs by tipe_program.orders ASC (nulls last), then program.orders ASC
+            $programs = \App\Models\Program::with(['shares.type', 'tipe'])
+                ->leftJoin('tipe_program', function($join) {
+                    $join->on('program.tipe_id', '=', 'tipe_program.id')
+                         ->whereNull('tipe_program.deleted_at');
+                })
+                ->select('program.*')
+                ->orderByRaw('COALESCE(tipe_program.orders, 999999) ASC')
+                ->orderBy('program.orders', 'asc')
+                ->get();
 
             $rows = [];
             $totals = ['total_transaksi' => 0];
@@ -722,6 +740,7 @@ class ProgramController extends Controller
 
         $validator = Validator::make($request->all(), [
             'nama_program' => 'required|string|max:255',
+            'tipe_id' => 'nullable|uuid|exists:tipe_program,id',
             'persentase_hak_program' => 'nullable|numeric|min:0|max:100',
             'persentase_hak_program_operasional' => 'nullable|numeric|min:0|max:100',
             'persentase_hak_championship' => 'nullable|numeric|min:0|max:100',
@@ -731,6 +750,7 @@ class ProgramController extends Controller
             'persentase_hak_iklan' => 'nullable|numeric|min:0|max:100',
             'persentase_hak_operasional_2' => 'nullable|numeric|min:0|max:100',
             'persentase_hak_operasional_3' => 'nullable|numeric|min:0|max:100',
+            'orders' => 'nullable|integer',
             'jumlah_persentase' => 'nullable|numeric|min:0|max:100',
         ]);
 
@@ -745,6 +765,7 @@ class ProgramController extends Controller
         try {
             $data = $request->only([
                 'nama_program',
+                'tipe_id',
                 'persentase_hak_program',
                 'persentase_hak_program_operasional',
                 'persentase_hak_championship',
@@ -754,6 +775,7 @@ class ProgramController extends Controller
                 'persentase_hak_iklan',
                 'persentase_hak_operasional_2',
                 'persentase_hak_operasional_3',
+                'orders',
                 'jumlah_persentase',
             ]);
 
@@ -825,7 +847,7 @@ class ProgramController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Program berhasil diupdate',
-                'data' => $program->fresh()->load(['creator', 'updater']),
+                'data' => $program->fresh()->load(['creator', 'updater', 'tipe']),
             ]);
         } catch (\Exception $e) {
             return response()->json([

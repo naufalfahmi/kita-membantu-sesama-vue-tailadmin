@@ -263,44 +263,40 @@
               </div>
 
               <!-- Selected Files Preview -->
-              <div v-if="selectedFiles.length > 0" class="space-y-2">
+              <div v-if="selectedFiles.length > 0" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 <div
                   v-for="(file, index) in selectedFiles"
                   :key="index"
-                  class="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900/50"
+                  class="relative group"
                 >
-                  <div class="flex items-center gap-3">
-                    <div class="flex h-10 w-10 items-center justify-center rounded bg-gray-100 dark:bg-gray-800">
-                      <svg
-                        class="h-6 w-6 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <p class="text-sm font-medium text-gray-800 dark:text-white/90">
-                        {{ file.name }}
-                      </p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">
-                        {{ formatFileSize(file.size) }}
-                      </p>
-                    </div>
+                  <!-- Image Preview -->
+                  <div class="aspect-square overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50">
+                    <img
+                      :src="getFilePreviewUrl(file)"
+                      :alt="file.name"
+                      class="h-full w-full object-cover"
+                    />
                   </div>
+                  
+                  <!-- File Info -->
+                  <div class="mt-2">
+                    <p class="truncate text-xs font-medium text-gray-700 dark:text-gray-300">
+                      {{ file.name }}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      {{ formatFileSize(file.size) }}
+                    </p>
+                  </div>
+                  
+                  <!-- Remove Button -->
                   <button
                     type="button"
                     @click="removeFile(index)"
-                    class="rounded-lg p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+                    class="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-red-600"
+                    title="Hapus gambar"
                   >
                     <svg
-                      class="h-5 w-5"
+                      class="h-4 w-4"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -544,6 +540,11 @@ const handleFileSelect = (event: Event) => {
 // Remove file
 const removeFile = (index: number) => {
   selectedFiles.value.splice(index, 1)
+}
+
+// Get file preview URL
+const getFilePreviewUrl = (file: File): string => {
+  return URL.createObjectURL(file)
 }
 
 // Format file size

@@ -262,8 +262,53 @@
                 </label>
               </div>
 
+              <!-- Existing Images (Edit Mode) -->
+              <div v-if="existingImages.length > 0" class="mb-6">
+                <h4 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Gambar yang Sudah Ada</h4>
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  <div
+                    v-for="img in existingImages"
+                    :key="img.id"
+                    class="relative group"
+                  >
+                    <!-- Image Preview -->
+                    <div class="aspect-square overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/50">
+                      <img
+                        :src="`/storage/${img.path}`"
+                        :alt="img.caption || 'Dokumentasi'"
+                        class="h-full w-full object-cover"
+                      />
+                    </div>
+                    
+                    <!-- Remove Button -->
+                    <button
+                      type="button"
+                      @click="removeExistingImage(img.id)"
+                      class="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition-transform hover:scale-110 hover:bg-red-600"
+                      title="Hapus gambar"
+                    >
+                      <svg
+                        class="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Selected Files Preview -->
-              <div v-if="selectedFiles.length > 0" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              <div v-if="selectedFiles.length > 0">
+                <h4 class="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">Gambar Baru yang Akan Diupload</h4>
+                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 <div
                   v-for="(file, index) in selectedFiles"
                   :key="index"
@@ -309,6 +354,7 @@
                       />
                     </svg>
                   </button>
+                </div>
                 </div>
               </div>
             </div>
@@ -455,6 +501,7 @@ const fetchCurrentUser = async () => {
 // File upload
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const selectedFiles = ref<File[]>([])
+const existingImages = ref<Array<{ id: string; path: string; caption?: string }>>([])
 
 // Form data
 const formData = reactive({
@@ -541,6 +588,37 @@ const removeFile = (index: number) => {
   selectedFiles.value.splice(index, 1)
 }
 
+// Remove existing image
+const removeExistingImage = async (imageId: string) => {
+  if (!confirm('Hapus gambar ini?')) return
+  
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+    const res = await fetch(`/admin/api/penyaluran/images/${imageId}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    })
+    
+    if (!res.ok) throw new Error('Failed to delete image')
+    const json = await res.json()
+    
+    if (json.success) {
+      // Remove from existingImages array
+      existingImages.value = existingImages.value.filter(img => img.id !== imageId)
+      toast.success('Gambar berhasil dihapus')
+    } else {
+      toast.error(json.message || 'Gagal menghapus gambar')
+    }
+  } catch (err) {
+    console.error('Error deleting image', err)
+    toast.error('Terjadi kesalahan saat menghapus gambar')
+  }
+}
+
 // Get file preview URL
 const getFilePreviewUrl = (file: File): string => {
   return URL.createObjectURL(file)
@@ -583,7 +661,14 @@ const loadData = async () => {
       formData.branchId = p.kantor_cabang_id || (p.kantor_cabang && p.kantor_cabang.id) || formData.branchId
       formData.pengajuanId = p.pengajuan_dana_id || formData.pengajuanId
 
-      // Note: existing images are not converted into File objects. Keep selectedFiles empty for uploads; images are available on server via p.images
+      // Load existing images
+      if (p.images && Array.isArray(p.images)) {
+        existingImages.value = p.images.map((img: any) => ({
+          id: img.id,
+          path: img.path,
+          caption: img.caption || '',
+        }))
+      }
     } catch (err) {
       console.error('Error loading penyaluran', err)
     }

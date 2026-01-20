@@ -38,14 +38,13 @@
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Fundraiser</label>
             <AsyncSearchableSelect
               v-model="filterFundraiser"
-              :fetch-url="'/admin/api/karyawan'"
-              :label-key="'nama'"
+              :fetch-url="fundraiserFetchUrl"
+              :label-key="'name'"
               :value-key="'id'"
               placeholder="Pilih Fundraiser"
               :allow-clear="true"
               :include-all="true"
               all-label="Semua Fundraiser"
-              :params="{ role: 'fundraiser' }"
             />
           </div>
           <div>
@@ -183,13 +182,41 @@ const agGridRef = ref<InstanceType<typeof AgGridVue> | null>(null)
 const gridApiRef = ref<any>(null)
 const gridColumnApiRef = ref<any>(null)
 const toast = useToast()
-const { fetchUser, hasPermission, isAdmin } = useAuth()
+const { fetchUser, hasPermission, isAdmin, user } = useAuth()
 const canCreate = computed(() => isAdmin() || hasPermission('create keuangan'))
 const canUpdate = computed(() => isAdmin() || hasPermission('update keuangan'))
 const canDelete = computed(() => isAdmin() || hasPermission('delete keuangan'))
 const showDeleteModal = ref(false)
 const deleteId = ref<string | null>(null)
 const isLoading = ref(false)
+
+// Compute allowed fundraiser IDs based on visibility rules (same as Transaksi page)
+const allowedFundraiserIds = computed(() => {
+  const transaksiIds = Array.isArray((user.value as any)?.visible_transaksi_ids)
+    ? (user.value as any).visible_transaksi_ids
+    : []
+  const donaturIds = Array.isArray((user.value as any)?.visible_donatur_ids)
+    ? (user.value as any).visible_donatur_ids
+    : []
+  const selfId = (user.value as any)?.id ? [(user.value as any).id] : []
+  const base = transaksiIds.length ? transaksiIds : donaturIds
+  const combined = [...base, ...selfId]
+  return Array.from(new Set(combined.map((id: any) => String(id)) as string[]))
+})
+
+// Compute fundraiser fetch URL with include_ids
+const fundraiserFetchUrl = computed(() => {
+  if (isAdmin()) {
+    // Admin sees all fundraisers without include_ids restriction
+    return '/admin/api/karyawan?per_page=1000'
+  }
+  // Non-admin uses visibility-based include_ids
+  const baseUrl = '/admin/api/karyawan?per_page=1000&only_assigned=1'
+  const includeIdsParam = allowedFundraiserIds.value.length
+    ? `&include_ids[]=${allowedFundraiserIds.value.join('&include_ids[]=')}`
+    : ''
+  return `${baseUrl}${includeIdsParam}`
+})
 
 // Flatpickr configuration for date
 const flatpickrDateConfig = {

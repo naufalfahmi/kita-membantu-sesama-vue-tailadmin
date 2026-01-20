@@ -75,27 +75,22 @@ class KaryawanController extends Controller
             }
         } else {
             // If caller is not admin, restrict visible users to the caller's subtree.
-            if ($authUser && ! $this->userIsAdmin($authUser) && ! $skipSubtreeForIncludeIds) {
-                // If a role_name filter was provided we skip this subtree
-                // restriction so that callers requesting a specific role get
-                // the full list of users with that role.
-                if (!empty($roleName)) {
-                    // do nothing (skip subtree restriction)
-                } else {
-                    // apply original subtree restriction
-                    // If user has subordinates, show only descendants excluding self (leaders)
-                    if ($authUser->subordinates()->exists()) {
-                        $allowed = User::descendantIdsOf($authUser->id);
-                        $allowed = array_values(array_diff($allowed, [$authUser->id]));
-                        if (empty($allowed)) {
-                            $query->whereRaw('1 = 0');
-                        } else {
-                            $query->whereIn('id', $allowed);
-                        }
+            // EXCEPT when a role_name filter is provided or include_ids are specified,
+            // in which case we skip subtree restriction to allow full role-based listings.
+            if ($authUser && ! $this->userIsAdmin($authUser) && ! $skipSubtreeForIncludeIds && ! $skipSubtreeForRoleFilter) {
+                // apply subtree restriction
+                // If user has subordinates, show only descendants excluding self (leaders)
+                if ($authUser->subordinates()->exists()) {
+                    $allowed = User::descendantIdsOf($authUser->id);
+                    $allowed = array_values(array_diff($allowed, [$authUser->id]));
+                    if (empty($allowed)) {
+                        $query->whereRaw('1 = 0');
                     } else {
-                        // Subordinate users see only themselves
-                        $query->where('id', $authUser->id);
+                        $query->whereIn('id', $allowed);
                     }
+                } else {
+                    // Subordinate users see only themselves
+                    $query->where('id', $authUser->id);
                 }
             }
         }

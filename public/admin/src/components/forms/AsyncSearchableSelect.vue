@@ -134,6 +134,10 @@ interface Props {
   includeAll?: boolean
   allLabel?: string
   allValue?: string
+  params?: Record<string, any>
+  labelKey?: string
+  valueKey?: string
+  allowClear?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -143,6 +147,10 @@ const props = withDefaults(defineProps<Props>(), {
   includeAll: false,
   allLabel: 'Semua',
   allValue: '',
+  params: () => ({}),
+  labelKey: 'nama',
+  valueKey: 'id',
+  allowClear: false,
 })
 
 const emit = defineEmits<{
@@ -203,6 +211,15 @@ const fetchPage = async (q = '', p = 1) => {
     params.append('per_page', String(props.perPage))
     params.append('page', String(p))
 
+    // Add custom params from props
+    if (props.params) {
+      Object.entries(props.params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          params.append(key, String(value))
+        }
+      })
+    }
+
     // If fetching donatur and user is not admin, request only assigned kantor cabang
     // but DO NOT add only_assigned for director of fundraising so backend
     // visibility rules can return donors of their subordinates.
@@ -223,7 +240,10 @@ const fetchPage = async (q = '', p = 1) => {
     const json = await res.json()
     if (json.success) {
       const dataArray = Array.isArray(json.data) ? json.data : (json.data && json.data.data) || []
-      const mapped = dataArray.map((item: any) => ({ value: item.id, label: item.nama || item.name || item.kode || item.label || '' }))
+      const mapped = dataArray.map((item: any) => ({ 
+        value: item[props.valueKey || 'id'], 
+        label: item[props.labelKey || 'nama'] || item.name || item.kode || item.label || '' 
+      }))
 
       if (p === 1) {
         options.value = mapped

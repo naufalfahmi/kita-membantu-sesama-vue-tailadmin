@@ -327,7 +327,7 @@
             type="submit"
             class="flex w-full justify-center rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600 sm:w-auto"
           >
-            Buat
+            Simpan
           </button>
         </div>
       </form>
@@ -340,7 +340,6 @@ import { reactive, computed, ref, onMounted, watch } from 'vue'
 import { useToast } from 'vue-toastification'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import PageBreadcrumb from '@/components/common/PageBreadcrumb.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 const route = useRoute()

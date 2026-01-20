@@ -101,7 +101,7 @@ class PenyaluranController extends Controller
             'amount' => 'required|numeric|min:0',
             'kantor_cabang_id' => 'nullable|exists:kantor_cabang,id',
             'images' => 'nullable|array',
-            'images.*.path' => 'required_with:images|string',
+            'images.*' => 'nullable|file|image|max:20480', // max 20MB
         ]);
 
         if ($validator->fails()) {
@@ -167,25 +167,23 @@ class PenyaluranController extends Controller
 
         $penyaluran = Penyaluran::create($data);
 
-        // handle uploaded files if provided
+        // Handle uploaded files - support both 'images' and 'images[]' field names
+        $uploadedFiles = [];
         if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $file) {
-                if (! $file->isValid()) continue;
-                // store in public disk under penyaluran
+            $uploadedFiles = $request->file('images');
+        }
+        
+        if (!empty($uploadedFiles)) {
+            foreach ($uploadedFiles as $file) {
+                if (!$file->isValid()) continue;
+                
+                // Store in public disk under penyaluran folder
                 $path = $file->store('penyaluran', 'public');
+                
                 PenyaluranImage::create([
                     'penyaluran_id' => $penyaluran->id,
                     'path' => $path,
                     'caption' => null,
-                    'created_by' => auth()->id(),
-                ]);
-            }
-        } elseif ($request->filled('images') && is_array($request->images)) {
-            foreach ($request->images as $img) {
-                PenyaluranImage::create([
-                    'penyaluran_id' => $penyaluran->id,
-                    'path' => $img['path'] ?? '',
-                    'caption' => $img['caption'] ?? null,
                     'created_by' => auth()->id(),
                 ]);
             }
@@ -203,10 +201,34 @@ class PenyaluranController extends Controller
             'program_name' => 'nullable|string|max:255',
             'pic' => 'nullable|string|max:255',
             'amount' => 'nullable|numeric|min:0',
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|file|image|max:20480', // max 20MB
         ]);
         if ($validator->fails()) return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
 
         $penyaluran->update(array_merge($request->only(['program_name','pic','village','district','city','province','postal_code','address','report','amount','kantor_cabang_id']), ['updated_by' => auth()->id()]));
+
+        // Handle new uploaded files
+        $uploadedFiles = [];
+        if ($request->hasFile('images')) {
+            $uploadedFiles = $request->file('images');
+        }
+        
+        if (!empty($uploadedFiles)) {
+            foreach ($uploadedFiles as $file) {
+                if (!$file->isValid()) continue;
+                
+                // Store in public disk under penyaluran folder
+                $path = $file->store('penyaluran', 'public');
+                
+                PenyaluranImage::create([
+                    'penyaluran_id' => $penyaluran->id,
+                    'path' => $path,
+                    'caption' => null,
+                    'created_by' => auth()->id(),
+                ]);
+            }
+        }
 
         return response()->json(['success' => true, 'message' => 'Penyaluran updated', 'data' => $penyaluran]);
     }
@@ -219,6 +241,25 @@ class PenyaluranController extends Controller
         $p->save();
         $p->delete();
         return response()->json(['success' => true, 'message' => 'Penyaluran dihapus']);
+    }
+
+    // Delete individual image
+    public function deleteImage(string $id)
+    {
+        $image = PenyaluranImage::find($id);
+        if (!$image) {
+            return response()->json(['success' => false, 'message' => 'Gambar tidak ditemukan'], 404);
+        }
+
+        // Delete file from storage
+        if ($image->path && \Storage::disk('public')->exists($image->path)) {
+            \Storage::disk('public')->delete($image->path);
+        }
+
+        // Delete database record
+        $image->delete();
+
+        return response()->json(['success' => true, 'message' => 'Gambar berhasil dihapus']);
     }
 
     // Helper: return approved pengajuans for frontend selection

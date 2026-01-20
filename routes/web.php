@@ -264,6 +264,7 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Penyaluran API
     Route::get('penyaluran/approved-pengajuans', [\App\Http\Controllers\PenyaluranController::class, 'approvedPengajuans']);
     Route::get('penyaluran/my-credit', [\App\Http\Controllers\PenyaluranController::class, 'myCredit']);
+    Route::delete('penyaluran/images/{id}', [\App\Http\Controllers\PenyaluranController::class, 'deleteImage'])->name('admin.api.penyaluran.delete-image');
     Route::apiResource('penyaluran', \App\Http\Controllers\PenyaluranController::class);
 
     // Landing Profile API (single resource endpoints)

@@ -152,9 +152,10 @@
                   @php
                     $relatedSlug = \Illuminate\Support\Str::slug($related->name);
                     $relatedExcerpt = strip_tags($related->description ?? '');
-                    if (strlen($relatedExcerpt) > 110) {
-                      $relatedExcerpt = substr($relatedExcerpt, 0, 107) . '...';
-                    }
+                    $relatedExcerpt = html_entity_decode($relatedExcerpt, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $relatedExcerpt = preg_replace('/\x{00A0}/u', ' ', $relatedExcerpt);
+                    $relatedExcerpt = preg_replace('/\s+/u', ' ', trim($relatedExcerpt));
+                    $relatedExcerpt = \Illuminate\Support\Str::limit($relatedExcerpt, 110);
                   @endphp
                   <br>
                   <div class="mb-5 pb-5 border-b border-stroke dark:border-strokedark last:border-0 last:pb-0 last:mb-0">

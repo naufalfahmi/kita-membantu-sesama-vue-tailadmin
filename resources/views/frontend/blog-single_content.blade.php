@@ -204,9 +204,10 @@
                   @php
                     $relatedSlug = \Illuminate\Support\Str::slug($related->title);
                     $relatedExcerpt = strip_tags($related->description ?? '');
-                    if (strlen($relatedExcerpt) > 110) {
-                      $relatedExcerpt = substr($relatedExcerpt, 0, 107) . '...';
-                    }
+                    $relatedExcerpt = html_entity_decode($relatedExcerpt, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $relatedExcerpt = preg_replace('/\x{00A0}/u', ' ', $relatedExcerpt);
+                    $relatedExcerpt = preg_replace('/\s+/u', ' ', trim($relatedExcerpt));
+                    $relatedExcerpt = \Illuminate\Support\Str::limit($relatedExcerpt, 110);
                   @endphp
                   <div class="mb-5 pb-5 border-b border-stroke dark:border-strokedark last:border-0 last:pb-0 last:mb-0">
                     <p class="text-xs uppercase tracking-wide text-brand-500 mb-1">{{ $related->activity_date ? \Carbon\Carbon::parse($related->activity_date)->format('d M, Y') : 'Kegiatan' }}</p>

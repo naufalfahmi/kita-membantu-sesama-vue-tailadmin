@@ -337,11 +337,14 @@
               <div class="animate_top sg vk rm xm">
                 <div class="c rc i z-1 pg">
                   <a href="{{ $image }}" class="rc" data-caption="{{ $p->name }}">
-                    <img class="w-full program-image" src="{{ $image }}" alt="{{ $p->name }}" />
+                    @php $pSlug = $p->slug ?? \Illuminate\Support\Str::slug($p->name); @endphp
+                    <a href="/program/{{ $pSlug }}">
+                      <img class="w-full program-image" src="{{ $image }}" alt="{{ $p->name }}" />
+                    </a>
                   </a>
-                  <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
+                  <!-- <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
                     <span class="vc ek rg lk gh sl ml il gi hi" style="cursor: pointer;">Lihat Poster</span>
-                  </div>
+                  </div> -->
                 </div>
 
                 <div class="yh">

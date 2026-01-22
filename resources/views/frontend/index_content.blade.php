@@ -183,7 +183,7 @@
           <div class="animate_right jn/2">
             @php
               $lp = $landingProfile ?? null;
-              $aboutTitle = $lp && !empty($lp->vision_title) ? $lp->vision_title : 'Menjadi Organisasi Sosial Kemanusiaan Internasional yang Unggul dan Profesional';
+              $aboutTitle = $lp && !empty($lp->vision_title) ? $lp->vision_title : '';
               $aboutDesc = $lp && !empty($lp->vision_description) ? $lp->vision_description : '';
               $missions = [];
               if ($lp && !empty($lp->mission_description)) {

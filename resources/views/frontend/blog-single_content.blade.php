@@ -54,7 +54,13 @@
                   </ul>
                 </div>
 
-                <div class="prose max-w-none mb-4">{!! $kegiatan->description ?? '' !!}</div>
+                @php
+                  $rawDesc = $kegiatan->description ?? '';
+                  $cleanDesc = html_entity_decode($rawDesc, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                  $cleanDesc = preg_replace('/\x{00A0}/u', ' ', $cleanDesc);
+                  $cleanDesc = preg_replace('/\s+/u', ' ', trim($cleanDesc));
+                @endphp
+                <div class="prose max-w-none mb-4">{!! $cleanDesc !!}</div>
 
                 @if(count($imgs) > 1)
                   <h3 class="text-xl font-semibold mb-4">Galeri Kegiatan</h3>

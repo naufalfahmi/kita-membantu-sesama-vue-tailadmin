@@ -26,26 +26,15 @@
                   }
                 @endphp
 
-                <style>
-                  .program-hero { width:100%; height:120px; }
-                  @media (min-width: 768px) { .program-hero { height:140px; } }
-                  @media (min-width: 1024px) { .program-hero { height:500px; } }
-                </style>
+                <img src="{{ $mainImg }}" alt="{{ $program->name }}" class="w-full h-auto rounded-lg mb-6" />
 
-                <div class="grid gap-6 md:grid-cols-2 items-start">
-                  <div class="w-full">
-                    <img src="{{ $mainImg }}" alt="{{ $program->name }}" class="program-hero rounded-lg" />
-                  </div>
-                  <div>
-                    <h1 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">{{ $program->name }}</h1>
+                <h1 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">{{ $program->name }}</h1>
 
-                    <div class="rounded-md shadow-solid-12 bg-white dark:bg-blacksection border border-stroke dark:border-strokedark p-5 mb-6">
-                      <p class="rc kk wm">{{ $program->description ? strip_tags(substr($program->description,0,300)) : '' }}</p>
-                    </div>
-
-                    <div class="prose max-w-none mb-4">{!! $program->description ?? '' !!}</div>
-                  </div>
+                <div class="rounded-md shadow-solid-12 bg-white dark:bg-blacksection border border-stroke dark:border-strokedark p-5 mb-6">
+                  <p class="rc kk wm">{{ $program->description ? strip_tags(substr($program->description,0,300)) : '' }}</p>
                 </div>
+
+                <div class="prose max-w-none mb-4">{!! $program->description ?? '' !!}</div>
 
               @else
                 <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">Program tidak ditemukan.</h2>

@@ -122,6 +122,37 @@ Route::get('/kegiatan/{slug}', function ($slug) {
     return view('frontend.blog-single', compact('kegiatan'));
 })->name('frontend.blog-single');
 
+// robots.txt
+Route::get('/robots.txt', function () {
+    $lines = [
+        'User-agent: *',
+        'Allow: /',
+        'Sitemap: ' . url('/sitemap.xml'),
+    ];
+    return response(implode("\n", $lines), 200, ['Content-Type' => 'text/plain']);
+});
+
+// sitemap.xml - simple dynamic sitemap for homepage, programs, kegiatan
+Route::get('/sitemap.xml', function () {
+    $urls = [];
+    $urls[] = ['loc' => url('/'), 'lastmod' => now()->toAtomString(), 'changefreq' => 'daily', 'priority' => '1.0'];
+
+    if (Schema::hasTable('landing_programs')) {
+        foreach (\App\Models\LandingProgram::orderByDesc('updated_at')->get() as $p) {
+            $urls[] = ['loc' => url('/program/' . ($p->slug ?? \Illuminate\Support\Str::slug($p->name))), 'lastmod' => optional($p->updated_at)->toAtomString(), 'changefreq' => 'monthly', 'priority' => '0.8'];
+        }
+    }
+
+    if (Schema::hasTable('landing_kegiatan')) {
+        foreach (\App\Models\LandingKegiatan::orderByDesc('activity_date')->get() as $k) {
+            $urls[] = ['loc' => url('/kegiatan/' . ($k->slug ?? \Illuminate\Support\Str::slug($k->title))), 'lastmod' => optional($k->updated_at ?? $k->activity_date)->toAtomString(), 'changefreq' => 'monthly', 'priority' => '0.8'];
+        }
+    }
+
+    $content = view('sitemap_xml', compact('urls'))->render();
+    return response($content, 200, ['Content-Type' => 'application/xml']);
+});
+
 // Contact form endpoint (frontend)
 Route::post('/contact', [ContactController::class, 'store'])->name('frontend.contact.store');
 

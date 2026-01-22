@@ -6,7 +6,52 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="csrf-token" content="{{ csrf_token() }}">
-  <title>@yield('title', config('app.name', 'KMS'))</title>
+  @php
+    $metaTitle = trim(View::hasSection('title') ? trim(View::getSection('title')) : (config('app.name', 'KMS')));
+    $metaDescription = $metaDescription ?? ($landingProfile->meta_description ?? null) ?? 'Kita Membantu Sesama - lembaga kemanusiaan.';
+    $metaImage = $metaImage ?? ($landingProfile->hero_image ?? asset('frontend/images/og-default.png'));
+    $canonical = $canonical ?? url()->current();
+  @endphp
+  <title>@yield('title', $metaTitle)</title>
+  <meta name="description" content="{{ Str::limit(strip_tags($metaDescription), 160) }}">
+  <link rel="canonical" href="{{ $canonical }}" />
+
+  <!-- Open Graph -->
+  <meta property="og:site_name" content="{{ config('app.name', 'KMS') }}" />
+  <meta property="og:title" content="@yield('title', $metaTitle)" />
+  <meta property="og:description" content="{{ Str::limit(strip_tags($metaDescription), 200) }}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="{{ $canonical }}" />
+  <meta property="og:image" content="{{ $metaImage }}" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="@yield('title', $metaTitle)" />
+  <meta name="twitter:description" content="{{ Str::limit(strip_tags($metaDescription), 200) }}" />
+  <meta name="twitter:image" content="{{ $metaImage }}" />
+
+  <!-- JSON-LD Organization + WebSite -->
+  <script type="application/ld+json">
+  @php
+    echo json_encode([
+      '@context' => 'https://schema.org',
+      '@graph' => [
+        [
+          '@type' => 'Organization',
+          'name' => config('app.name', 'KMS'),
+          'url' => url('/'),
+          'logo' => ($landingProfile->logo ?? asset('frontend/images/logo.png')),
+        ],
+        [
+          '@type' => 'WebSite',
+          'url' => url('/'),
+          'name' => config('app.name', 'KMS'),
+          'description' => Str::limit(strip_tags($metaDescription), 200),
+        ]
+      ]
+    ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE|JSON_PRETTY_PRINT);
+  @endphp
+  </script>
   <!-- Prefer scalable SVG favicon, fallback to legacy ICO (versioned to bust cache) -->
   <link rel="icon" href="{{ asset('favicon.svg') }}?v={{ filemtime(public_path('favicon.svg')) }}" type="image/svg+xml">
   <link rel="alternate icon" href="{{ asset('frontend/favicon.ico') }}?v={{ filemtime(public_path('favicon.svg')) }}">

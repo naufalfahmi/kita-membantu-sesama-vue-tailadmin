@@ -883,7 +883,43 @@
             </div>
             <div class="fb">
               <h4 class="wj kk wm cc">Lokasi Kantor</h4>
-              <p>{{ $addressText }}</p>
+              @php
+                $addressesRaw = $lp->address ?? null;
+                $addresses = null;
+                if ($addressesRaw) {
+                  if (is_array($addressesRaw)) {
+                    $addresses = $addressesRaw;
+                  } else {
+                    $decoded = json_decode($addressesRaw, true);
+                    $addresses = is_array($decoded) ? $decoded : null;
+                  }
+                }
+              @endphp
+
+              @if(is_array($addresses) && count($addresses) > 0)
+                <ul class="list-disc list-inside">
+                  @foreach($addresses as $addr)
+                    @php
+                      if (is_array($addr)) {
+                        $label = $addr['label'] ?? null;
+                        $value = $addr['value'] ?? ($addr['address'] ?? null);
+                      } else {
+                        $label = null;
+                        $value = (string)$addr;
+                      }
+                      $value = $value ?? '';
+                    @endphp
+                    <li>
+                      @if($label)
+                        <strong>{{ $label }}</strong>: 
+                      @endif
+                      {{ $value }}
+                    </li>
+                  @endforeach
+                </ul>
+              @else
+                <p>{{ $addressText }}</p>
+              @endif
             </div>
             <div class="fb">
               <h4 class="wj kk wm cc">Nomor Telepon</h4>

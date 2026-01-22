@@ -40,6 +40,23 @@
                 <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">Program tidak ditemukan.</h2>
               @endif
 
+              @php
+                $lp = \App\Models\LandingProfile::first();
+                $phoneRaw = $lp->phone_number ?? ($lp->phone ?? null);
+                if (is_array($phoneRaw)) {
+                  $phoneStr = implode('', array_filter($phoneRaw));
+                } else {
+                  $phoneStr = (string)($phoneRaw ?? '');
+                }
+                $phoneDigits = preg_replace('/\D+/', '', $phoneStr);
+                $waLink = $phoneDigits ? 'https://wa.me/' . $phoneDigits . '?text=' . urlencode('Saya ingin berdonasi untuk program: ' . ($program->name ?? '')) : '#';
+              @endphp
+
+              <br>
+              <div class="mb-6">
+                <a id="donate-now" href="{{ $waLink }}" target="_blank" rel="noopener" role="button" class="vc rg lk gh ml il hi gi _l">Donasi Sekarang</a>
+              </div>
+
               <ul class="tc wf bg sb mt-8">
                 <li>
                   <p class="sj kk wm tb">Bagikan:</p>

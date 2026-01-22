@@ -17,6 +17,12 @@
                   if (!empty($imgs) && !empty($imgs[0])) {
                     $mainImg = preg_match('/^https?:\/\//', $imgs[0]) ? $imgs[0] : asset('storage/' . $imgs[0]);
                   }
+                  // Per-page SEO meta
+                  $metaTitle = ($kegiatan->title ? $kegiatan->title . ' - ' : '') . config('app.name', 'KMS');
+                  $metaDescription = strip_tags($kegiatan->description ?? '');
+                  $metaDescription = strlen($metaDescription) > 160 ? substr($metaDescription, 0, 157) . '...' : $metaDescription;
+                  $metaImage = $mainImg ?? asset('frontend/images/og-default.png');
+                  $canonical = url('/kegiatan/' . ($kegiatan->slug ?? \Illuminate\Support\Str::slug($kegiatan->title)));
                   $date = $kegiatan->activity_date ? \Carbon\Carbon::parse($kegiatan->activity_date)->format('d M, Y') : '';
                   $location = collect([
                       $kegiatan->village,

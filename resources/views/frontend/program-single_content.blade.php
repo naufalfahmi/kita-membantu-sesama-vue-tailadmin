@@ -1,4 +1,18 @@
     <!-- ===== Program Single Start ===== -->
+    @php
+      if (!empty($program)) {
+        $metaTitle = ($program->name ? $program->name . ' - ' : '') . config('app.name', 'KMS');
+        $metaDescription = strip_tags($program->description ?? '');
+        $metaDescription = 
+          strlen($metaDescription) > 160 ? substr($metaDescription, 0, 157) . '...' : $metaDescription;
+        if (!empty($program->image_url)) {
+          $metaImage = preg_match('/^https?:\/\//', $program->image_url) ? $program->image_url : asset('storage/' . $program->image_url);
+        } else {
+          $metaImage = asset('frontend/images/og-default.png');
+        }
+        $canonical = url('/program/' . ($program->slug ?? \Illuminate\Support\Str::slug($program->name)));
+      }
+    @endphp
     <section class="gj  hj rp hr">
       <div class="bb ze ki xn 2xl:ud-px-0">
         <div class="tc sf yo zf kq">
@@ -12,15 +26,26 @@
                   }
                 @endphp
 
-                <img src="{{ $mainImg }}" alt="{{ $program->name }}" class="w-full h-auto rounded-lg mb-6" />
+                <style>
+                  .program-hero { width:100%; height:120px; }
+                  @media (min-width: 768px) { .program-hero { height:140px; } }
+                  @media (min-width: 1024px) { .program-hero { height:500px; } }
+                </style>
 
-                <h1 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">{{ $program->name }}</h1>
+                <div class="grid gap-6 md:grid-cols-2 items-start">
+                  <div class="w-full">
+                    <img src="{{ $mainImg }}" alt="{{ $program->name }}" class="program-hero rounded-lg" />
+                  </div>
+                  <div>
+                    <h1 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">{{ $program->name }}</h1>
 
-                <div class="rounded-md shadow-solid-12 bg-white dark:bg-blacksection border border-stroke dark:border-strokedark p-5 mb-6">
-                  <p class="rc kk wm">{{ $program->description ? strip_tags(substr($program->description,0,300)) : '' }}</p>
+                    <div class="rounded-md shadow-solid-12 bg-white dark:bg-blacksection border border-stroke dark:border-strokedark p-5 mb-6">
+                      <p class="rc kk wm">{{ $program->description ? strip_tags(substr($program->description,0,300)) : '' }}</p>
+                    </div>
+
+                    <div class="prose max-w-none mb-4">{!! $program->description ?? '' !!}</div>
+                  </div>
                 </div>
-
-                <div class="prose max-w-none mb-4">{!! $program->description ?? '' !!}</div>
 
               @else
                 <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">Program tidak ditemukan.</h2>

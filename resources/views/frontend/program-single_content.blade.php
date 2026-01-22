@@ -1,5 +1,5 @@
     <!-- ===== Program Single Start ===== -->
-    <section class="gj qp gr hj rp hr">
+    <section class="gj  hj rp hr">
       <div class="bb ze ki xn 2xl:ud-px-0">
         <div class="tc sf yo zf kq">
           <div class="ro">
@@ -89,6 +89,45 @@
 
             </div>
           </div>
+
+          <div class="jn/2 so">
+            <div class="animate_top">
+              <h4 class="tj kk wm qb">Program Lainnya</h4>
+
+              <div>
+                @php
+                  $relatedPrograms = \App\Models\LandingProgram::where('id', '!=', $program->id ?? 0)
+                    ->orderByDesc('created_at')
+                    ->limit(6)
+                    ->get();
+                @endphp
+
+                @forelse($relatedPrograms as $related)
+                  @php
+                    $relatedSlug = \Illuminate\Support\Str::slug($related->name);
+                    $relatedExcerpt = strip_tags($related->description ?? '');
+                    if (strlen($relatedExcerpt) > 110) {
+                      $relatedExcerpt = substr($relatedExcerpt, 0, 107) . '...';
+                    }
+                  @endphp
+                  <br>
+                  <div class="mb-5 pb-5 border-b border-stroke dark:border-strokedark last:border-0 last:pb-0 last:mb-0">
+                    <h5 class="wj kk wm xl bn ml il mb-2">
+                      <a href="{{ route('frontend.program-single', ['slug' => $relatedSlug]) }}" class="hover:text-brand-500">
+                        {{ $related->name }}
+                      </a>
+                    </h5>
+                    @if(!empty($relatedExcerpt))
+                      <p class="text-sm text-gray-500 dark:text-gray-400">{{ $relatedExcerpt }}</p>
+                    @endif
+                  </div>
+                @empty
+                  <p class="text-sm text-gray-500">Tidak ada program lainnya.</p>
+                @endforelse
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>

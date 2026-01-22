@@ -34,7 +34,14 @@
                   <p class="rc kk wm">{{ $program->description ? strip_tags(substr($program->description,0,300)) : '' }}</p>
                 </div>
 
-                <div class="prose max-w-none mb-4">{!! $program->description ?? '' !!}</div>
+                @php
+                  $rawDesc = $program->description ?? '';
+                  $cleanDesc = html_entity_decode($rawDesc, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                  // replace non-breaking spaces with normal spaces and collapse multiple spaces
+                  $cleanDesc = preg_replace('/\x{00A0}/u', ' ', $cleanDesc);
+                  $cleanDesc = preg_replace('/\s+/u', ' ', trim($cleanDesc));
+                @endphp
+                <div class="prose max-w-none mb-4">{!! $cleanDesc !!}</div>
 
               @else
                 <h2 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">Program tidak ditemukan.</h2>

@@ -201,7 +201,7 @@
             @endphp
 
             <h4 class="ek yj mk gb">Tentang Kita Membantu Sesama</h4>
-            <h5 class="uo">{{ $aboutTitle }}</h5>
+            <p class="uo">{{ $aboutTitle }}</p>
             <!-- <p class="uo mb-4"></p> -->
             <br>
             <div class="mb-6">
@@ -334,7 +334,7 @@
                     <img class="w-full program-image" src="{{ $image }}" alt="{{ $p->name }}" />
                   </a>
                   <div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10">
-                    <span class="vc ek rg lk gh sl ml il gi hi" style="cursor: pointer;">Read More</span>
+                    <span class="vc ek rg lk gh sl ml il gi hi" style="cursor: pointer;">Lihat Poster</span>
                   </div>
                 </div>
 

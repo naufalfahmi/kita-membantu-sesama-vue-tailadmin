@@ -40,7 +40,7 @@
                     $shortClean = \Illuminate\Support\Str::limit($shortClean, 300000);
                   @endphp
                   <p class="rc kk wm">{{ $shortClean }}</p>
-                </div>
+                </div><br>
 
                 @php
                   $rawDesc = $program->description ?? '';

@@ -202,11 +202,11 @@
 
             <h4 class="ek yj mk gb">Tentang Kita Membantu Sesama</h4>
             <h2 class="fk vj zp pr kk wm qb">{{ $aboutTitle }}</h2>
-            <p class="uo mb-4">{!! nl2br(e($aboutDesc)) !!}</p>
+            <!-- <p class="uo mb-4"></p> -->
             <br>
             <div class="mb-6">
               <h5 class="ek zj kk wm mb-5">Visi Kami</h5>
-              <p class="uo">{{ $aboutTitle }}</p>
+              <p class="uo">{!! nl2br(e($aboutDesc)) !!}</p>
             </div>
             <br>
             <div class="mb-6">

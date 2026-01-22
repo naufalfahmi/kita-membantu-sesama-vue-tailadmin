@@ -264,6 +264,12 @@
       @push('scripts')
       <script>
         (function(){
+          const slugify = function(str){
+            return String(str).toLowerCase().trim()
+              .replace(/[^a-z0-9\s-_]/g, '')
+              .replace(/[\s_]+/g, '-')
+              .replace(/^-+|-+$/g, '');
+          };
           let currentPage = 1;
           const perPage = 6;
           const btn = document.getElementById('load-more-bulletins');
@@ -340,7 +346,8 @@
 
                 <div class="yh">
                   <h4 class="ek tj ml il kk wm xl eq lb">
-                    <a href="#">{{ $p->name }}</a>
+                    @php $pSlug = $p->slug ?? \Illuminate\Support\Str::slug($p->name); @endphp
+                    <a href="/program/{{ $pSlug }}">{{ $p->name }}</a>
                   </h4>
                   <p>{{ $excerpt }}</p>
                 </div>
@@ -417,7 +424,11 @@
                     div.className = 'animate_top sg vk rm xm';
                     const img = p.image_url && /^https?:\/\//.test(p.image_url) ? p.image_url : (p.image_url ? `/storage/${p.image_url}` : '/frontend/images/project-01.png');
                     const excerpt = (p.description || '').replace(/<[^>]+>/g, '').slice(0, 117) + (p.description && p.description.length > 120 ? '...' : '');
-                    div.innerHTML = `<div class="c rc i z-1 pg"><a href="${img}" class="rc" data-caption="${p.name}"><img class="w-full program-image" src="${img}" alt="${p.name}" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><span class="vc ek rg lk gh sl ml il gi hi" style="cursor: pointer;">Read More</span></div></div><div class="yh"><h4 class="ek tj ml il kk wm xl eq lb"><a href="#">${p.name}</a></h4><p>${excerpt}</p></div>`;
+                    const slugify = function(str){
+                      return String(str).toLowerCase().trim().replace(/[^a-z0-9\s-_]/g,'').replace(/[\s_]+/g,'-').replace(/^-+|-+$/g,'');
+                    };
+                    const slug = p.slug || slugify(p.name || p.id || 'program');
+                    div.innerHTML = `<div class="c rc i z-1 pg"><a href="${img}" class="rc" data-caption="${p.name}"><img class="w-full program-image" src="${img}" alt="${p.name}" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><span class="vc ek rg lk gh sl ml il gi hi" style="cursor: pointer;">Read More</span></div></div><div class="yh"><h4 class="ek tj ml il kk wm xl eq lb"><a href="/program/${slug}">${p.name}</a></h4><p>${excerpt}</p></div>`;
                     container.appendChild(div);
                   });
                   // Reinitialize baguetteBox after adding new images
@@ -531,7 +542,8 @@
                   const imgs = k.images ? JSON.parse(k.images) : [];
                   const img = imgs.length && imgs[0] && /^https?:\/\//.test(imgs[0]) ? imgs[0] : (imgs.length && imgs[0] ? `/storage/${imgs[0]}` : '/frontend/images/project-01.png');
                   const excerpt = (k.description || '').replace(/<[^>]+>/g, '').slice(0, 117) + (k.description && k.description.length > 120 ? '...' : '');
-                  div.innerHTML = `<div class="c rc i z-1 pg"><a href="/blog-single/${k.id}" class="rc"><img class="w-full program-image" src="${img}" alt="${k.title}" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="/blog-single/${k.id}" class="vc ek rg lk gh sl ml il gi hi">View</a></div></div><div class="yh"><h4 class="ek tj ml il kk wm xl eq lb"><a href="/blog-single/${k.id}">${k.title}</a></h4><p>${excerpt}</p></div>`;
+                  const slug = slugify(k.title || k.id || 'kegiatan');
+                  div.innerHTML = `<div class="c rc i z-1 pg"><a href="/kegiatan/${slug}" class="rc"><img class="w-full program-image" src="${img}" alt="${k.title}" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="/kegiatan/${slug}" class="vc ek rg lk gh sl ml il gi hi">View</a></div></div><div class="yh"><h4 class="ek tj ml il kk wm xl eq lb"><a href="/kegiatan/${slug}">${k.title}</a></h4><p>${excerpt}</p></div>`;
                   container.appendChild(div);
                 });
                 if (!json.has_more) {
@@ -760,6 +772,12 @@
       @push('scripts')
       <script>
         (function(){
+          const slugify = function(str){
+            return String(str).toLowerCase().trim()
+              .replace(/[^a-z0-9\s-_]/g, '')
+              .replace(/[\s_]+/g, '-')
+              .replace(/^-+|-+$/g, '');
+          };
           let currentPage = 1;
           const perPage = 3;
           const btn = document.getElementById('load-more-kegiatan');
@@ -782,7 +800,8 @@
 
                     const div = document.createElement('div');
                     div.className = 'animate_top sg vk rm xm';
-                    div.innerHTML = `<div class="c rc i z-1 pg"><a href="/blog-single/${k.id}" class="rc"><img class="w-full kegiatan-image" src="${img}" alt="Kegiatan" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="/blog-single/${k.id}" class="vc ek rg lk gh sl ml il gi hi">Read More</a></div></div><div class="yh"><div class="tc uf wf ag jq"><div class="tc wf ag"><img src="/frontend/images/icon-man.svg" alt="User" /><p>${k.organizer || 'Team'}</p></div><div class="tc wf ag"><img src="/frontend/images/icon-calender.svg" alt="Calender" /><p>${date}</p></div></div><h4 class="ek tj ml il kk wm xl eq lb"><a href="/blog-single/${k.id}">${k.title}</a></h4><p>${excerpt}</p></div>`;
+                    const slug = slugify(k.title || k.id || 'kegiatan');
+                    div.innerHTML = `<div class="c rc i z-1 pg"><a href="/kegiatan/${slug}" class="rc"><img class="w-full kegiatan-image" src="${img}" alt="Kegiatan" /></a><div class="im h r s df vd yc wg tc wf xf al hh/20 nl il z-10"><a href="/kegiatan/${slug}" class="vc ek rg lk gh sl ml il gi hi">Read More</a></div></div><div class="yh"><div class="tc uf wf ag jq"><div class="tc wf ag"><img src="/frontend/images/icon-man.svg" alt="User" /><p>${k.organizer || 'Team'}</p></div><div class="tc wf ag"><img src="/frontend/images/icon-calender.svg" alt="Calender" /><p>${date}</p></div></div><h4 class="ek tj ml il kk wm xl eq lb"><a href="/kegiatan/${slug}">${k.title}</a></h4><p>${excerpt}</p></div>`;
                     container.appendChild(div);
                   });
                   if (!json.has_more) {

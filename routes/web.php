@@ -82,14 +82,43 @@ Route::get('/blog-grid', function () {
     return view('frontend.blog-grid');
 })->name('frontend.blog-grid');
 
-Route::get('/blog-single/{id?}', function ($id = null) {
-    $kegiatan = null;
-    if ($id) {
-        $kegiatan = \App\Models\LandingKegiatan::find($id);
-        if (! $kegiatan) {
-            abort(404);
-        }
+// Program detail route (public)
+Route::get('/program/{slug}', function ($slug) {
+    $program = \App\Models\LandingProgram::where('slug', $slug)->first();
+    if (! $program && is_numeric($slug)) {
+        $program = \App\Models\LandingProgram::find($slug);
     }
+    if (! $program) {
+        $program = \App\Models\LandingProgram::get()->first(function ($item) use ($slug) {
+            return \Illuminate\Support\Str::slug($item->name) === $slug;
+        });
+    }
+    if (! $program) abort(404);
+    return view('frontend.program-single', compact('program'));
+})->name('frontend.program-single');
+
+Route::get('/kegiatan/{slug}', function ($slug) {
+    $kegiatan = null;
+
+    // Try finding by explicit slug column
+    $kegiatan = \App\Models\LandingKegiatan::where('slug', $slug)->first();
+
+    // Fallback: if slug looks numeric, try as ID
+    if (! $kegiatan && is_numeric($slug)) {
+        $kegiatan = \App\Models\LandingKegiatan::find($slug);
+    }
+
+    // Final fallback: match by slugified title (best-effort)
+    if (! $kegiatan) {
+        $kegiatan = \App\Models\LandingKegiatan::get()->first(function ($item) use ($slug) {
+            return \Illuminate\Support\Str::slug($item->title) === $slug;
+        });
+    }
+
+    if (! $kegiatan) {
+        abort(404);
+    }
+
     return view('frontend.blog-single', compact('kegiatan'));
 })->name('frontend.blog-single');
 

@@ -33,31 +33,22 @@
                 <div class="rounded-md shadow-solid-12 bg-white dark:bg-blacksection border border-stroke dark:border-strokedark p-5 mb-6">
                   <ul class="tc uf flex-wrap cg 2xl:ud-gap-15 fb gap-4 md:gap-8 md:flex-nowrap">
                     <li class="flex items-center gap-2 md:flex-1">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M8 7V3M16 7V3M7 11H17M5 21H19C20.1046 21 21 20.1046 21 19V7C21 5.89543 20.1046 5 19 5H5C3.89543 5 3 5.89543 3 7V19C3 20.1046 3.89543 21 5 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                    <span class="rc kk wm">Tanggal: </span> {{ $date }}
+                    <span class="rc kk wm">Tanggal: {{ $date }}</span> 
                   </li>
                   @if(!empty($location))
                     <li class="flex items-center gap-2 md:flex-1">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="currentColor"/>
-                    </svg>
-                    <span class="rc kk wm">Lokasi: </span> {{ $location }}
+                    <span class="rc kk wm">Lokasi: {{ $location }}</span>
                   </li>
                   @endif
                   @if($kegiatan->number_of_recipients > 0)
                     <li class="flex items-center gap-2 md:flex-1">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M16 11C17.66 11 18.99 9.66 18.99 8C18.99 6.34 17.66 5 16 5C14.34 5 13 6.34 13 8C13 9.66 14.34 11 16 11ZM8 11C9.66 11 10.99 9.66 10.99 8C10.99 6.34 9.66 5 8 5C6.34 5 5 6.34 5 8C5 9.66 6.34 11 8 11ZM8 13C5.67 13 1 14.17 1 16.5V19H15V16.5C15 14.17 10.33 13 8 13ZM16 13C15.71 13 15.38 13.02 15.03 13.05C16.19 13.89 17 15.02 17 16.5V19H23V16.5C23 14.17 18.33 13 16 13Z" fill="currentColor"/>
-                    </svg>
-                    <span class="rc kk wm">Penerima Manfaat: </span> {{ number_format($kegiatan->number_of_recipients) }} orang
+                    <span class="rc kk wm">Penerima Manfaat: {{ number_format($kegiatan->number_of_recipients) }} orang</span>
                   </li>
                   @endif
                   </ul>
                 </div>
 
-                <div class="prose max-w-none mb-6">{!! $kegiatan->description ?? '' !!}</div>
+                <div class="prose max-w-none mb-4">{!! $kegiatan->description ?? '' !!}</div>
 
                 @if(count($imgs) > 1)
                   <h3 class="text-xl font-semibold mb-4">Galeri Kegiatan</h3>

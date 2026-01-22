@@ -201,7 +201,7 @@
             @endphp
 
             <h4 class="ek yj mk gb">Tentang Kita Membantu Sesama</h4>
-            <h2 class="fk vj zp pr kk wm qb">{{ $aboutTitle }}</h2>
+            <h5 class="ek zj kk wm mb-5">{{ $aboutTitle }}</h5>
             <!-- <p class="uo mb-4"></p> -->
             <br>
             <div class="mb-6">

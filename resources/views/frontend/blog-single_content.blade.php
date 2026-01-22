@@ -1,6 +1,6 @@
 
     <!-- ===== Blog Single Start ===== -->
-    <section class="gj qp gr hj rp hr">
+    <section class="gj  hj rp hr">
       <div class="bb ze ki xn 2xl:ud-px-0">
         <div class="tc sf yo zf kq">
           <div class="ro">

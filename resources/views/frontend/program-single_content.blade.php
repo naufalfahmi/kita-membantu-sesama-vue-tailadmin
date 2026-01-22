@@ -37,7 +37,7 @@
                     $shortClean = html_entity_decode($shortClean, ENT_QUOTES | ENT_HTML5, 'UTF-8');
                     $shortClean = preg_replace('/\x{00A0}/u', ' ', $shortClean);
                     $shortClean = preg_replace('/\s+/u', ' ', trim($shortClean));
-                    $shortClean = \Illuminate\Support\Str::limit($shortClean, 300);
+                    $shortClean = \Illuminate\Support\Str::limit($shortClean, 300000);
                   @endphp
                   <p class="rc kk wm">{{ $shortClean }}</p>
                 </div>

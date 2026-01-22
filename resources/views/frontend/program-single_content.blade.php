@@ -31,7 +31,15 @@
                 <h1 class="ek vj 2xl:ud-text-title-lg kk wm nb gb">{{ $program->name }}</h1>
 
                 <div class="rounded-md shadow-solid-12 bg-white dark:bg-blacksection border border-stroke dark:border-strokedark p-5 mb-6">
-                  <p class="rc kk wm">{{ $program->description ? strip_tags(substr($program->description,0,300)) : '' }}</p>
+                  @php
+                    $shortRaw = $program->description ?? '';
+                    $shortClean = strip_tags($shortRaw);
+                    $shortClean = html_entity_decode($shortClean, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $shortClean = preg_replace('/\x{00A0}/u', ' ', $shortClean);
+                    $shortClean = preg_replace('/\s+/u', ' ', trim($shortClean));
+                    $shortClean = \Illuminate\Support\Str::limit($shortClean, 300);
+                  @endphp
+                  <p class="rc kk wm">{{ $shortClean }}</p>
                 </div>
 
                 @php

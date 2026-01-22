@@ -331,7 +331,9 @@
                     $image = preg_match('/^https?:\/\//', $p->image_url) ? $p->image_url : asset('storage/' . $p->image_url);
                 }
                 $excerpt = strip_tags($p->description ?? '');
-                if (strlen($excerpt) > 120) $excerpt = substr($excerpt, 0, 117) . '...';
+                $excerpt = html_entity_decode($excerpt, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $excerpt = preg_replace('/\s+/', ' ', trim($excerpt));
+                $excerpt = \Illuminate\Support\Str::limit($excerpt, 120);
               @endphp
 
               <div class="animate_top sg vk rm xm">
@@ -490,7 +492,9 @@
                   }
               }
               $excerpt = strip_tags($k->description ?? '');
-              if (strlen($excerpt) > 120) $excerpt = substr($excerpt, 0, 117) . '...';
+              $excerpt = html_entity_decode($excerpt, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+              $excerpt = preg_replace('/\s+/', ' ', trim($excerpt));
+              $excerpt = \Illuminate\Support\Str::limit($excerpt, 120);
               $slug = \Illuminate\Support\Str::slug($k->title);
             @endphp
 

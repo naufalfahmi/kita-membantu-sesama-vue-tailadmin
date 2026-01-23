@@ -5,6 +5,7 @@
         <h3 class="font-semibold text-gray-800 text-theme-xl dark:text-white/90 sm:text-2xl">{{ currentPageTitle }}</h3>
         <div class="flex items-center gap-3">
           <button v-if="canGenerate" @click="openGenerate" class="flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-600">Generate Periode</button>
+          <span v-if="canGenerate && missingCount > 0" class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-800">+{{ missingCount }} belum</span>
         </div>
       </div>
 
@@ -63,6 +64,7 @@ const genMonth = ref(new Date().getMonth()+1)
 const genYear = ref(new Date().getFullYear())
 
 const gridRowData = ref([])
+const missingCount = ref(0)
 
 const columnDefs = [
   { headerName: 'Periode', field: 'periode', flex: 1 },
@@ -124,6 +126,19 @@ const loadPeriods = async () => {
   }))
 }
 
+const loadMissingCount = async () => {
+  try {
+    const qs = new URLSearchParams()
+    qs.append('year', String(genYear.value))
+    qs.append('month', String(genMonth.value))
+    const res = await fetch(`/admin/api/operasional/payroll/periods/missing-count?${qs.toString()}`, { credentials: 'same-origin' })
+    const json = await res.json()
+    if (json.success) missingCount.value = json.missing || 0
+  } catch (e) {
+    missingCount.value = 0
+  }
+}
+
 onMounted(async () => {
   // If user only has view permission (no admin-like create/manage/generate), redirect them to their own payroll list (all periods)
   const isViewerOnly = (hasPermission('view payroll') || hasPermission('view remunerasi')) && !isAdmin() && !canGenerate.value
@@ -133,6 +148,7 @@ onMounted(async () => {
   }
 
   await loadPeriods()
+  await loadMissingCount()
 })
 
 // debounce filter changes
@@ -141,6 +157,14 @@ watch([filterYear, filterMonth], () => {
   filterTimeout = setTimeout(() => {
     loadPeriods()
   }, 450)
+})
+
+watch([genYear, genMonth], () => {
+  // update missing count when generate year/month changed (debounced)
+  if (filterTimeout) clearTimeout(filterTimeout)
+  filterTimeout = setTimeout(() => {
+    loadMissingCount()
+  }, 300)
 })
 
 const openGenerate = () => { showGenerateModal.value = true }

@@ -89,6 +89,36 @@ class PayrollController extends Controller
         return response()->json(['success' => true, 'data' => $period]);
     }
 
+    /**
+     * Return count of active karyawan that do not have a payroll record for given year/month.
+     * This helps the frontend show how many employees would be added if generate is clicked.
+     */
+    public function missingCount(Request $request)
+    {
+        $v = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'year' => 'required|integer|min:2000',
+            'month' => 'required|integer|min:1|max:12',
+        ]);
+
+        if ($v->fails()) return response()->json(['success' => false, 'errors' => $v->errors()], 422);
+
+        $year = (int)$request->query('year');
+        $month = (int)$request->query('month');
+
+        $existing = PayrollPeriod::where('year', $year)->where('month', $month)->first();
+        $existingIds = [];
+        if ($existing) {
+            $existingIds = $existing->records()->pluck('employee_id')->map(fn($id) => (string)$id)->toArray();
+        }
+
+        $count = \App\Models\User::karyawan()->active()->whereNull('deleted_at')
+            ->when(!empty($existingIds), function ($q) use ($existingIds) {
+                $q->whereNotIn('id', $existingIds);
+            })->count();
+
+        return response()->json(['success' => true, 'missing' => $count]);
+    }
+
     public function show($id)
     {
         $period = PayrollPeriod::with(['records.employee', 'records.items'])->find($id);

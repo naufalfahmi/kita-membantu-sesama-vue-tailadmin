@@ -267,6 +267,7 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     // Payroll / Rekap Gaji per Periode
     Route::get('operasional/payroll/periods', [\App\Http\Controllers\Api\PayrollController::class, 'index']);
     Route::post('operasional/payroll/periods/generate', [\App\Http\Controllers\Api\PayrollController::class, 'generate']);
+    Route::get('operasional/payroll/periods/missing-count', [\App\Http\Controllers\Api\PayrollController::class, 'missingCount']);
     Route::get('operasional/payroll/periods/{id}', [\App\Http\Controllers\Api\PayrollController::class, 'show']);
     Route::post('operasional/payroll/periods/{id}/transfer', [\App\Http\Controllers\Api\PayrollController::class, 'transferPeriod']);
 

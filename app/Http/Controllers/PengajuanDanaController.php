@@ -32,11 +32,15 @@ class PengajuanDanaController extends Controller
             $isAdmin = $user->hasRole('admin') || $user->hasRole('Admin');
             $hasApprovalPermission = $user->can('approve pengajuan dana') || $user->can('approval pengajuan dana');
             
-            if (!$isAdmin) {
+            if (! $isAdmin) {
                 if ($hasApprovalPermission) {
-                    // Users with approval permission can see data from their kantor_cabang
+                    // Users with approval permission should see records for their kantor_cabang
+                    // AND always be able to see their own pengajuan regardless of kantor_cabang.
                     if ($user->kantor_cabang_id) {
-                        $query->where('kantor_cabang_id', $user->kantor_cabang_id);
+                        $query->where(function ($q) use ($user) {
+                            $q->where('kantor_cabang_id', $user->kantor_cabang_id)
+                              ->orWhere('fundraiser_id', $user->id);
+                        });
                     } else {
                         // If no kantor_cabang assigned, only see own data
                         $query->where('fundraiser_id', $user->id);

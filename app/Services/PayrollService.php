@@ -23,9 +23,13 @@ class PayrollService
         return DB::transaction(function () use ($year, $month, $actorId) {
             $period = PayrollPeriod::where('year', $year)->where('month', $month)->first();
 
-            if ($period && in_array($period->status, ['generated', 'transferred'])) {
+            // If period exists and is 'transferred' we should not modify it.
+            if ($period && $period->status === 'transferred') {
                 throw new \RuntimeException('Payroll period already generated or transferred');
             }
+
+            // Keep track of existing employee records so we only add missing ones
+            $existingEmployeeIds = [];
 
             if (!$period) {
                 $period = PayrollPeriod::create([
@@ -36,15 +40,28 @@ class PayrollService
                     'created_by' => $actorId,
                 ]);
             } else {
-                // cleanup existing draft records
-                $period->records()->delete();
-                $period->update(['status' => 'generated', 'generated_at' => now()]);
+                // If period exists and is 'generated', don't delete existing records — only add missing employees.
+                if ($period->status === 'generated') {
+                    $existingEmployeeIds = $period->records()->pluck('employee_id')->map(function ($id) {
+                        return (string)$id;
+                    })->toArray();
+                    $period->update(['generated_at' => now()]);
+                } else {
+                    // cleanup existing draft records and mark generated
+                    $period->records()->delete();
+                    $period->update(['status' => 'generated', 'generated_at' => now()]);
+                }
             }
 
             // fetch all active employees (karyawan)
             $employees = User::karyawan()->active()->get();
 
             foreach ($employees as $emp) {
+                // skip if employee already has a record in this period
+                if (in_array((string)$emp->id, $existingEmployeeIds, true)) {
+                    continue;
+                }
+
                 $record = PayrollRecord::create([
                     'payroll_period_id' => $period->id,
                     'employee_id' => $emp->id,
@@ -55,7 +72,6 @@ class PayrollService
 
                 // Try find existing Remunerasi entry as base salary for the given month/year
                 $gajiValue = 0;
-                // Try find existing Remunerasi entry as base salary for the given month/year if table exists
                 if (\Illuminate\Support\Facades\Schema::hasTable('remunerasis')) {
                     $rem = Remunerasi::where('karyawan_id', $emp->id)
                         ->where('bulan_remunerasi', $month)

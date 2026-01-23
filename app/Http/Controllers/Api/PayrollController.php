@@ -69,9 +69,9 @@ class PayrollController extends Controller
         $year = (int)$request->input('year');
         $month = (int)$request->input('month');
 
-        // Check for existing period and return clearer error when already generated/transferred
+        // If period already transferred we must not modify it. If generated, allow adding missing employees.
         $existing = \App\Models\PayrollPeriod::where('year', $year)->where('month', $month)->first();
-        if ($existing && in_array($existing->status, ['generated', 'transferred'])) {
+        if ($existing && $existing->status === 'transferred') {
             return response()->json([
                 'success' => false,
                 'message' => 'Payroll period already generated or transferred',
@@ -112,6 +112,11 @@ class PayrollController extends Controller
                 return $r->employee_id && $r->employee_id == $user->id;
             })->values());
         }
+
+        // Remove any records whose related employee is soft-deleted or missing
+        $period->setRelation('records', $period->records->filter(function ($r) {
+            return $r->employee && empty($r->employee->deleted_at);
+        })->values());
 
         return response()->json(['success' => true, 'data' => $period]);
     }

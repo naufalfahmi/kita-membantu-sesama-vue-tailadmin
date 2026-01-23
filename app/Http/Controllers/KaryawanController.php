@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 use App\Models\KaryawanDonaturVisibility;
@@ -256,59 +257,87 @@ class KaryawanController extends Controller
         }
 
         try {
-            $karyawan = DB::transaction(function () use ($request) {
-                $data = $request->only([
-                    'name',
-                    'email',
-                    'no_induk',
-                    'posisi',
-                    'pangkat_id',
-                    'tipe_absensi_id',
-                    'no_handphone',
-                    'nama_bank',
-                    'no_rekening',
-                    'tanggal_lahir',
-                    'pendidikan',
-                    'tanggal_masuk',
-                    'kantor_cabang_id',
-                    'leader_id',
-                    'kantor_cabang_ids',
-                ]);
+            $attempts = 0;
+            $maxAttempts = 5;
+            $karyawan = null;
 
-                $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
-                $data['tipe_user'] = 'karyawan';
-                $data['is_active'] = $request->boolean('is_active', true);
-                $data['created_by'] = auth()->id();
-                $data['password'] = Hash::make($request->password ?? 'password123');
+            while ($attempts < $maxAttempts) {
+                try {
+                    $karyawan = DB::transaction(function () use ($request) {
+                        $data = $request->only([
+                            'name',
+                            'email',
+                            'no_induk',
+                            'posisi',
+                            'pangkat_id',
+                            'tipe_absensi_id',
+                            'no_handphone',
+                            'nama_bank',
+                            'no_rekening',
+                            'tanggal_lahir',
+                            'pendidikan',
+                            'tanggal_masuk',
+                            'kantor_cabang_id',
+                            'leader_id',
+                            'kantor_cabang_ids',
+                        ]);
 
-                $karyawan = User::create($this->sanitizePayload($data));
+                        $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
+                        $data['tipe_user'] = 'karyawan';
+                        $data['is_active'] = $request->boolean('is_active', true);
+                        $data['created_by'] = auth()->id();
+                        $data['password'] = Hash::make($request->password ?? 'password123');
 
-                $this->syncKantorCabangAssignments($karyawan, $request);
+                        $karyawan = User::create($this->sanitizePayload($data));
 
-                if ($request->filled('role_id')) {
-                    $role = Role::find($request->role_id);
-                    if ($role) {
-                        $karyawan->syncRoles($role);
+                        $this->syncKantorCabangAssignments($karyawan, $request);
+
+                        if ($request->filled('role_id')) {
+                            $role = Role::find($request->role_id);
+                            if ($role) {
+                                $karyawan->syncRoles($role);
+                            }
+                        }
+
+                        $this->syncSubordinates($karyawan, $request);
+
+                        $this->syncVisibilityAssignments($karyawan, $request->input('visible_transaksi_ids', []), 'transaksi');
+                        $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
+                        $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_transaksi_ids', []), 'transaksi');
+                        $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_donatur_ids', []), 'donatur');
+
+                        return $karyawan->fresh([
+                            'pangkat:id,nama',
+                            'tipeAbsensi:id,nama',
+                            'kantorCabang:id,nama',
+                            'kantorCabangs:id,nama',
+                            'roles:id,name',
+                            'transaksiVisibilityEntries.visibleKaryawan:id,name',
+                            'donaturVisibilityEntries.visibleKaryawan:id,name',
+                        ]);
+                    });
+
+                    // success => break attempts loop
+                    break;
+                } catch (QueryException $qe) {
+                    // duplicate no_induk - try again with a new generated number
+                    $attempts++;
+                    $isDuplicateNoInduk = str_contains($qe->getMessage(), 'users_no_induk_unique') || str_contains($qe->getMessage(), 'no_induk');
+                    if ($attempts >= $maxAttempts || ! $isDuplicateNoInduk) {
+                        throw $qe;
                     }
+                    // small sleep to reduce hot-loop collisions
+                    usleep(100000);
+                    continue;
                 }
+            }
 
-                $this->syncSubordinates($karyawan, $request);
-
-                $this->syncVisibilityAssignments($karyawan, $request->input('visible_transaksi_ids', []), 'transaksi');
-                $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
-                $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_transaksi_ids', []), 'transaksi');
-                $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_donatur_ids', []), 'donatur');
-
-                return $karyawan->fresh([
-                    'pangkat:id,nama',
-                    'tipeAbsensi:id,nama',
-                    'kantorCabang:id,nama',
-                    'kantorCabangs:id,nama',
-                    'roles:id,name',
-                    'transaksiVisibilityEntries.visibleKaryawan:id,name',
-                    'donaturVisibilityEntries.visibleKaryawan:id,name',
-                ]);
-            });
+            if (! $karyawan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menambahkan karyawan (gagal menghasilkan no_induk unik)',
+                ], 500);
+            }
 
             return response()->json([
                 'success' => true,
@@ -409,81 +438,106 @@ class KaryawanController extends Controller
         }
 
         try {
-            $karyawan = DB::transaction(function () use ($request, $karyawan) {
-                $data = $request->only([
-                    'name',
-                    'email',
-                    'no_induk',
-                    'posisi',
-                    'pangkat_id',
-                    'tipe_absensi_id',
-                    'no_handphone',
-                    'nama_bank',
-                    'no_rekening',
-                    'tanggal_lahir',
-                    'pendidikan',
-                    'tanggal_masuk',
-                    'kantor_cabang_id',
-                    'leader_id',
-                    'kantor_cabang_ids',
-                ]);
+            $attempts = 0;
+            $maxAttempts = 5;
+            $updatedKaryawan = null;
 
-                $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
-                $data['is_active'] = $request->boolean('is_active', $karyawan->is_active);
-                $data['updated_by'] = auth()->id();
+            while ($attempts < $maxAttempts) {
+                try {
+                    $updatedKaryawan = DB::transaction(function () use ($request, $karyawan) {
+                        $data = $request->only([
+                            'name',
+                            'email',
+                            'no_induk',
+                            'posisi',
+                            'pangkat_id',
+                            'tipe_absensi_id',
+                            'no_handphone',
+                            'nama_bank',
+                            'no_rekening',
+                            'tanggal_lahir',
+                            'pendidikan',
+                            'tanggal_masuk',
+                            'kantor_cabang_id',
+                            'leader_id',
+                            'kantor_cabang_ids',
+                        ]);
 
-                if ($request->filled('password')) {
-                    $data['password'] = Hash::make($request->password);
-                }
+                        $data['no_induk'] = $this->prepareNoInduk($data['no_induk'] ?? null);
+                        $data['is_active'] = $request->boolean('is_active', $karyawan->is_active);
+                        $data['updated_by'] = auth()->id();
 
-                $karyawan->update($this->sanitizePayload($data));
-
-                $this->syncKantorCabangAssignments($karyawan, $request);
-
-                if ($request->has('role_id')) {
-                    if ($request->filled('role_id')) {
-                        $role = Role::find($request->role_id);
-                        if ($role) {
-                            $karyawan->syncRoles($role);
+                        if ($request->filled('password')) {
+                            $data['password'] = Hash::make($request->password);
                         }
-                    } else {
-                        $karyawan->syncRoles([]);
+
+                        $karyawan->update($this->sanitizePayload($data));
+
+                        $this->syncKantorCabangAssignments($karyawan, $request);
+
+                        if ($request->has('role_id')) {
+                            if ($request->filled('role_id')) {
+                                $role = Role::find($request->role_id);
+                                if ($role) {
+                                    $karyawan->syncRoles($role);
+                                }
+                            } else {
+                                $karyawan->syncRoles([]);
+                            }
+                        }
+
+                        $this->syncSubordinates($karyawan, $request);
+
+                        if ($request->has('visible_transaksi_ids')) {
+                            $this->syncVisibilityAssignments($karyawan, $request->input('visible_transaksi_ids', []), 'transaksi');
+                        }
+
+                        if ($request->has('visible_donatur_ids')) {
+                            $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
+                        }
+
+                        if ($request->has('visible_mitra_transaksi_ids')) {
+                            $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_transaksi_ids', []), 'transaksi');
+                        }
+
+                        if ($request->has('visible_mitra_donatur_ids')) {
+                            $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_donatur_ids', []), 'donatur');
+                        }
+
+                        return $karyawan->fresh([
+                            'pangkat:id,nama',
+                            'tipeAbsensi:id,nama',
+                            'kantorCabang:id,nama',
+                            'kantorCabangs:id,nama',
+                            'roles:id,name',
+                            'transaksiVisibilityEntries.visibleKaryawan:id,name',
+                            'donaturVisibilityEntries.visibleKaryawan:id,name',
+                        ]);
+                    });
+
+                    break;
+                } catch (QueryException $qe) {
+                    $attempts++;
+                    $isDuplicateNoInduk = str_contains($qe->getMessage(), 'users_no_induk_unique') || str_contains($qe->getMessage(), 'no_induk');
+                    if ($attempts >= $maxAttempts || ! $isDuplicateNoInduk) {
+                        throw $qe;
                     }
+                    usleep(100000);
+                    continue;
                 }
+            }
 
-                $this->syncSubordinates($karyawan, $request);
-
-                if ($request->has('visible_transaksi_ids')) {
-                    $this->syncVisibilityAssignments($karyawan, $request->input('visible_transaksi_ids', []), 'transaksi');
-                }
-
-                if ($request->has('visible_donatur_ids')) {
-                    $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
-                }
-
-                if ($request->has('visible_mitra_transaksi_ids')) {
-                    $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_transaksi_ids', []), 'transaksi');
-                }
-
-                if ($request->has('visible_mitra_donatur_ids')) {
-                    $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_donatur_ids', []), 'donatur');
-                }
-
-                return $karyawan->fresh([
-                    'pangkat:id,nama',
-                    'tipeAbsensi:id,nama',
-                    'kantorCabang:id,nama',
-                    'kantorCabangs:id,nama',
-                    'roles:id,name',
-                    'transaksiVisibilityEntries.visibleKaryawan:id,name',
-                    'donaturVisibilityEntries.visibleKaryawan:id,name',
-                ]);
-            });
+            if (! $updatedKaryawan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengupdate karyawan (gagal menghasilkan no_induk unik)',
+                ], 500);
+            }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Karyawan berhasil diupdate',
-                'data' => $this->transformKaryawan($karyawan),
+                'data' => $this->transformKaryawan($updatedKaryawan),
             ]);
         } catch (\Exception $e) {
             return response()->json([

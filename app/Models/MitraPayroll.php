@@ -17,6 +17,7 @@ class MitraPayroll extends Model
     protected $fillable = [
         'mitra_id',
         'program_id',
+        'program_ids',
         'nama_mitra',
         'jumlah',
         'persentase',
@@ -25,6 +26,11 @@ class MitraPayroll extends Model
         'created_by',
         'updated_by',
         'deleted_by',
+    ];
+
+    protected $casts = [
+        'program_ids' => 'array',
+        'payroll_date' => 'date',
     ];
 
     public function mitra(): BelongsTo

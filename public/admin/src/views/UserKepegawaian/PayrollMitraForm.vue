@@ -20,10 +20,10 @@
 
           <div>
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Pilih Program <span class="text-red-500">*</span></label>
-            <SearchableSelect
-              v-model="form.program_id"
+            <SearchableMultiSelect
+              v-model="form.program_ids"
               :options="programOptions"
-              placeholder="Pilih Program"
+              placeholder="Pilih Program (bisa banyak)"
               :search-input="programSearch"
               @update:search-input="programSearch = $event"
             />
@@ -100,10 +100,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import SearchableMultiSelect from '@/components/forms/SearchableMultiSelect.vue'
 import { useToast } from 'vue-toastification'
 import { useAuth } from '@/composables/useAuth'
 import flatPickr from 'vue-flatpickr-component'
@@ -127,7 +128,7 @@ const mitraOptions = computed(() => mitraRaw.value.map((m: any) => ({ value: m.i
 const programOptions = computed(() => programRaw.value.map((p: any) => ({ value: p.id, label: p.nama_program })))
 
 const todayDate = new Date().toISOString().split('T')[0]
-const form = ref({ mitra_id: '', program_id: '', nama_mitra: '', jumlah: 0, persentase: 0, total: 0, payroll_date: todayDate })
+const form = ref({ mitra_id: '', program_ids: [], program_id: '', nama_mitra: '', jumlah: 0, persentase: 0, total: 0, payroll_date: todayDate })
 
 const FEE_SHARE_KEY = 'fee_mitra'
 const shareInfo = ref<{ type: string; value: number | null; key: string | null }>({
@@ -225,14 +226,19 @@ const loadProgramShare = async (programId: string | null, options: { applyToForm
 }
 
 watch(
-  () => form.value.program_id,
-  async (programId) => {
+  () => form.value.program_ids,
+  async (programIds) => {
     if (suppressShareAutoFill.value) {
-      suppressShareAutoFill.value = false
       return
     }
-    form.value.jumlah = ''
-    await loadProgramShare(programId)
+    form.value.jumlah = 0
+    // only auto-fill share when exactly one program is selected
+    if (Array.isArray(programIds) && programIds.length === 1) {
+      await loadProgramShare(programIds[0])
+    } else {
+      // reset share info when multiple or none selected
+      shareInfo.value = { type: 'percentage', value: null, key: null }
+    }
   }
 )
 
@@ -272,15 +278,32 @@ const fetchDetail = async (id:string) => {
     const json = await res.json()
     if (json.success) {
       // ensure mitra_id/program_id are set to ids
+      // prevent the watch from auto-clearing jumlah while we populate program_ids
       suppressShareAutoFill.value = true
       Object.assign(form.value, json.data)
-      suppressShareAutoFill.value = false
+      // coerce numeric fields to numbers
+      form.value.jumlah = json.data.jumlah !== undefined && json.data.jumlah !== null ? Number(json.data.jumlah) : form.value.jumlah
+      form.value.persentase = json.data.persentase !== undefined && json.data.persentase !== null ? Number(json.data.persentase) : form.value.persentase
+      form.value.total = json.data.total !== undefined && json.data.total !== null ? Number(json.data.total) : form.value.total
       if (json.data.mitra && json.data.mitra.id) form.value.mitra_id = json.data.mitra.id
-        if (json.data.program && json.data.program.id) {
-          suppressShareAutoFill.value = true
-          form.value.program_id = json.data.program.id
-        }
-      await loadProgramShare(json.data.program_id ?? null, { applyToForm: false })
+
+      // prefer explicit program_ids array if present
+      if (Array.isArray(json.data.program_ids) && json.data.program_ids.length > 0) {
+        form.value.program_ids = json.data.program_ids
+        form.value.program_id = json.data.program_ids[0]
+      } else if (json.data.program && json.data.program.id) {
+        form.value.program_ids = [json.data.program.id]
+        form.value.program_id = json.data.program.id
+      }
+
+      // wait one tick so the watch sees suppress flag while program_ids change
+      await nextTick()
+      // re-enable watch after populating
+      suppressShareAutoFill.value = false
+      // only load program share when exactly one program is selected
+      if (Array.isArray(form.value.program_ids) && form.value.program_ids.length === 1) {
+        await loadProgramShare(form.value.program_ids[0], { applyToForm: false })
+      }
     } else toast.error('Gagal memuat data')
   } catch (e) { toast.error('Gagal memuat data') }
 }
@@ -288,7 +311,7 @@ const fetchDetail = async (id:string) => {
 const handleSave = async () => {
   if (!form.value.jumlah || !form.value.persentase) { toast.error('Jumlah dan persentase wajib diisi'); return }
   isSaving.value = true
-  try {
+    try {
     // ensure nama_mitra is filled from selected mitra
     if (form.value.mitra_id) {
       const m = mitraRaw.value.find((x:any) => x.id === form.value.mitra_id)
@@ -301,7 +324,17 @@ const handleSave = async () => {
     const method = isEdit.value ? 'PUT' : 'POST'
     const tokenRes = await fetch('/admin/api/csrf-token', { credentials: 'same-origin' })
     const token = (await tokenRes.json()).csrf_token
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token }, credentials: 'same-origin', body: JSON.stringify(form.value) })
+    // prepare payload: if multiple programs selected, send program_ids
+    const payload: any = { ...form.value }
+    if (Array.isArray(form.value.program_ids) && form.value.program_ids.length > 0) {
+      payload.program_ids = form.value.program_ids
+      // keep single program_id for compatibility when only one selected
+      if (form.value.program_ids.length === 1) payload.program_id = form.value.program_ids[0]
+    } else if (form.value.program_id) {
+      payload.program_id = form.value.program_id
+    }
+
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token }, credentials: 'same-origin', body: JSON.stringify(payload) })
     const json = await res.json()
     if (json.success) { toast.success('Berhasil'); router.push('/user-kepegawaian/payroll-mitra') }
     else toast.error(json.message || 'Gagal menyimpan')

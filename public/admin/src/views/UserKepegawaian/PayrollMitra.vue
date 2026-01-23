@@ -98,7 +98,7 @@ const columnDefs = computed(() => {
     // 'Mitra' column removed as requested
     { 
       headerName: 'Program', 
-      valueGetter: (p: any) => p.data?.program?.nama_program || '-', 
+      valueGetter: (p: any) => p.data?.programs_display || p.data?.program?.nama_program || '-', 
       // flex: 1
     },
     {

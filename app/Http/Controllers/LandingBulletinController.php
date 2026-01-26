@@ -65,7 +65,9 @@ class LandingBulletinController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:landing_bulletins,slug',
             'date' => 'required|date',
+            'is_published' => 'nullable|boolean',
             'file' => 'nullable|file|mimes:pdf,doc,docx|max:20480',
             'file_url' => 'nullable|url',
         ]);
@@ -77,6 +79,24 @@ class LandingBulletinController extends Controller
         try {
             $data = $validator->validated();
             $data['created_by'] = auth()->id();
+
+            // Auto-generate slug if not provided
+            if (empty($data['slug'])) {
+                $data['slug'] = \Illuminate\Support\Str::slug($data['name']);
+                
+                // Handle duplicate slugs
+                $originalSlug = $data['slug'];
+                $count = 1;
+                while (LandingBulletin::where('slug', $data['slug'])->exists()) {
+                    $data['slug'] = $originalSlug . '-' . $count;
+                    $count++;
+                }
+            }
+
+            // Set is_published default if not provided
+            if (!isset($data['is_published'])) {
+                $data['is_published'] = true;
+            }
 
             if ($request->hasFile('file')) {
                 $path = $request->file('file')->store('bulletins', 'public');
@@ -109,7 +129,9 @@ class LandingBulletinController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255|unique:landing_bulletins,slug,' . $id,
             'date' => 'required|date',
+            'is_published' => 'nullable|boolean',
             'file' => 'nullable|file|mimes:pdf,doc,docx|max:20480',
             'file_url' => 'nullable|url',
         ]);
@@ -121,6 +143,19 @@ class LandingBulletinController extends Controller
         try {
             $data = $validator->validated();
             $data['updated_by'] = auth()->id();
+
+            // Auto-generate slug if not provided but name changed
+            if (empty($data['slug']) && isset($data['name']) && $data['name'] !== $bulletin->name) {
+                $data['slug'] = \Illuminate\Support\Str::slug($data['name']);
+                
+                // Handle duplicate slugs
+                $originalSlug = $data['slug'];
+                $count = 1;
+                while (LandingBulletin::where('slug', $data['slug'])->where('id', '!=', $id)->exists()) {
+                    $data['slug'] = $originalSlug . '-' . $count;
+                    $count++;
+                }
+            }
 
             if ($request->hasFile('file')) {
                 if ($bulletin->file && !preg_match('/^https?:\/\//', $bulletin->file)) {

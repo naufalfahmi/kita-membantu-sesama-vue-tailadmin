@@ -15,10 +15,12 @@ class LandingBulletin extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'date',
         'file',
         'file_name',
         'file_size',
+        'is_published',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -26,6 +28,7 @@ class LandingBulletin extends Model
 
     protected $casts = [
         'date' => 'date',
+        'is_published' => 'boolean',
     ];
 
     protected static function booted()

@@ -44,22 +44,46 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 Route::get('/', function () {
+    $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
     $landingBulletins = LandingBulletin::orderByDesc('date')->limit(6)->get();
     $landingBulletinsTotal = Schema::hasTable('landing_bulletins') ? LandingBulletin::count() : 0;
+    
+    return view('frontend.index', compact('landingProfile', 'landingBulletins', 'landingBulletinsTotal'));
+})->name('frontend.index');
 
-    $landingPrograms = LandingProgram::orderByDesc('created_at')->limit(4)->get();
-    $landingProgramsTotal = Schema::hasTable('landing_programs') ? LandingProgram::count() : 0;
-
-    $landingKegiatan = LandingKegiatan::orderByDesc('activity_date')->limit(3)->get();
-    $landingKegiatanTotal = Schema::hasTable('landing_kegiatans') ? LandingKegiatan::count() : 0;
-
+// Tentang Kami page
+Route::get('/tentang-kami', function () {
     $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
+    return view('frontend.tentang-kami', compact('landingProfile'));
+})->name('frontend.tentang-kami');
 
-    // Dashboard-style public counters
+// Program page
+Route::get('/program', function () {
+    $landingPrograms = LandingProgram::orderByDesc('created_at')->limit(12)->get();
+    $landingProgramsTotal = Schema::hasTable('landing_programs') ? LandingProgram::count() : 0;
+    $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
+    return view('frontend.program', compact('landingPrograms', 'landingProgramsTotal', 'landingProfile'));
+})->name('frontend.program');
+
+// Cara Donasi page
+Route::get('/cara-donasi', function () {
+    $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
+    return view('frontend.cara-donasi', compact('landingProfile'));
+})->name('frontend.cara-donasi');
+
+// Galeri page
+Route::get('/galeri', function () {
+    $landingKegiatan = LandingKegiatan::orderByDesc('activity_date')->limit(12)->get();
+    $landingKegiatanTotal = Schema::hasTable('landing_kegiatans') ? LandingKegiatan::count() : 0;
+    $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
+    return view('frontend.galeri', compact('landingKegiatan', 'landingKegiatanTotal', 'landingProfile'));
+})->name('frontend.galeri');
+
+// Transparansi page
+Route::get('/transparansi', function () {
     $kantorCabangCount = Schema::hasTable('kantor_cabang') ? DB::table('kantor_cabang')->count() : 0;
     $donaturCount = Schema::hasTable('donaturs') ? DB::table('donaturs')->count() : 0;
-
-    // Count users that have a role named 'fundraiser' (case-insensitive)
+    
     $fundraiserCount = 0;
     if (Schema::hasTable('model_has_roles') && Schema::hasTable('roles')) {
         $fundraiserCount = DB::table('model_has_roles')
@@ -68,15 +92,20 @@ Route::get('/', function () {
             ->whereRaw('LOWER(roles.name) = ?', ['fundrising'])
             ->count();
     }
-
-    // Penggalangan Dana = total transaksi count
+    
     $penggalanganDanaCount = Schema::hasTable('transaksis') ? DB::table('transaksis')->count() : 0;
-
-    return view('frontend.index', compact(
-        'landingBulletins', 'landingBulletinsTotal', 'landingPrograms', 'landingProgramsTotal',
-        'kantorCabangCount', 'donaturCount', 'fundraiserCount', 'penggalanganDanaCount', 'landingKegiatan', 'landingKegiatanTotal', 'landingProfile'
+    $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
+    
+    return view('frontend.transparansi', compact(
+        'kantorCabangCount', 'donaturCount', 'fundraiserCount', 'penggalanganDanaCount', 'landingProfile'
     ));
-})->name('frontend.index');
+})->name('frontend.transparansi');
+
+// Kontak page
+Route::get('/kontak', function () {
+    $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
+    return view('frontend.kontak', compact('landingProfile'));
+})->name('frontend.kontak');
 
 Route::get('/blog-grid', function () {
     return view('frontend.blog-grid');
@@ -345,6 +374,7 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::get('laporan/keuangan/program-breakdown', [\App\Http\Controllers\LaporanKeuanganController::class, 'programBreakdown'])->name('admin.api.laporan.keuangan.program-breakdown');
     Route::get('laporan/keuangan/timeline', [\App\Http\Controllers\LaporanKeuanganController::class, 'timeline'])->name('admin.api.laporan.keuangan.timeline');
     Route::get('laporan/keuangan/penyaluran-by-alias', [\App\Http\Controllers\LaporanKeuanganController::class, 'penyaluranByAlias'])->name('admin.api.laporan.keuangan.penyaluran-by-alias');
+    Route::get('laporan/keuangan/expense-type-breakdown', [\App\Http\Controllers\LaporanKeuanganController::class, 'expenseTypeBreakdown'])->name('admin.api.laporan.keuangan.expense-type-breakdown');
     Route::get('laporan/mitra', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraList'])->name('admin.api.laporan.mitra');
     Route::get('laporan/mitra/{id}', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraDetail'])->name('admin.api.laporan.mitra.detail');
     Route::get('laporan/mitra/{id}/transactions', [\App\Http\Controllers\LaporanKeuanganController::class, 'mitraTransactions'])->name('admin.api.laporan.mitra.transactions');

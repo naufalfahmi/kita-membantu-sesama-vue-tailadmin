@@ -65,37 +65,9 @@
           stickyMenu: false,
           navigationOpen: false,
           scrollTop: false,
-          activeSection: window.location.hash ? window.location.hash.replace('#','') : '{{ $page ?? 'home' }}',
-          setActiveSection(section) {
-            this.activeSection = section || 'home';
-          },
           init() {
             this.darkMode = JSON.parse(localStorage.getItem('darkMode'));
             this.$watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)));
-
-            const sectionIds = ['home','tentang-kami','program','cara-donasi','galeri','transparansi','kontak'];
-            const updateSection = (section) => this.setActiveSection(section);
-            const initialSection = window.location.hash ? window.location.hash.replace('#','') : null;
-            if (initialSection) { updateSection(initialSection); }
-            window.addEventListener('hashchange', () => updateSection(window.location.hash.replace('#','') || 'home'));
-
-            const queue = window.queueMicrotask || function(cb){ setTimeout(cb, 0); };
-            if ('IntersectionObserver' in window) {
-              const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                  if (entry.isIntersecting && entry.target.id) {
-                    updateSection(entry.target.id);
-                  }
-                });
-              }, { threshold: 0.35 });
-              queue(() => {
-                sectionIds.forEach(id => {
-                  const el = document.getElementById(id);
-                  if (el) { observer.observe(el); }
-                });
-              });
-              window.addEventListener('beforeunload', () => observer.disconnect(), { once: true });
-            }
           }
         }"
   :class="{'b eh': darkMode === true}">
@@ -108,6 +80,7 @@
 
   @include('partials.frontend.footer')
   @include('partials.frontend.back-to-top')
+  @include('partials.frontend.whatsapp-sticky')
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/baguettebox.js/1.11.1/baguetteBox.min.js"></script>
   @stack('scripts')

@@ -567,6 +567,109 @@ class LaporanKeuanganController extends Controller
     }
 
     /**
+     * Return detailed breakdown by expense type (submission_type).
+     * Shows pengajuan dana, penyaluran, total pengeluaran, and saldo for each type.
+     */
+    public function expenseTypeBreakdown(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->can('view laporan keuangan')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $start = $request->query('start');
+        $end = $request->query('end');
+        $programId = $request->query('program_id');
+        $kantorCabangId = $request->query('kantor_cabang_id');
+
+        try {
+            $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
+        }
+
+        // Get all unique submission types from pengajuan_danas
+        $submissionTypes = \App\Models\PengajuanDana::select('submission_type')
+            ->whereNotNull('submission_type')
+            ->distinct()
+            ->pluck('submission_type')
+            ->toArray();
+
+        $breakdown = [];
+
+        foreach ($submissionTypes as $submissionType) {
+            // Get alias from program_share_types
+            $alias = $submissionType;
+            $shareType = \App\Models\ProgramShareType::where('name', $submissionType)->first();
+            if ($shareType && $shareType->alias) {
+                $alias = $shareType->alias;
+            } elseif ($shareType) {
+                $alias = $shareType->name;
+            }
+
+            // Calculate Pengajuan Dana for this submission type (Approved status)
+            // Using PengajuanDana directly assuming disbursements might be missing/untabulated
+            $pengajuanQuery = \App\Models\PengajuanDana::where('submission_type', $submissionType)
+                ->where('status', 'Approved')
+                ->whereBetween('created_at', [$startDate, $endDate]);
+
+            if ($programId) {
+                $pengajuanQuery->where('program_id', $programId);
+            }
+            if ($kantorCabangId) {
+                $pengajuanQuery->where('kantor_cabang_id', $kantorCabangId);
+            }
+            
+            $pengajuanDana = $pengajuanQuery->sum('amount');
+            
+            $penyaluranQuery = \App\Models\Penyaluran::whereHas('pengajuan', function($q) use ($submissionType) {
+                $q->where('submission_type', $submissionType);
+            })->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()]);
+
+            if ($programId) {
+                $penyaluranQuery->whereHas('pengajuan', function ($q) use ($programId) {
+                    $q->where('program_id', $programId);
+                });
+            }
+            if ($kantorCabangId) {
+                $penyaluranQuery->where('kantor_cabang_id', $kantorCabangId);
+            }
+
+            // Get Details for Penyaluran (Activity in period)
+            // Penyaluran doesn't have program/transaksi relations directly. using fields directly.
+            $detailsQuery = clone $penyaluranQuery;
+            $details = $detailsQuery->orderBy('created_at', 'desc')->get();
+
+            $penyaluran = $penyaluranQuery->sum('amount');
+
+            // Only include if there's activity in this period (Approved/Disbursed)
+            // Saldo removed as requested
+            if ($pengajuanDana > 0 || $penyaluran > 0) {
+                // Total Pengeluaran removed as it was double counting and confusing
+
+                $breakdown[] = [
+                    'alias' => $alias,
+                    'submission_type' => $submissionType,
+                    'pengajuan_dana' => (float)$pengajuanDana,
+                    'penyaluran' => (float)$penyaluran,
+                    'details' => $details,
+                ];
+            }
+        }
+
+        // Sort by penyaluran desc
+        usort($breakdown, function($a, $b) {
+            return $b['penyaluran'] <=> $a['penyaluran'];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $breakdown,
+        ]);
+    }
+
+    /**
      * Return list of mitra that have transactions (count + total nominal).
      * Supports optional search query `search` and pagination.
      */

@@ -173,10 +173,50 @@
             </div>
           </div>
 
-          <!-- NEW: Breakdown Penyaluran per Kategori -->
+
+          <!-- 4. Charts Row - Donut Chart & Saldo Card -->
+          <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <!-- Donut Chart for Breakdown -->
+            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+              <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown Pengeluaran</h3>
+              <div class="flex items-center justify-center">
+                <VueApexCharts
+                  type="donut"
+                  height="280"
+                  :options="breakdownChartOptions"
+                  :series="breakdownChartSeries"
+                />
+              </div>
+            </div>
+
+            <!-- Saldo Card -->
+            <div class="rounded-lg border border-gray-200 bg-gradient-to-br from-brand-500 to-brand-600 p-6 shadow-lg dark:border-gray-700 dark:from-brand-600 dark:to-brand-700">
+              <h3 class="mb-4 text-lg font-semibold text-white/90">Saldo</h3>
+              <div class="space-y-4">
+                <div>
+                  <p class="text-sm text-white/80">Saldo Akhir</p>
+                  <p class="text-3xl font-bold text-white">{{ formatCurrency(balanceTotals.saldo_akhir || 0) }}</p>
+                </div>
+                <div class="flex items-center justify-between border-t border-white/20 pt-4">
+                  <div>
+                    <p class="text-xs text-white/70">Saldo Awal</p>
+                    <p class="text-lg font-semibold text-white">{{ formatCurrency(balanceTotals.saldo_awal || 0) }}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-xs text-white/70">Selisih</p>
+                    <p class="text-lg font-semibold" :class="(balanceTotals.saldo_akhir - balanceTotals.saldo_awal) >= 0 ? 'text-green-200' : 'text-red-200'">
+                      {{ formatCurrency(Math.abs(balanceTotals.saldo_akhir - balanceTotals.saldo_awal)) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Breakdown per Tipe Pengeluaran -->
           <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
             <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Penyaluran per Kategori</h3>
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown per Tipe Pengeluaran</h3>
               <div class="text-sm text-gray-600 dark:text-gray-400">
                 Total: <span class="font-bold text-purple-600 dark:text-purple-400">{{ formatCurrency(penyaluranByAliasData.total || 0) }}</span>
               </div>
@@ -257,56 +297,127 @@
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- 4. Charts Row - Donut Chart & Saldo Card -->
-          <div class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <!-- Donut Chart for Breakdown -->
-            <div class="rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
-              <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown Pengeluaran</h3>
-              <div class="flex items-center justify-center">
-                <VueApexCharts
-                  type="donut"
-                  height="280"
-                  :options="breakdownChartOptions"
-                  :series="breakdownChartSeries"
-                />
-              </div>
-            </div>
-
-            <!-- Saldo Card -->
-            <div class="rounded-lg border border-gray-200 bg-gradient-to-br from-brand-500 to-brand-600 p-6 shadow-lg dark:border-gray-700 dark:from-brand-600 dark:to-brand-700">
-              <h3 class="mb-4 text-lg font-semibold text-white/90">Saldo</h3>
-              <div class="space-y-4">
-                <div>
-                  <p class="text-sm text-white/80">Saldo Akhir</p>
-                  <p class="text-3xl font-bold text-white">{{ formatCurrency(balanceTotals.saldo_akhir || 0) }}</p>
-                </div>
-                <div class="flex items-center justify-between border-t border-white/20 pt-4">
-                  <div>
-                    <p class="text-xs text-white/70">Saldo Awal</p>
-                    <p class="text-lg font-semibold text-white">{{ formatCurrency(balanceTotals.saldo_awal || 0) }}</p>
-                  </div>
-                  <div class="text-right">
-                    <p class="text-xs text-white/70">Selisih</p>
-                    <p class="text-lg font-semibold" :class="(balanceTotals.saldo_akhir - balanceTotals.saldo_awal) >= 0 ? 'text-green-200' : 'text-red-200'">
-                      {{ formatCurrency(Math.abs(balanceTotals.saldo_akhir - balanceTotals.saldo_awal)) }}
-                    </p>
+            <!-- Detailed Breakdown Table -->
+            <div class="mt-6">
+              <h4 class="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">
+                Detail Breakdown per Tipe
+              </h4>
+              <div class="relative overflow-x-auto">
+                <!-- Loading State -->
+                <div
+                  v-if="isLoadingExpenseTypeBreakdown"
+                  class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
+                >
+                  <div class="flex flex-col items-center gap-3">
+                    <div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500"></div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Memuat detail breakdown...</p>
                   </div>
                 </div>
+
+                <table v-if="expenseTypeBreakdownData && expenseTypeBreakdownData.length > 0" class="w-full table-auto">
+                  <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                      <th class="pb-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Nama Pengeluaran</th>
+                      <th class="pb-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Pengajuan Dana</th>
+                      <th class="pb-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Penyaluran</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template v-for="(item, index) in expenseTypeBreakdownData" :key="index">
+                      <tr
+                        class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/[0.02]"
+                        :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': expandedExpenseType === item.submission_type }"
+                      >
+                        <td class="py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                          <div class="flex items-center gap-2">
+                            <button
+                              @click="expandedExpenseType = expandedExpenseType === item.submission_type ? null : item.submission_type"
+                              class="flex h-6 w-6 items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                            >
+                              <svg
+                                class="h-4 w-4 text-gray-600 dark:text-gray-400 transition-transform"
+                                :class="{ 'rotate-90': expandedExpenseType === item.submission_type }"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                            {{ item.alias }}
+                          </div>
+                        </td>
+                        <td class="py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(item.pengajuan_dana) }}</td>
+                        <td class="py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(item.penyaluran) }}</td>
+                      </tr>
+                      
+                      <!-- Detail Row -->
+                      <tr v-if="expandedExpenseType === item.submission_type" class="bg-gray-50 dark:bg-gray-800/50">
+                        <td colspan="3" class="p-4">
+                          <div class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+                            <h5 class="bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                              Detail Penyaluran ({{ item.details?.length || 0 }})
+                            </h5>
+                            <div v-if="!item.details || item.details.length === 0" class="p-4 text-center text-sm text-gray-500">
+                              Tidak ada detail penyaluran
+                            </div>
+                            <table v-else class="w-full text-left text-sm">
+                              <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+                                <tr>
+                                  <th class="px-4 py-2">Tanggal</th>
+                                  <th class="px-4 py-2">Keterangan</th>
+                                  <th class="px-4 py-2">Penerima</th>
+                                  <th class="px-4 py-2 text-right">Nominal</th>
+                                </tr>
+                              </thead>
+                              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tr v-for="detail in item.details" :key="detail.id">
+                                  <td class="px-4 py-2 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                    {{ formatDate(detail.created_at) }}
+                                  </td>
+                                  <td class="px-4 py-2 text-gray-600 dark:text-gray-300">
+                                    {{ detail.program_name || detail.report || '-' }}
+                                  </td>
+                                  <td class="px-4 py-2 text-gray-600 dark:text-gray-300">
+                                    {{ detail.pic || '-' }}
+                                  </td>
+                                  <td class="px-4 py-2 text-right font-medium text-gray-800 dark:text-white">
+                                    {{ formatCurrency(detail.amount) }}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                  <tfoot>
+                    <tr class="border-t-2 border-gray-300 dark:border-gray-600">
+                      <td class="pt-3 text-sm font-bold text-gray-800 dark:text-white/90">Total</td>
+                      <td class="pt-3 text-right text-sm font-bold text-orange-600 dark:text-orange-400">
+                        {{ formatCurrency(expenseTypeBreakdownData.reduce((sum, item) => sum + item.pengajuan_dana, 0)) }}
+                      </td>
+                      <td class="pt-3 text-right text-sm font-bold text-purple-600 dark:text-purple-400">
+                        {{ formatCurrency(expenseTypeBreakdownData.reduce((sum, item) => sum + item.penyaluran, 0)) }}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+
+                <!-- Empty State -->
+                <div v-if="!expenseTypeBreakdownData || expenseTypeBreakdownData.length === 0 && !isLoadingExpenseTypeBreakdown" class="py-12 text-center">
+                  <div class="flex flex-col items-center justify-center gap-3">
+                    <svg class="h-16 w-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Tidak ada data breakdown</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-500">Belum ada data untuk periode ini</p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- 5. Timeline Chart - Area Chart -->
-          <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
-            <h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Tren Harian</h3>
-            <VueApexCharts
-              type="area"
-              height="320"
-              :options="timelineChartOptions"
-              :series="timelineChartSeries"
-            />
           </div>
 
           <!-- 6. Program Breakdown Table -->
@@ -766,6 +877,19 @@ const route = useRoute()
 const router = useRouter()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Laporan Keuangan')
 
+
+// Helper for date formatting
+const formatDate = (dateString: string) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 // Icon components
 const BalanceIcon = {
   template: `
@@ -873,8 +997,8 @@ const scheduleFetch = (delay = 400) => {
     balancePagination.value.current_page = 1
     fetchBalanceData(1)
     fetchProgramBreakdown()
-    fetchTimelineData()
     fetchPenyaluranByAlias()
+    fetchExpenseTypeBreakdown()
   }, delay)
 }
 
@@ -925,10 +1049,8 @@ const balanceBreakdown = ref({
 })
 
 const programBreakdownData = ref([])
-const timelineData = ref([])
 const isLoadingTransactionFilter = ref(false)
 const isLoadingProgramBreakdown = ref(false)
-const isLoadingTimeline = ref(false)
 
 // NEW: Expanded row state for program breakdown details
 const expandedProgramId = ref(null)
@@ -936,6 +1058,11 @@ const expandedProgramId = ref(null)
 // NEW: Penyaluran by Alias data
 const penyaluranByAliasData = ref({ total: 0, breakdown: [] })
 const isLoadingPenyaluranByAlias = ref(false)
+
+// NEW: Expense Type Breakdown data
+const expenseTypeBreakdownData = ref([])
+const expandedExpenseType = ref(null)
+const isLoadingExpenseTypeBreakdown = ref(false)
 
 // NEW: Transaction filter tabs
 const transactionFilters = [
@@ -1036,77 +1163,6 @@ const breakdownChartSeries = computed(() => [
   balanceBreakdown.value.penyaluran || 0,
 ])
 
-// NEW: Timeline Area Chart
-const timelineChartOptions = computed(() => ({
-  chart: {
-    fontFamily: 'Outfit, sans-serif',
-    type: 'area',
-    toolbar: {
-      show: false,
-    },
-  },
-  colors: ['#10b981', '#ef4444'],
-  dataLabels: {
-    enabled: false,
-  },
-  stroke: {
-    curve: 'smooth',
-    width: 2,
-  },
-  fill: {
-    type: 'gradient',
-    gradient: {
-      opacityFrom: 0.6,
-      opacityTo: 0.1,
-    },
-  },
-  xaxis: {
-    type: 'datetime',
-    labels: {
-      style: {
-        colors: '#6B7280',
-      },
-    },
-  },
-  yaxis: {
-    labels: {
-      style: {
-        colors: '#6B7280',
-      },
-      formatter: function (val: number) {
-        return formatCurrency(val)
-      },
-    },
-  },
-  tooltip: {
-    x: {
-      format: 'dd MMM yyyy',
-    },
-    y: {
-      formatter: function (val: number) {
-        return formatCurrency(val)
-      },
-    },
-  },
-  legend: {
-    position: 'top',
-    horizontalAlign: 'right',
-    labels: {
-      colors: '#6B7280',
-    },
-  },
-}))
-
-const timelineChartSeries = computed(() => [
-  {
-    name: 'Pemasukan',
-    data: timelineData.value.map((d: any) => [new Date(d.tanggal).getTime(), d.pemasukan || 0]),
-  },
-  {
-    name: 'Pengeluaran',
-    data: timelineData.value.map((d: any) => [new Date(d.tanggal).getTime(), d.pengeluaran || 0]),
-  },
-])
 
 // NEW: Penyaluran by Alias Horizontal Bar Chart
 // Helper function untuk generate array warna
@@ -1358,11 +1414,8 @@ const fetchBalanceData = async (page = 1) => {
       })
     }
     
-    // Fetch program breakdown and timeline data
-    await Promise.all([
-      fetchProgramBreakdown(),
-      fetchTimelineData(),
-    ])
+    // Fetch program breakdown
+    await fetchProgramBreakdown()
   } catch (err) {
     console.error('Exception fetching laporan keuangan', err)
   }
@@ -1403,35 +1456,6 @@ const fetchProgramBreakdown = async () => {
   }
 }
 
-// NEW: Fetch timeline data
-const fetchTimelineData = async () => {
-  try {
-    isLoadingTimeline.value = true
-    const params = new URLSearchParams()
-    params.append('start', balanceStart.value)
-    params.append('end', balanceEnd.value)
-    if (selectedProgram.value) params.append('program_id', selectedProgram.value)
-    if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
-
-    const res = await fetch(`/admin/api/laporan/keuangan/timeline?${params.toString()}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      credentials: 'same-origin',
-    })
-
-    if (!res.ok) return
-    const json = await res.json()
-    if (json.success) {
-      timelineData.value = json.data || []
-    }
-  } catch (err) {
-    console.error('Error fetching timeline data', err)
-  } finally {
-    isLoadingTimeline.value = false
-  }
-}
 
 // NEW: Fetch penyaluran by alias
 const fetchPenyaluranByAlias = async () => {
@@ -1460,6 +1484,36 @@ const fetchPenyaluranByAlias = async () => {
     console.error('Error fetching penyaluran by alias', err)
   } finally {
     isLoadingPenyaluranByAlias.value = false
+  }
+}
+
+// NEW: Fetch expense type breakdown
+const fetchExpenseTypeBreakdown = async () => {
+  try {
+    isLoadingExpenseTypeBreakdown.value = true
+    const params = new URLSearchParams()
+    params.append('start', balanceStart.value)
+    params.append('end', balanceEnd.value)
+    if (selectedProgram.value) params.append('program_id', selectedProgram.value)
+    if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
+
+    const res = await fetch(`/admin/api/laporan/keuangan/expense-type-breakdown?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+    })
+
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) {
+      expenseTypeBreakdownData.value = json.data || []
+    }
+  } catch (err) {
+    console.error('Error fetching expense type breakdown', err)
+  } finally {
+    isLoadingExpenseTypeBreakdown.value = false
   }
 }
 
@@ -1517,8 +1571,8 @@ onMounted(() => {
       fetchPrograms(),
       fetchKantorCabangs(),
       fetchProgramBreakdown(),
-      fetchTimelineData(),
       fetchPenyaluranByAlias(),
+      fetchExpenseTypeBreakdown(),
     ])
   }
 })

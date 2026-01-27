@@ -44,13 +44,13 @@
     <div class="vd wo/4 sd qo f ho oo wf yf" :class="{ 'd hh rm sr td ud qg ug jc yh': navigationOpen }">
       <nav>
         <ul class="tc _o sf yo cg ep">
-          <li><a href="{{ route('frontend.index') }}" class="xl" :class="{ 'mk': activeSection === 'home' }" @click="setActiveSection('home')">Beranda</a></li>
-          <li><a href="{{ route('frontend.index') }}#tentang-kami" class="xl" :class="{ 'mk': activeSection === 'tentang-kami' }" @click="setActiveSection('tentang-kami')">Tentang Kami</a></li>
-          <li><a href="{{ route('frontend.index') }}#program" class="xl" :class="{ 'mk': activeSection === 'program' }" @click="setActiveSection('program')">Program</a></li>
-          <li><a href="{{ route('frontend.index') }}#cara-donasi" class="xl" :class="{ 'mk': activeSection === 'cara-donasi' }" @click="setActiveSection('cara-donasi')">Cara Berdonasi</a></li>
-          <li><a href="{{ route('frontend.index') }}#galeri" class="xl" :class="{ 'mk': activeSection === 'galeri' }" @click="setActiveSection('galeri')">Galeri</a></li>
-          <li><a href="{{ route('frontend.index') }}#transparansi" class="xl" :class="{ 'mk': activeSection === 'transparansi' }" @click="setActiveSection('transparansi')">Transparansi</a></li>
-          <li><a href="{{ route('frontend.index') }}#kontak" class="xl" :class="{ 'mk': activeSection === 'kontak' }" @click="setActiveSection('kontak')">Kontak</a></li>
+          <li><a href="{{ route('frontend.index') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.index' }">Beranda</a></li>
+          <li><a href="{{ route('frontend.tentang-kami') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.tentang-kami' }">Tentang Kami</a></li>
+          <li><a href="{{ route('frontend.program') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.program' }">Program Kami</a></li>
+          <li><a href="{{ route('frontend.cara-donasi') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.cara-donasi' }">Cara Berdonasi</a></li>
+          <li><a href="{{ route('frontend.galeri') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.galeri' }">Galeri Kegiatan</a></li>
+          <li><a href="{{ route('frontend.transparansi') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.transparansi' }">Transparansi</a></li>
+          <li><a href="{{ route('frontend.kontak') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.kontak' }">Kontak</a></li>
         </ul>
       </nav>
 

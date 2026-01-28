@@ -131,6 +131,7 @@
                 </p>
               @endif
 
+              <br>
                 <div class="mt-10 mb-6">
                   <a id="donate-now" href="https://wa.me/62895621093500?text=Saya+ingin+berdonasi+untuk+kegiatan%3A+{{ urlencode($kegiatan->title ?? 'Sedekah Buka Puasa') }}" target="_blank" rel="noopener" role="button" class="vc rg lk gh ml il hi gi _l inline-flex items-center">
                     Donasi Sekarang
@@ -237,29 +238,7 @@
     </section>
     <!-- ===== Blog Single End ===== -->
 
-    <!-- ===== CTA Start ===== -->
-    <section class="i pg gh ji">
-      <!-- Bg Shape -->
-      <img class="h p q" src="{{ asset("frontend/images/shape-16.svg") }}" alt="Bg Shape" />
-
-      <div class="bb ye i z-10 ki xn dr">
-        <div class="tc uf sn tn un gg">
-          <div class="animate_left to/2">
-            <h2 class="fk vj zp pr lk ac">
-              Bergabunglah Dengan Ribuan Donatur
-            </h2>
-            <p class="lk">
-              Mari bersama-sama membantu sesama dan menciptakan perubahan positif untuk masyarakat yang membutuhkan.
-            </p>
-          </div>
-          <div class="animate_right bf">
-            <a href="/#cara-donasi" class="vc ek kk hh rg ol il cm gi hi">
-              Donasi Sekarang
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
+   
 
     <!-- ===== CTA End ===== -->
   

@@ -410,8 +410,11 @@ class LaporanKeuanganController extends Controller
         // Preferred keys for summary
         $shareKeys = ['dp', 'ops_1', 'ops_2', 'program', 'fee_mitra', 'bonus', 'championship'];
         
-        // Dynamic labels mapping
-        $shareTypeLabels = \App\Models\ProgramShareType::pluck('name', 'key')->toArray();
+        // Dynamic labels mapping - Use alias as primary label if available
+        $shareTypeLabels = \App\Models\ProgramShareType::pluck('alias', 'key')
+            ->map(function($alias, $key) {
+                return $alias ?: ucwords(str_replace('_', ' ', $key));
+            })->toArray();
         
         $totalNominal = 0;
         $allocatedTotals = [];
@@ -487,23 +490,68 @@ class LaporanKeuanganController extends Controller
             // Unassigned transactions are typically "unallocated" or go to a default bucket if defined
         }
 
+        // NEW: Calculate Penyaluran in range for matching allocation categories
+        $penyaluranQuery = Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()]);
+        if ($programId) {
+            $penyaluranQuery->whereHas('pengajuan', function ($q) use ($programId) {
+                $q->where('program_id', $programId);
+            });
+        }
+        if ($kantorCabangId) {
+            $penyaluranQuery->where('kantor_cabang_id', $kantorCabangId);
+        }
+
+        $penyalurans = $penyaluranQuery->get();
+        $penyaluranTotals = [];
+        foreach ($shareKeys as $k) $penyaluranTotals[$k] = 0;
+        $grandTotalPenyaluran = 0;
+
+        foreach ($penyalurans as $p) {
+            $amount = (float)$p->amount;
+            $grandTotalPenyaluran += $amount;
+            
+            $submissionType = $p->pengajuan ? $p->pengajuan->submission_type : null;
+            if ($submissionType) {
+                // Find ProgramShareType by name OR alias to get the key
+                $shareType = \App\Models\ProgramShareType::where('name', $submissionType)
+                    ->orWhere('alias', $submissionType)
+                    ->first();
+                $key = $shareType->key ?? 'unknown';
+                
+                if (!isset($penyaluranTotals[$key])) {
+                    $penyaluranTotals[$key] = 0;
+                }
+                $penyaluranTotals[$key] += $amount;
+            } else {
+                if (!isset($penyaluranTotals['unknown'])) {
+                    $penyaluranTotals['unknown'] = 0;
+                }
+                $penyaluranTotals['unknown'] += $amount;
+            }
+        }
+
         // Build boxes
         $boxes = [];
-        $boxes[] = ['label' => 'Nominal Keseluruhan Transaksi', 'value' => $totalNominal];
+        $boxes[] = ['label' => 'Nominal Keseluruhan Transaksi', 'value' => $totalNominal, 'penyaluran' => $grandTotalPenyaluran];
         
         $totalSharesSum = 0;
         foreach ($shareKeys as $k) {
             $val = $allocatedTotals[$k];
-            if ($val <= 0 && !in_array($k, ['dp', 'ops_1', 'ops_2', 'program'])) continue;
+            $peny = $penyaluranTotals[$k] ?? 0;
+            if ($val <= 0 && $peny <= 0 && !in_array($k, ['dp', 'ops_1', 'ops_2', 'program'])) continue;
             
-            $label = $shareTypeLabels[$k] ?? ucwords(str_replace('_', ' ', $k));
-            $boxes[] = ['label' => "Nominal All $label", 'value' => $val];
+            $label = $shareTypeLabels[$k];
+            $boxes[] = [
+                'label' => $label,
+                'value' => $val,
+                'penyaluran' => $peny
+            ];
             $totalSharesSum += $val;
         }
         
         $remainder = $totalNominal - $totalSharesSum;
         if ($remainder > 0) {
-            $boxes[] = ['label' => 'Sisa Belum Teralokasi', 'value' => $remainder];
+            $boxes[] = ['label' => 'Sisa Belum Teralokasi', 'value' => $remainder, 'penyaluran' => $penyaluranTotals['unknown'] ?? 0];
         }
 
         return response()->json([
@@ -652,10 +700,12 @@ class LaporanKeuanganController extends Controller
         foreach ($penyalurans as $penyaluran) {
             $submissionType = $penyaluran->pengajuan ? $penyaluran->pengajuan->submission_type : null;
             
-            // Get alias from program_share_types (match by name, not id)
+            // Get alias from program_share_types (match by name or alias)
             $alias = 'Lainnya';
             if ($submissionType) {
-                $shareType = \App\Models\ProgramShareType::where('name', $submissionType)->first();
+                $shareType = \App\Models\ProgramShareType::where('name', $submissionType)
+                    ->orWhere('alias', $submissionType)
+                    ->first();
                 if ($shareType && $shareType->alias) {
                     $alias = $shareType->alias;
                 } elseif ($shareType) {
@@ -736,7 +786,9 @@ class LaporanKeuanganController extends Controller
         foreach ($submissionTypes as $submissionType) {
             // Get alias from program_share_types
             $alias = $submissionType;
-            $shareType = \App\Models\ProgramShareType::where('name', $submissionType)->first();
+            $shareType = \App\Models\ProgramShareType::where('name', $submissionType)
+                ->orWhere('alias', $submissionType)
+                ->first();
             if ($shareType && $shareType->alias) {
                 $alias = $shareType->alias;
             } elseif ($shareType) {

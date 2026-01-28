@@ -153,6 +153,7 @@
                   <tr class="border-b border-gray-200 text-left text-sm font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-400">
                     <th class="px-4 py-3">Kategori</th>
                     <th class="px-4 py-3 text-right">Nominal</th>
+                    <th class="px-4 py-3 text-right">Penyaluran</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -161,9 +162,12 @@
                       <td class="px-4 py-3 text-right text-sm font-bold" :class="box.label.includes('Sisa') ? 'text-brand-600 dark:text-brand-400' : 'text-gray-800 dark:text-white/90'">
                         {{ formatCurrency(box.value) }}
                       </td>
+                      <td class="px-4 py-3 text-right text-sm font-bold text-purple-600 dark:text-purple-400">
+                        {{ formatCurrency(box.penyaluran || 0) }}
+                      </td>
                    </tr>
                    <tr v-if="filteredAllocationBoxes.length === 0 && !grandTotalBox && !isLoadingAllocation">
-                      <td colspan="2" class="px-4 py-12 text-center text-gray-500">Tidak ada data alokasi</td>
+                      <td colspan="3" class="px-4 py-12 text-center text-gray-500">Tidak ada data alokasi</td>
                    </tr>
                 </tbody>
                 <tfoot v-if="grandTotalBox">
@@ -171,6 +175,9 @@
                     <td class="px-4 py-4 text-sm font-bold text-gray-800 dark:text-white/90">{{ grandTotalBox.label }}</td>
                     <td class="px-4 py-4 text-right text-lg font-bold text-brand-600 dark:text-brand-400">
                       {{ formatCurrency(grandTotalBox.value) }}
+                    </td>
+                    <td class="px-4 py-4 text-right text-lg font-bold text-purple-600 dark:text-purple-400">
+                      {{ formatCurrency(grandTotalBox.penyaluran || 0) }}
                     </td>
                   </tr>
                 </tfoot>

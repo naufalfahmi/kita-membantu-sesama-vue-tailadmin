@@ -131,6 +131,12 @@
                 </p>
               @endif
 
+                <div class="mt-10 mb-6">
+                  <a id="donate-now" href="https://wa.me/62895621093500?text=Saya+ingin+berdonasi+untuk+kegiatan%3A+{{ urlencode($kegiatan->title ?? 'Sedekah Buka Puasa') }}" target="_blank" rel="noopener" role="button" class="vc rg lk gh ml il hi gi _l inline-flex items-center">
+                    Donasi Sekarang
+                  </a>
+                </div>
+
               <ul class="tc wf bg sb mt-8">
                 <li>
                   <p class="sj kk wm tb">Bagikan:</p>

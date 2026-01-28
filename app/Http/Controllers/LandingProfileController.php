@@ -79,6 +79,18 @@ class LandingProfileController extends Controller
             'hero_whatsapp_active' => 'nullable|boolean',
             'hero_whatsapp_number' => 'nullable|string',
             'hero_image' => 'nullable|string',
+
+            // Transparency
+            'transparency_title' => 'nullable|string|max:255',
+            'transparency_description' => 'nullable|string',
+            'transparency_kantor_cabang_text' => 'nullable|string|max:255',
+            'transparency_kantor_cabang_total' => 'nullable|integer',
+            'transparency_donatur_text' => 'nullable|string|max:255',
+            'transparency_donatur_total' => 'nullable|integer',
+            'transparency_fundraiser_text' => 'nullable|string|max:255',
+            'transparency_fundraiser_total' => 'nullable|integer',
+            'transparency_penggalangan_dana_text' => 'nullable|string|max:255',
+            'transparency_penggalangan_dana_total' => 'nullable|integer',
         ]);
 
         if ($validator->fails()) {
@@ -146,6 +158,18 @@ class LandingProfileController extends Controller
             'hero_whatsapp_active' => 'nullable|boolean',
             'hero_whatsapp_number' => 'nullable|string',
             'hero_image' => 'nullable|string',
+
+            // Transparency
+            'transparency_title' => 'nullable|string|max:255',
+            'transparency_description' => 'nullable|string',
+            'transparency_kantor_cabang_text' => 'nullable|string|max:255',
+            'transparency_kantor_cabang_total' => 'nullable|integer',
+            'transparency_donatur_text' => 'nullable|string|max:255',
+            'transparency_donatur_total' => 'nullable|integer',
+            'transparency_fundraiser_text' => 'nullable|string|max:255',
+            'transparency_fundraiser_total' => 'nullable|integer',
+            'transparency_penggalangan_dana_text' => 'nullable|string|max:255',
+            'transparency_penggalangan_dana_total' => 'nullable|integer',
         ]);
 
         if ($validator->fails()) {

@@ -45,10 +45,22 @@ use Illuminate\Support\Facades\Schema;
 
 Route::get('/', function () {
     $landingProfile = Schema::hasTable('landing_profiles') ? LandingProfile::first() : null;
-    $landingBulletins = LandingBulletin::orderByDesc('date')->limit(6)->get();
-    $landingBulletinsTotal = Schema::hasTable('landing_bulletins') ? LandingBulletin::count() : 0;
     
-    return view('frontend.index', compact('landingProfile', 'landingBulletins', 'landingBulletinsTotal'));
+    // Fetch highlight program
+    $highlightProgram = LandingProgram::where('is_highlight', true)
+        ->where('is_active', true)
+        ->first();
+    
+    // Fetch latest programs (excluding highlight if it exists)
+    $query = LandingProgram::where('is_active', true);
+    if ($highlightProgram) {
+        $query->where('id', '!=', $highlightProgram->id);
+    }
+    $landingPrograms = $query->orderByDesc('created_at')->limit(8)->get();
+    
+    $totalLandingPrograms = LandingProgram::where('is_active', true)->count();
+    
+    return view('frontend.index', compact('landingProfile', 'highlightProgram', 'landingPrograms', 'totalLandingPrograms'));
 })->name('frontend.index');
 
 // Tentang Kami page

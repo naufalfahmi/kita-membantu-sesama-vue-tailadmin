@@ -1,1 +1,0 @@
-import{_ as s}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{c as o,o as r,a as c,r as n}from"./admin-BW3DTPqb.js";const d="/build/favicon.svg",t={},a={class:"min-h-screen"};function _(e,l){return r(),o("div",a,[c("main",null,[n(e.$slots,"default")])])}const f=s(t,[["render",_]]);export{f as F,d as _};

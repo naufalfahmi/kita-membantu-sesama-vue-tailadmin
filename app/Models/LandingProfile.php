@@ -46,6 +46,18 @@ class LandingProfile extends Model
         'hero_whatsapp_number',
         'hero_image',
 
+        // Transparency fields
+        'transparency_title',
+        'transparency_description',
+        'transparency_kantor_cabang_text',
+        'transparency_kantor_cabang_total',
+        'transparency_donatur_text',
+        'transparency_donatur_total',
+        'transparency_fundraiser_text',
+        'transparency_fundraiser_total',
+        'transparency_penggalangan_dana_text',
+        'transparency_penggalangan_dana_total',
+
         'created_by',
         'updated_by',
         'deleted_by',
@@ -60,5 +72,11 @@ class LandingProfile extends Model
         // Hero flags
         'hero_button_active' => 'boolean',
         'hero_whatsapp_active' => 'boolean',
+
+        // Transparency totals
+        'transparency_kantor_cabang_total' => 'integer',
+        'transparency_donatur_total' => 'integer',
+        'transparency_fundraiser_total' => 'integer',
+        'transparency_penggalangan_dana_total' => 'integer',
     ];
 }

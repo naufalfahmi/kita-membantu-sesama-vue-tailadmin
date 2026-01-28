@@ -497,6 +497,65 @@
           </div>
         </div>
 
+        <!-- Transparansi Card -->
+        <div class="mb-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+          <h4 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white/90">Transparansi</h4>
+
+          <div class="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+            <div class="lg:col-span-2">
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Judul Transparansi</label>
+              <input type="text" v-model="formData.transparency_title" placeholder="Judul Transparansi" maxlength="255" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300" :class="{ 'border-red-500': errors.transparency_title }" />
+              <p v-if="errors.transparency_title" class="mt-1 text-xs text-red-500">{{ errors.transparency_title }}</p>
+            </div>
+
+            <div class="lg:col-span-2">
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Deskripsi Transparansi</label>
+              <textarea v-model="formData.transparency_description" placeholder="Deskripsi Transparansi" rows="3" class="dark:bg-dark-900 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300" :class="{ 'border-red-500': errors.transparency_description }"></textarea>
+              <p v-if="errors.transparency_description" class="mt-1 text-xs text-red-500">{{ errors.transparency_description }}</p>
+            </div>
+
+            <!-- Kantor Cabang -->
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Teks Kantor Cabang</label>
+              <input type="text" v-model="formData.transparency_kantor_cabang_text" placeholder="Kantor Cabang" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs" />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Total Kantor Cabang</label>
+              <input type="number" v-model="formData.transparency_kantor_cabang_total" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs" />
+            </div>
+
+            <!-- Donatur -->
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Teks Donatur</label>
+              <input type="text" v-model="formData.transparency_donatur_text" placeholder="Donatur" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs" />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Total Donatur</label>
+              <input type="number" v-model="formData.transparency_donatur_total" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs" />
+            </div>
+
+            <!-- Fundraiser -->
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Teks Fundraiser</label>
+              <input type="text" v-model="formData.transparency_fundraiser_text" placeholder="Fundraiser" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs" />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Total Fundraiser</label>
+              <input type="number" v-model="formData.transparency_fundraiser_total" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs" />
+            </div>
+
+            <!-- Penggalangan Dana -->
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Teks Penggalangan Dana</label>
+              <input type="text" v-model="formData.transparency_penggalangan_dana_text" placeholder="Penggalangan Dana" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs" />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Total Penggalangan Dana</label>
+              <input type="number" v-model="formData.transparency_penggalangan_dana_total" class="dark:bg-dark-900 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 shadow-theme-xs" />
+            </div>
+          </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex items-center gap-3 lg:justify-end">
           <button
@@ -562,6 +621,18 @@ const formData = reactive({
   cta_description: '',
   cta_button_active: false,
   cta_button_link: '',
+
+  // Transparency fields
+  transparency_title: '',
+  transparency_description: '',
+  transparency_kantor_cabang_text: '',
+  transparency_kantor_cabang_total: 0,
+  transparency_donatur_text: '',
+  transparency_donatur_total: 0,
+  transparency_fundraiser_text: '',
+  transparency_fundraiser_total: 0,
+  transparency_penggalangan_dana_text: '',
+  transparency_penggalangan_dana_total: 0,
 })
 
 // Validation errors
@@ -788,6 +859,26 @@ const validateForm = (): boolean => {
     }
   }
 
+  // Validate Transparency
+  if (formData.transparency_title && formData.transparency_title.length > 255) {
+    errors.value.transparency_title = 'Judul transparansi maksimal 255 karakter'
+  }
+  if (formData.transparency_description && formData.transparency_description.length > 5000) {
+    errors.value.transparency_description = 'Deskripsi transparansi terlalu panjang'
+  }
+  if (formData.transparency_kantor_cabang_text && formData.transparency_kantor_cabang_text.length > 255) {
+    errors.value.transparency_kantor_cabang_text = 'Teks kantor cabang maksimal 255 karakter'
+  }
+  if (formData.transparency_donatur_text && formData.transparency_donatur_text.length > 255) {
+    errors.value.transparency_donatur_text = 'Teks donatur maksimal 255 karakter'
+  }
+  if (formData.transparency_fundraiser_text && formData.transparency_fundraiser_text.length > 255) {
+    errors.value.transparency_fundraiser_text = 'Teks fundraiser maksimal 255 karakter'
+  }
+  if (formData.transparency_penggalangan_dana_text && formData.transparency_penggalangan_dana_text.length > 255) {
+    errors.value.transparency_penggalangan_dana_text = 'Teks penggalangan dana maksimal 255 karakter'
+  }
+
   return Object.keys(errors.value).length === 0
 }
 
@@ -849,6 +940,18 @@ const handleSave = async () => {
       hero_whatsapp_active: formData.hero_whatsapp_active ? true : false,
       hero_whatsapp_number: formData.hero_whatsapp_active ? (formData.hero_whatsapp_number || null) : null,
       hero_image: formData.hero_image || null,
+
+      // Transparency
+      transparency_title: formData.transparency_title || null,
+      transparency_description: formData.transparency_description || null,
+      transparency_kantor_cabang_text: formData.transparency_kantor_cabang_text || null,
+      transparency_kantor_cabang_total: formData.transparency_kantor_cabang_total || 0,
+      transparency_donatur_text: formData.transparency_donatur_text || null,
+      transparency_donatur_total: formData.transparency_donatur_total || 0,
+      transparency_fundraiser_text: formData.transparency_fundraiser_text || null,
+      transparency_fundraiser_total: formData.transparency_fundraiser_total || 0,
+      transparency_penggalangan_dana_text: formData.transparency_penggalangan_dana_text || null,
+      transparency_penggalangan_dana_total: formData.transparency_penggalangan_dana_total || 0,
     }
 
     // Fetch CSRF token
@@ -1043,6 +1146,18 @@ const handleSave = async () => {
         formData.hero_whatsapp_number = data.hero_whatsapp_number || ''
         formData.hero_image = data.hero_image || ''
         previewHeroImage.value = resolveImagePreview(formData.hero_image)
+
+        // Transparency
+        formData.transparency_title = data.transparency_title || ''
+        formData.transparency_description = data.transparency_description || ''
+        formData.transparency_kantor_cabang_text = data.transparency_kantor_cabang_text || ''
+        formData.transparency_kantor_cabang_total = data.transparency_kantor_cabang_total || 0
+        formData.transparency_donatur_text = data.transparency_donatur_text || ''
+        formData.transparency_donatur_total = data.transparency_donatur_total || 0
+        formData.transparency_fundraiser_text = data.transparency_fundraiser_text || ''
+        formData.transparency_fundraiser_total = data.transparency_fundraiser_total || 0
+        formData.transparency_penggalangan_dana_text = data.transparency_penggalangan_dana_text || ''
+        formData.transparency_penggalangan_dana_total = data.transparency_penggalangan_dana_total || 0
       }
   } catch (error) {
     console.error('Error loading data:', error)

@@ -154,6 +154,7 @@
                     <th class="px-4 py-3">Kategori</th>
                     <th class="px-4 py-3 text-right">Nominal</th>
                     <th class="px-4 py-3 text-right">Penyaluran</th>
+                    <th class="px-4 py-3 text-right">Saldo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -165,9 +166,12 @@
                       <td class="px-4 py-3 text-right text-sm font-bold text-purple-600 dark:text-purple-400">
                         {{ formatCurrency(box.penyaluran || 0) }}
                       </td>
+                      <td class="px-4 py-3 text-right text-sm font-bold" :class="(box.value - (box.penyaluran || 0)) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">
+                        {{ formatCurrency(box.value - (box.penyaluran || 0)) }}
+                      </td>
                    </tr>
                    <tr v-if="filteredAllocationBoxes.length === 0 && !grandTotalBox && !isLoadingAllocation">
-                      <td colspan="3" class="px-4 py-12 text-center text-gray-500">Tidak ada data alokasi</td>
+                      <td colspan="4" class="px-4 py-12 text-center text-gray-500">Tidak ada data alokasi</td>
                    </tr>
                 </tbody>
                 <tfoot v-if="grandTotalBox">
@@ -178,6 +182,9 @@
                     </td>
                     <td class="px-4 py-4 text-right text-lg font-bold text-purple-600 dark:text-purple-400">
                       {{ formatCurrency(grandTotalBox.penyaluran || 0) }}
+                    </td>
+                    <td class="px-4 py-4 text-right text-lg font-bold" :class="(grandTotalBox.value - (grandTotalBox.penyaluran || 0)) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">
+                      {{ formatCurrency(grandTotalBox.value - (grandTotalBox.penyaluran || 0)) }}
                     </td>
                   </tr>
                 </tfoot>

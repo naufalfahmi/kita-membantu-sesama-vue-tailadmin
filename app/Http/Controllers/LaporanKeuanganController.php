@@ -378,6 +378,141 @@ class LaporanKeuanganController extends Controller
     }
 
     /**
+     * Return aggregated allocation totals per program share type for summary boxes.
+     * Respects start, end, program_id, and kantor_cabang_id filters.
+     */
+    public function allocationSummary(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || !$user->can('view laporan keuangan')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $start = $request->query('start');
+        $end = $request->query('end');
+        $programId = $request->query('program_id');
+        $kantorCabangId = $request->query('kantor_cabang_id');
+
+        try {
+            $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
+        }
+
+        // Get relevant programs
+        $programQuery = \App\Models\Program::with(['shares.type']);
+        if ($programId) {
+            $programQuery->where('id', $programId);
+        }
+        $programs = $programQuery->get();
+
+        // Preferred keys for summary
+        $shareKeys = ['dp', 'ops_1', 'ops_2', 'program', 'fee_mitra', 'bonus', 'championship'];
+        
+        // Dynamic labels mapping
+        $shareTypeLabels = \App\Models\ProgramShareType::pluck('name', 'key')->toArray();
+        
+        $totalNominal = 0;
+        $allocatedTotals = [];
+        foreach ($shareKeys as $k) $allocatedTotals[$k] = 0;
+        
+        // Find all other keys present in these programs
+        foreach ($programs as $p) {
+            foreach ($p->shares as $s) {
+                $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                $key = $pst->key ?? ($s->program_share_type_key ?? null) ?? 'unknown';
+                if (!in_array($key, $shareKeys)) {
+                    $shareKeys[] = $key;
+                    $allocatedTotals[$key] = 0;
+                }
+            }
+        }
+
+        foreach ($programs as $program) {
+            // Inflow for this program in range
+            $inflowQuery = Transaksi::where('program_id', $program->id)
+                ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()]);
+            
+            if ($kantorCabangId) {
+                $inflowQuery->where('kantor_cabang_id', $kantorCabangId);
+            }
+            
+            $inflow = (int) $inflowQuery->sum('nominal');
+            $totalNominal += $inflow;
+
+            $programAllocated = 0;
+            foreach ($program->shares as $s) {
+                $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                $key = $pst->key ?? ($s->program_share_type_key ?? null) ?? 'unknown';
+                
+                $allocated = 0;
+                if ($s->type === 'percentage' && $s->value !== null) {
+                    $allocated = (int) floor($inflow * (float)$s->value / 100);
+                } elseif ($s->type === 'nominal' && $s->value !== null) {
+                    $allocated = (int) $s->value;
+                }
+                
+                $allocatedTotals[$key] += $allocated;
+                $programAllocated += $allocated;
+            }
+            
+            // Handle unallocated for 'program' share if it has no specific config
+            $unallocated = $inflow - $programAllocated;
+            if ($unallocated > 0) {
+                $programShare = $program->shares->first(function($s) {
+                    $pst = $s->relationLoaded('type') ? $s->getRelationValue('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                    $key = $pst->key ?? ($s->program_share_type_key ?? null) ?? 'unknown';
+                    return $key === 'program' && ($s->type === null || $s->value === null);
+                });
+                
+                if ($programShare || !isset($allocatedTotals['program']) || (isset($allocatedTotals['program']) && $allocatedTotals['program'] == 0)) {
+                    if (!isset($allocatedTotals['program'])) $allocatedTotals['program'] = 0;
+                    $allocatedTotals['program'] += $unallocated;
+                }
+            }
+        }
+
+        // Check for transactions WITHOUT program
+        if (!$programId) {
+            $inflowNoProgramQuery = Transaksi::whereNull('program_id')
+                ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()]);
+            
+            if ($kantorCabangId) {
+                $inflowNoProgramQuery->where('kantor_cabang_id', $kantorCabangId);
+            }
+            
+            $inflowNoProgram = (int) $inflowNoProgramQuery->sum('nominal');
+            $totalNominal += $inflowNoProgram;
+            // Unassigned transactions are typically "unallocated" or go to a default bucket if defined
+        }
+
+        // Build boxes
+        $boxes = [];
+        $boxes[] = ['label' => 'Nominal Keseluruhan Transaksi', 'value' => $totalNominal];
+        
+        $totalSharesSum = 0;
+        foreach ($shareKeys as $k) {
+            $val = $allocatedTotals[$k];
+            if ($val <= 0 && !in_array($k, ['dp', 'ops_1', 'ops_2', 'program'])) continue;
+            
+            $label = $shareTypeLabels[$k] ?? ucwords(str_replace('_', ' ', $k));
+            $boxes[] = ['label' => "Nominal All $label", 'value' => $val];
+            $totalSharesSum += $val;
+        }
+        
+        $remainder = $totalNominal - $totalSharesSum;
+        if ($remainder > 0) {
+            $boxes[] = ['label' => 'Sisa Belum Teralokasi', 'value' => $remainder];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $boxes,
+        ]);
+    }
+
+    /**
      * Return timeline data (daily aggregates) for chart visualization.
      */
     public function timeline(Request $request)

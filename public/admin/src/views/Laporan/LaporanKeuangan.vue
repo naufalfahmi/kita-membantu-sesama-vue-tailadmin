@@ -130,6 +130,54 @@
             </div>
           </div>
 
+          <!-- Allocation Summary Table -->
+          <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Ringkasan Alokasi</h3>
+            </div>
+            
+            <div class="relative overflow-x-auto">
+              <!-- Loading State -->
+               <div
+                v-if="isLoadingAllocation"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/80 dark:bg-gray-900/80"
+              >
+                <div class="flex flex-col items-center gap-3">
+                  <div class="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500"></div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Memuat data alokasi...</p>
+                </div>
+              </div>
+
+              <table class="w-full table-auto">
+                <thead>
+                  <tr class="border-b border-gray-200 text-left text-sm font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-400">
+                    <th class="px-4 py-3">Kategori</th>
+                    <th class="px-4 py-3 text-right">Nominal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                   <tr v-for="(box, idx) in filteredAllocationBoxes" :key="`alloc-${idx}`" class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]">
+                      <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">{{ box.label }}</td>
+                      <td class="px-4 py-3 text-right text-sm font-bold" :class="box.label.includes('Sisa') ? 'text-brand-600 dark:text-brand-400' : 'text-gray-800 dark:text-white/90'">
+                        {{ formatCurrency(box.value) }}
+                      </td>
+                   </tr>
+                   <tr v-if="filteredAllocationBoxes.length === 0 && !grandTotalBox && !isLoadingAllocation">
+                      <td colspan="2" class="px-4 py-12 text-center text-gray-500">Tidak ada data alokasi</td>
+                   </tr>
+                </tbody>
+                <tfoot v-if="grandTotalBox">
+                  <tr class="bg-gray-50 dark:bg-gray-800/50">
+                    <td class="px-4 py-4 text-sm font-bold text-gray-800 dark:text-white/90">{{ grandTotalBox.label }}</td>
+                    <td class="px-4 py-4 text-right text-lg font-bold text-brand-600 dark:text-brand-400">
+                      {{ formatCurrency(grandTotalBox.value) }}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
           <!-- 3. Breakdown Section - Pengajuan Dana & Penyaluran -->
           <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <!-- Pengajuan Dana (Orange) -->
@@ -213,10 +261,71 @@
             </div>
           </div>
 
+          
+            <!-- NEW: Bank Accounts Section (Actual Balance) -->
+            <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
+              <div class="mb-4 flex items-center justify-between">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Rekening Bank (Saldo Aktual)</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Total Saldo: <span class="font-bold text-gray-800 dark:text-white">{{ formatCurrency(totalBankBalance) }}</span></p>
+                </div>
+                <button @click="openBankModal()" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 transition-colors">
+                  + Tambah Rekening
+                </button>
+              </div>
+
+              <!-- Bank Accounts Grid -->
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div v-for="bank in bankAccounts" :key="bank.id" class="relative group rounded-lg border border-gray-200 bg-gray-50 p-4 transition-all hover:-translate-y-1 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/50">
+                  <!-- Actions (Edit/Delete) -->
+                  <div class="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 flex gap-2">
+                    <button @click="openBankModal(bank)" class="text-gray-500 hover:text-blue-500" title="Edit">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                    <button @click="confirmDeleteBank(bank)" class="text-gray-500 hover:text-red-500" title="Hapus">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div class="flex items-center gap-3 mb-3">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 class="font-semibold text-gray-800 dark:text-white">{{ bank.bank_name }}</h4>
+                      <p class="text-xs text-gray-500 dark:text-gray-400">{{ bank.account_number }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-end justify-between">
+                    <div>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Saldo Aktual</p>
+                      <p class="text-lg font-bold text-gray-800 dark:text-white">{{ formatCurrency(bank.balance) }}</p>
+                    </div>
+                    <div v-if="bank.account_name" class="text-right">
+                      <p class="text-[10px] text-gray-400 uppercase tracking-wider">A.N</p>
+                      <p class="text-xs font-medium text-gray-600 dark:text-gray-300 max-w-[100px] truncate" :title="bank.account_name">{{ bank.account_name }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-if="bankAccounts.length === 0" class="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                  <p>Belum ada data rekening bank.</p>
+                  <button @click="openBankModal()" class="mt-2 text-sm font-medium text-brand-500 hover:text-brand-600 hover:underline">Tambah Rekening Baru</button>
+                </div>
+              </div>
+            </div>
+
           <!-- Breakdown per Tipe Pengeluaran -->
           <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
             <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown per Tipe Pengeluaran</h3>
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown per Tipe Penyaluran</h3>
               <div class="text-sm text-gray-600 dark:text-gray-400">
                 Total: <span class="font-bold text-purple-600 dark:text-purple-400">{{ formatCurrency(penyaluranByAliasData.total || 0) }}</span>
               </div>
@@ -301,7 +410,7 @@
             <!-- Detailed Breakdown Table -->
             <div class="mt-6">
               <h4 class="mb-4 text-base font-semibold text-gray-800 dark:text-white/90">
-                Detail Breakdown per Tipe
+                Detail Breakdown per Tipe Penyaluran
               </h4>
               <div class="relative overflow-x-auto">
                 <!-- Loading State -->
@@ -318,7 +427,7 @@
                 <table v-if="expenseTypeBreakdownData && expenseTypeBreakdownData.length > 0" class="w-full table-auto">
                   <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700">
-                      <th class="pb-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Nama Pengeluaran</th>
+                      <th class="pb-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Nama Penyaluran</th>
                       <th class="pb-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Pengajuan Dana</th>
                       <th class="pb-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Penyaluran</th>
                     </tr>
@@ -423,7 +532,7 @@
           <!-- 6. Program Breakdown Table -->
           <div class="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-white/[0.03]">
             <div class="mb-4 flex items-center justify-between">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown per Program</h3>
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Breakdown Inflow - Penyaluran per Program</h3>
               <button
                 @click="handleExportProgramBreakdown"
                 :disabled="programBreakdownData.length === 0"
@@ -856,6 +965,71 @@
         </div>
       </div>
     </div>
+
+  <Modal :isOpen="showBankModal" :title="editBankId ? 'Edit Rekening' : 'Tambah Rekening'" @close="closeBankModal">
+    <template #content>
+      <div class="space-y-4">
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nama Bank <span class="text-red-500">*</span></label>
+          <input
+            v-model="bankForm.bank_name"
+            type="text"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+            placeholder="Contoh: BCA, Mandiri, BRI"
+          >
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nomor Rekening</label>
+            <input
+              v-model="bankForm.account_number"
+              type="text"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+              placeholder="1234567890"
+            >
+          </div>
+          <div>
+            <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Atas Nama</label>
+            <input
+              v-model="bankForm.account_name"
+              type="text"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+              placeholder="Yayasan..."
+            >
+          </div>
+        </div>
+        <div>
+          <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Saldo Aktual (Rp) <span class="text-red-500">*</span></label>
+          <input
+            v-model.number="bankForm.balance"
+            type="number"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+            placeholder="0"
+          />
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ formatCurrency(bankForm.balance) }}</p>
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <button @click="closeBankModal" class="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">Batal</button>
+        <button @click="saveBank" :disabled="isSavingBank" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
+          {{ isSavingBank ? 'Menyimpan...' : 'Simpan' }}
+        </button>
+      </div>
+    </template>
+  </Modal>
+
+  <ConfirmModal
+    :isOpen="showDeleteBankModal"
+    title="Hapus Rekening"
+    message="Apakah Anda yakin ingin menghapus rekening ini? Data yang dihapus tidak dapat dikembalikan."
+    confirmText="Hapus"
+    confirmButtonClass="bg-red-500 hover:bg-red-600"
+    @confirm="deleteBank"
+    @cancel="showDeleteBankModal = false"
+  />
+
   </AdminLayout>
 </template>
 
@@ -871,10 +1045,15 @@ import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import Modal from '@/components/ui/Modal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import { useToast } from 'vue-toastification'
+import { getCsrfTokenSafe } from '@/utils/getCsrfToken'
 
 
 const route = useRoute()
 const router = useRouter()
+const toast = useToast()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Laporan Keuangan')
 
 
@@ -999,6 +1178,7 @@ const scheduleFetch = (delay = 400) => {
     fetchProgramBreakdown()
     fetchPenyaluranByAlias()
     fetchExpenseTypeBreakdown()
+    fetchAllocationSummary()
   }, delay)
 }
 
@@ -1064,7 +1244,18 @@ const expenseTypeBreakdownData = ref([])
 const expandedExpenseType = ref(null)
 const isLoadingExpenseTypeBreakdown = ref(false)
 
-// NEW: Transaction filter tabs
+// NEW: Allocation Summary Boxes data
+const allocationBoxes = ref([])
+const isLoadingAllocation = ref(false)
+
+const filteredAllocationBoxes = computed(() => {
+  return allocationBoxes.value.filter((box: any) => !box.label.toLowerCase().includes('keseluruhan transaksi'))
+})
+
+const grandTotalBox = computed(() => {
+  return allocationBoxes.value.find((box: any) => box.label.toLowerCase().includes('keseluruhan transaksi'))
+})
+
 const transactionFilters = [
   { value: 'all', label: 'Semua' },
   { value: 'masuk', label: 'Pemasukan' },
@@ -1421,6 +1612,173 @@ const fetchBalanceData = async (page = 1) => {
   }
 }
 
+const fetchAllocationSummary = async () => {
+  isLoadingAllocation.value = true
+  try {
+    const params = new URLSearchParams()
+    params.append('start', balanceStart.value)
+    params.append('end', balanceEnd.value)
+    if (selectedProgram.value) params.append('program_id', selectedProgram.value)
+    if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
+
+    const res = await fetch(`/admin/api/laporan/keuangan/allocation-summary?${params.toString()}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+    })
+
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) {
+      allocationBoxes.value = json.data || []
+    }
+  } catch (err) {
+    console.error('Error fetching allocation summary', err)
+  } finally {
+    isLoadingAllocation.value = false
+  }
+}
+
+
+// NEW: Bank Accounts Logic
+const bankAccounts = ref([])
+const totalBankBalance = ref(0)
+const showBankModal = ref(false)
+const showDeleteBankModal = ref(false)
+const editBankId = ref(null)
+const deleteBankId = ref(null)
+const isSavingBank = ref(false)
+
+const bankForm = ref({
+  bank_name: '',
+  account_number: '',
+  account_name: '',
+  balance: 0,
+})
+
+const fetchBankAccounts = async () => {
+  try {
+    const res = await fetch('/admin/api/bank-accounts', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    })
+    if (!res.ok) return
+    const json = await res.json()
+    if (json.success) {
+      bankAccounts.value = json.data || []
+      totalBankBalance.value = json.total_balance || 0
+    }
+  } catch (err) {
+    console.error('Error fetching bank accounts', err)
+  }
+}
+
+const openBankModal = (bank = null) => {
+  if (bank) {
+    editBankId.value = bank.id
+    bankForm.value = {
+      bank_name: bank.bank_name,
+      account_number: bank.account_number,
+      account_name: bank.account_name,
+      balance: Number(bank.balance),
+    }
+  } else {
+    editBankId.value = null
+    bankForm.value = {
+      bank_name: '',
+      account_number: '',
+      account_name: '',
+      balance: 0,
+    }
+  }
+  showBankModal.value = true
+}
+
+const closeBankModal = () => {
+  showBankModal.value = false
+  editBankId.value = null
+}
+
+const saveBank = async () => {
+  if (!bankForm.value.bank_name || bankForm.value.balance === '') {
+    toast.error('Nama Bank dan Saldo wajib diisi')
+    return
+  }
+
+  isSavingBank.value = true
+  try {
+    const url = editBankId.value 
+      ? `/admin/api/bank-accounts/${editBankId.value}`
+      : '/admin/api/bank-accounts'
+    
+    const method = editBankId.value ? 'PUT' : 'POST'
+    
+    const csrf = await getCsrfTokenSafe()
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': csrf,
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(bankForm.value),
+    })
+
+    const json = await res.json()
+    if (json.success) {
+      toast.success(json.message)
+      closeBankModal()
+      fetchBankAccounts()
+    } else {
+      toast.error(json.message || 'Gagal menyimpan rekening')
+    }
+  } catch (err) {
+    console.error('Error saving bank', err)
+    toast.error('Terjadi kesalahan sistem')
+  } finally {
+    isSavingBank.value = false
+  }
+}
+
+const confirmDeleteBank = (bank) => {
+  deleteBankId.value = bank.id
+  showDeleteBankModal.value = true
+}
+
+const deleteBank = async () => {
+  if (!deleteBankId.value) return
+  
+  try {
+    const csrf = await getCsrfTokenSafe()
+    const res = await fetch(`/admin/api/bank-accounts/${deleteBankId.value}`, {
+      method: 'DELETE',
+      headers: { 
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': csrf,
+      },
+      credentials: 'same-origin'
+    })
+    
+    const json = await res.json()
+    if (json.success) {
+      toast.success(json.message)
+      showDeleteBankModal.value = false
+      deleteBankId.value = null
+      fetchBankAccounts()
+    } else {
+      toast.error(json.message || 'Gagal menghapus rekening')
+    }
+  } catch (err) {
+    console.error(err)
+    toast.error('Gagal menghapus rekening')
+  }
+}
+
+
+
 // NEW: Fetch program breakdown
 const fetchProgramBreakdown = async () => {
   try {
@@ -1455,6 +1813,8 @@ const fetchProgramBreakdown = async () => {
     isLoadingProgramBreakdown.value = false
   }
 }
+
+
 
 
 // NEW: Fetch penyaluran by alias
@@ -1573,6 +1933,10 @@ onMounted(() => {
       fetchProgramBreakdown(),
       fetchPenyaluranByAlias(),
       fetchExpenseTypeBreakdown(),
+      fetchExpenseTypeBreakdown(),
+      fetchAllocationSummary(),
+      fetchAllocationSummary(),
+      fetchBankAccounts(),
     ])
   }
 })
@@ -1963,6 +2327,7 @@ const handleExportExcelManagement = () => {
   
   XLSX.writeFile(workbook, filename)
 }
+
 </script>
 
 <style scoped>

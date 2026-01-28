@@ -2,7 +2,7 @@
 <section id="galeri" class="ji gp uq">
   <!-- Section Title Start -->
   <div class="animate_top bb ze rj ki xn vq">
-    <h2 class="fk vj pr kk wm on/5 gq/2 bb _b">Galeri Kegiatan</h2>
+    <h2 class="fk vj pr kk wm on/5 gq/2 bb _b">Aksi Bantu Sesama</h2>
     <p class="bb on/5 wo/5 hq">Dokumentasi kegiatan dan program yang telah kami laksanakan untuk membantu sesama.</p>
   </div>
   <!-- Section Title End -->

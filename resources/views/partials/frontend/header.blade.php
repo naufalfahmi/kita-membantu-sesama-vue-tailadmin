@@ -48,7 +48,7 @@
           <li><a href="{{ route('frontend.tentang-kami') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.tentang-kami' }">Tentang Kami</a></li>
           <li><a href="{{ route('frontend.program') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.program' }">Program Kami</a></li>
           <li><a href="{{ route('frontend.cara-donasi') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.cara-donasi' }">Cara Berdonasi</a></li>
-          <li><a href="{{ route('frontend.galeri') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.galeri' }">Galeri Kegiatan</a></li>
+          <li><a href="{{ route('frontend.galeri') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.galeri' }">Aksi Bantu Sesama</a></li>
           <li><a href="{{ route('frontend.transparansi') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.transparansi' }">Transparansi</a></li>
           <li><a href="{{ route('frontend.kontak') }}" class="xl" :class="{ 'mk': '{{ Route::currentRouteName() }}' === 'frontend.kontak' }">Kontak</a></li>
         </ul>

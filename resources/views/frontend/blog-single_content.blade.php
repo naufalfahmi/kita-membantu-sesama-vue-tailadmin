@@ -63,7 +63,7 @@
                 <div class="prose max-w-none mb-4">{!! $cleanDesc !!}</div>
 
                 @if(count($imgs) > 1)
-                  <h3 class="text-xl font-semibold mb-4">Galeri Kegiatan</h3>
+                  <h3 class="text-xl font-semibold mb-4">Aksi Bantu Sesama</h3>
                   <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 kegiatan-gallery">
                     @foreach(array_slice($imgs, 1) as $si)
                       @php $simg = preg_match('/^https?:\/\//', $si) ? $si : asset('storage/' . $si); @endphp

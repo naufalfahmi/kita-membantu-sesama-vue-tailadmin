@@ -182,6 +182,15 @@ class User extends Authenticatable
     }
 
     /**
+     * Explicit visibility list for absensi (who this user may see).
+     */
+    public function absensiVisibilityEntries()
+    {
+        return $this->hasMany(KaryawanAbsensiVisibility::class, 'karyawan_id')
+            ->whereNull('deleted_at');
+    }
+
+    /**
      * Push subscription entries for this user.
      */
     public function pushSubscriptions(): HasMany
@@ -210,6 +219,21 @@ class User extends Authenticatable
     public function visibleDonaturKaryawanIds(): array
     {
         $ids = $this->donaturVisibilityEntries()->pluck('visible_karyawan_id')->toArray();
+
+        if (! empty($ids)) {
+            $ids[] = $this->id;
+            return $this->normalizeVisibilityIds($ids);
+        }
+
+        return User::descendantIdsOf($this->id);
+    }
+
+    /**
+     * Helper: return IDs this user may see in absensi context.
+     */
+    public function visibleAbsensiKaryawanIds(): array
+    {
+        $ids = $this->absensiVisibilityEntries()->pluck('visible_karyawan_id')->toArray();
 
         if (! empty($ids)) {
             $ids[] = $this->id;

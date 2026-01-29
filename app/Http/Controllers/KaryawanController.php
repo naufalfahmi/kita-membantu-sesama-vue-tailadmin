@@ -303,6 +303,7 @@ class KaryawanController extends Controller
 
                         $this->syncVisibilityAssignments($karyawan, $request->input('visible_transaksi_ids', []), 'transaksi');
                         $this->syncVisibilityAssignments($karyawan, $request->input('visible_donatur_ids', []), 'donatur');
+                        $this->syncVisibilityAssignments($karyawan, $request->input('visible_absensi_ids', []), 'absensi');
                         $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_transaksi_ids', []), 'transaksi');
                         $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_donatur_ids', []), 'donatur');
 
@@ -504,6 +505,10 @@ class KaryawanController extends Controller
                             $this->syncMitraVisibilityAssignments($karyawan, $request->input('visible_mitra_donatur_ids', []), 'donatur');
                         }
 
+                        if ($request->has('visible_absensi_ids')) {
+                            $this->syncVisibilityAssignments($karyawan, $request->input('visible_absensi_ids', []), 'absensi');
+                        }
+
                         return $karyawan->fresh([
                             'pangkat:id,nama',
                             'tipeAbsensi:id,nama',
@@ -635,7 +640,13 @@ class KaryawanController extends Controller
      */
     protected function syncVisibilityAssignments(User $karyawan, $rawIds, string $type): void
     {
-        $modelClass = $type === 'donatur' ? KaryawanDonaturVisibility::class : KaryawanTransaksiVisibility::class;
+        if ($type === 'donatur') {
+            $modelClass = KaryawanDonaturVisibility::class;
+        } elseif ($type === 'absensi') {
+            $modelClass = \App\Models\KaryawanAbsensiVisibility::class;
+        } else {
+            $modelClass = KaryawanTransaksiVisibility::class;
+        }
 
         $ids = $this->normalizeIdArray($rawIds, null);
         $ids = array_map('intval', $ids);
@@ -756,6 +767,7 @@ class KaryawanController extends Controller
         $user->loadMissing([
             'transaksiVisibilityEntries.visibleKaryawan',
             'donaturVisibilityEntries.visibleKaryawan',
+            'absensiVisibilityEntries.visibleKaryawan',
             'mitraTransaksiVisibilityEntries.visibleMitra',
             'mitraDonaturVisibilityEntries.visibleMitra',
         ]);

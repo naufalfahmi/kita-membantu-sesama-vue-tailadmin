@@ -372,6 +372,22 @@
             <div v-else class="mt-2 text-sm text-gray-500">Belum ada mitra untuk dipilih.</div>
           </div>
 
+          <div>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
+              Akses Data Absensi (karyawan yang bisa dilihat)
+            </label>
+            <div v-if="employeeSelectOptions.length">
+              <SearchableMultiSelect
+                v-model="formData.visible_absensi_ids"
+                :options="employeeSelectOptions"
+                placeholder="Pilih karyawan untuk akses absensi"
+                :search-input="jabatanSearchInput"
+                @update:search-input="jabatanSearchInput = $event"
+              />
+            </div>
+            <div v-else class="mt-2 text-sm text-gray-500">Belum ada karyawan untuk dipilih.</div>
+          </div>
+
           <div class="flex items-center gap-3">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-400">Status Akun</label>
             <label class="relative inline-flex cursor-pointer items-center">
@@ -525,6 +541,7 @@ const formData = reactive({
   visible_donatur_ids: [] as string[],
   visible_mitra_transaksi_ids: [] as string[],
   visible_mitra_donatur_ids: [] as string[],
+  visible_absensi_ids: [] as string[],
   is_active: true,
 })
 
@@ -627,6 +644,7 @@ const loadData = async (id: string) => {
       formData.visible_donatur_ids = (data.visible_donatur_ids || []).map((id: string) => String(id))
       formData.visible_mitra_transaksi_ids = (data.visible_mitra_transaksi_ids || []).map((id: string) => String(id))
       formData.visible_mitra_donatur_ids = (data.visible_mitra_donatur_ids || []).map((id: string) => String(id))
+      formData.visible_absensi_ids = (data.absensi_visibility_entries || []).map((entry: any) => String(entry.visible_karyawan_id))
       formData.is_active = Boolean(data.is_active)
       formData.password = ''
     } else {
@@ -700,6 +718,7 @@ const handleSave = async () => {
       visible_donatur_ids: formData.visible_donatur_ids,
       visible_mitra_transaksi_ids: formData.visible_mitra_transaksi_ids,
       visible_mitra_donatur_ids: formData.visible_mitra_donatur_ids,
+      visible_absensi_ids: formData.visible_absensi_ids,
       is_active: formData.is_active,
     }
 

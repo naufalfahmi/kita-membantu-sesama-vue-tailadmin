@@ -27,8 +27,7 @@ class AbsensiController extends Controller
         // Build allowed user ids for non-admin: self + subordinates
         $allowedUserIds = null;
         if (!$isAdmin) {
-            $subordinateIds = $authUser->subordinates()->pluck('id')->toArray();
-            $allowedUserIds = array_merge([$authUser->id], $subordinateIds);
+            $allowedUserIds = $authUser->visibleAbsensiKaryawanIds();
         }
 
         // Search filter by user name or no induk

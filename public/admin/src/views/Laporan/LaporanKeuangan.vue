@@ -1683,7 +1683,10 @@ const fetchBankAccounts = async () => {
     if (!res.ok) return
     const json = await res.json()
     if (json.success) {
-      bankAccounts.value = json.data || []
+      const accounts = json.data || []
+      // Sort by created_at ascending to keep position stable
+      accounts.sort((a: any, b: any) => (a.created_at || '').localeCompare(b.created_at || ''))
+      bankAccounts.value = accounts
       totalBankBalance.value = json.total_balance || 0
     }
   } catch (err) {

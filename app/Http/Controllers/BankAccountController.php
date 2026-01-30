@@ -14,7 +14,7 @@ class BankAccountController extends Controller
     public function index()
     {
         // Default only show active
-        $accounts = BankAccount::orderBy('updated_at', 'desc')->get();
+        $accounts = BankAccount::orderBy('created_at', 'asc')->get();
         
         $totalBalance = $accounts->where('is_active', true)->sum('balance');
 

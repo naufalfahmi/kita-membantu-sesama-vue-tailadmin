@@ -283,7 +283,7 @@
                   <h3 class="text-lg font-semibold text-gray-800 dark:text-white/90">Rekening Bank (Saldo Aktual)</h3>
                   <p class="text-sm text-gray-500 dark:text-gray-400">Total Saldo: <span class="font-bold text-gray-800 dark:text-white">{{ formatCurrency(totalBankBalance) }}</span></p>
                 </div>
-                <button @click="openBankModal()" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 transition-colors">
+                <button v-if="can('create laporan keuangan')" @click="openBankModal()" class="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 transition-colors">
                   + Tambah Rekening
                 </button>
               </div>
@@ -293,12 +293,12 @@
                 <div v-for="bank in bankAccounts" :key="bank.id" class="relative group rounded-lg border border-gray-200 bg-gray-50 p-4 transition-all hover:-translate-y-1 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/50">
                   <!-- Actions (Edit/Delete) -->
                   <div class="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100 flex gap-2">
-                    <button @click="openBankModal(bank)" class="text-gray-500 hover:text-blue-500" title="Edit">
+                    <button v-if="can('update laporan keuangan')" @click="openBankModal(bank)" class="text-gray-500 hover:text-blue-500" title="Edit">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
                     </button>
-                    <button @click="confirmDeleteBank(bank)" class="text-gray-500 hover:text-red-500" title="Hapus">
+                    <button v-if="can('delete laporan keuangan')" @click="confirmDeleteBank(bank)" class="text-gray-500 hover:text-red-500" title="Hapus">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
@@ -331,7 +331,7 @@
                 <!-- Empty State -->
                 <div v-if="bankAccounts.length === 0" class="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 p-8 text-center text-gray-500 dark:border-gray-700 dark:text-gray-400">
                   <p>Belum ada data rekening bank.</p>
-                  <button @click="openBankModal()" class="mt-2 text-sm font-medium text-brand-500 hover:text-brand-600 hover:underline">Tambah Rekening Baru</button>
+                  <button v-if="can('create laporan keuangan')" @click="openBankModal()" class="mt-2 text-sm font-medium text-brand-500 hover:text-brand-600 hover:underline">Tambah Rekening Baru</button>
                 </div>
               </div>
             </div>
@@ -1063,11 +1063,13 @@ import Modal from '@/components/ui/Modal.vue'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import { useToast } from 'vue-toastification'
 import { getCsrfTokenSafe } from '@/utils/getCsrfToken'
+import { useAuth } from '@/composables/useAuth'
 
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { can } = useAuth()
 const currentPageTitle = computed(() => (route.meta.title as string) || 'Laporan Keuangan')
 
 

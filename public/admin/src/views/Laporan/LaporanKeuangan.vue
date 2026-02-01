@@ -152,7 +152,7 @@
                 <thead>
                   <tr class="border-b border-gray-200 text-left text-sm font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-400">
                     <th class="px-4 py-3">Kategori</th>
-                    <th class="px-4 py-3 text-right">Nominal</th>
+                    <th class="px-4 py-3 text-right">Dana Siap Salur</th>
                     <th class="px-4 py-3 text-right">Penyaluran</th>
                     <th class="px-4 py-3 text-right">Saldo</th>
                   </tr>
@@ -574,7 +574,7 @@
                 <thead>
                   <tr class="border-b border-gray-200 text-left text-sm font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-400">
                     <th class="px-4 py-3">Program</th>
-                    <th class="px-4 py-3 text-right">Pemasukan</th>
+                    <th class="px-4 py-3 text-right">Dana Siap Salur</th>
                     <th class="px-4 py-3 text-right">Pengajuan Dana</th>
                     <th class="px-4 py-3 text-right">Penyaluran</th>
                     <th class="px-4 py-3 text-right">Saldo</th>
@@ -628,7 +628,7 @@
                           
                           <!-- Pemasukan Breakdown -->
                           <div v-if="program.breakdown.pemasukan && program.breakdown.pemasukan.length > 0">
-                            <div class="mb-2 text-sm font-medium text-green-700 dark:text-green-400">Pemasukan dari Program:</div>
+                            <div class="mb-2 text-sm font-medium text-green-700 dark:text-green-400">Dana Siap Salur dari Program:</div>
                             <div class="space-y-1">
                               <div
                                 v-for="(item, idx) in program.breakdown.pemasukan"
@@ -1157,7 +1157,7 @@ const currentMitraPage = ref(1)
 const mitraPerPage = 6
 
 // Balance filters & state
-const balanceStart = ref(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+const balanceStart = ref('2020-01-01')
 const balanceEnd = ref(new Date().toISOString().split('T')[0])
 const showBalanceTransactions = ref(false)
 
@@ -1943,18 +1943,9 @@ watch(activeTab, (v) => {
 onMounted(() => {
   if (activeTab.value === 'balance') {
     balanceRange.value = [balanceStart.value, balanceEnd.value]
-    Promise.all([
-      fetchBalanceData(1),
-      fetchPrograms(),
-      fetchKantorCabangs(),
-      fetchProgramBreakdown(),
-      fetchPenyaluranByAlias(),
-      fetchExpenseTypeBreakdown(),
-      fetchExpenseTypeBreakdown(),
-      fetchAllocationSummary(),
-      fetchAllocationSummary(),
-      fetchBankAccounts(),
-    ])
+    fetchBalanceData(1)
+    fetchPrograms()
+    fetchKantorCabangs()
   }
 })
 
@@ -1977,7 +1968,7 @@ const handleExportBalance = () => {
 const handleExportProgramBreakdown = () => {
   const data = programBreakdownData.value.map((p) => ({
     'Program': p.program_nama,
-    'Pemasukan': formatCurrency(p.pemasukan || 0),
+    'Dana Siap Salur': formatCurrency(p.pemasukan || 0),
     'Pengajuan Dana': formatCurrency(p.pengajuan_dana || 0),
     'Penyaluran': formatCurrency(p.penyaluran || 0),
     'Saldo': formatCurrency(p.saldo || 0),

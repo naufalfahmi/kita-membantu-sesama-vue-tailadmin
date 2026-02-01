@@ -9,6 +9,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use App\Models\Program;
+use App\Models\ProgramShareType;
 
 class LaporanKeuanganController extends Controller
 {
@@ -34,7 +36,7 @@ class LaporanKeuanganController extends Controller
 
         try {
             $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
-            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : Carbon::create(2020, 1, 1)->startOfDay();
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
         }
@@ -242,123 +244,21 @@ class LaporanKeuanganController extends Controller
         
         try {
             $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
-            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : Carbon::create(2020, 1, 1)->startOfDay();
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
         }
 
-        // Get all active programs
-        $programs = \App\Models\Program::all();
+        // Get all active programs with their shares
+        $programs = Program::with(['shares.type'])->get();
 
-        $programData = [];
+        $programDataEntries = [];
+        $totalDanaSiapSalur = 0;
         
-        // Calculate Totals for "Semua Program" (Grand Total for the period)
-        $pemasukanTotal = Transaksi::whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
-            ->sum('nominal');
-        
-        $pengajuanTotal = \App\Models\PengajuanDana::where('status', 'Approved')
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum('amount');
-        
-        $penyaluranTotal = \App\Models\Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
-            ->sum('amount');
-
-        if ($pemasukanTotal > 0 || $pengajuanTotal > 0 || $penyaluranTotal > 0) {
-            // Get detailed breakdown for "Semua Program" - FIFO based
-            $pemasukanBreakdown = [];
-            $pengajuanBreakdown = [];
-            $penyaluranBreakdown = [];
-
-            // Breakdown all pemasukan grouped by program (including Tanpa Program)
-            $pemasukanWithProgram = Transaksi::selectRaw('transaksis.program_id, program.nama_program, SUM(transaksis.nominal) as total')
-                ->leftJoin('program', 'transaksis.program_id', '=', 'program.id')
-                ->whereBetween('transaksis.tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
-                ->groupBy('transaksis.program_id', 'program.nama_program')
-                ->orderBy(DB::raw('MIN(transaksis.tanggal_transaksi)'), 'asc') // FIFO
-                ->get();
-            
-            foreach ($pemasukanWithProgram as $item) {
-                $pemasukanBreakdown[] = [
-                    'program_nama' => $item->nama_program ?: 'Tanpa Program',
-                    'amount' => (float)$item->total,
-                ];
-            }
-
-            // Breakdown all pengajuan dana by program (including Tanpa Program)
-            $pengajuanDetails = \App\Models\PengajuanDana::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(pengajuan_danas.amount) as total')
-                ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
-                ->where('status', 'Approved')
-                ->whereBetween('pengajuan_danas.created_at', [$startDate, $endDate])
-                ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
-                ->orderBy(DB::raw('MIN(pengajuan_danas.created_at)'), 'asc') // FIFO
-                ->get();
-            
-            foreach ($pengajuanDetails as $item) {
-                $pengajuanBreakdown[] = [
-                    'program_nama' => $item->nama_program ?: 'Tanpa Program',
-                    'amount' => (float)$item->total,
-                ];
-            }
-
-            // Breakdown all penyaluran by program (including Tanpa Program)
-            $penyaluranDetails = \App\Models\Penyaluran::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(penyalurans.amount) as total')
-                ->leftJoin('pengajuan_danas', 'penyalurans.pengajuan_dana_id', '=', 'pengajuan_danas.id')
-                ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
-                ->whereBetween(DB::raw('DATE(penyalurans.created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
-                ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
-                ->orderBy(DB::raw('MIN(penyalurans.created_at)'), 'asc') // FIFO
-                ->get();
-            
-            foreach ($penyaluranDetails as $item) {
-                $penyaluranBreakdown[] = [
-                    'program_nama' => $item->nama_program ?: 'Tanpa Program',
-                    'amount' => (float)$item->total,
-                ];
-            }
-
-            $programData[] = [
-                'id' => null,
-                'nama' => 'Semua Program',
-                'pemasukan' => (float)$pemasukanTotal,
-                'pengajuan_dana' => (float)$pengajuanTotal,
-                'penyaluran' => (float)$penyaluranTotal,
-                'saldo' => (float)($pemasukanTotal - ($pengajuanTotal + $penyaluranTotal)),
-                'breakdown' => [
-                    'pemasukan' => $pemasukanBreakdown,
-                    'pengajuan_dana' => $pengajuanBreakdown,
-                    'penyaluran' => $penyaluranBreakdown,
-                ],
-            ];
-            
-            // Add "Tanpa Program / Operasional Umum" specific row if unassigned data exists
-            $pemasukanUnassigned = Transaksi::whereNull('program_id')
-                ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
-                ->sum('nominal');
-            
-            $pengajuanUnassigned = \App\Models\PengajuanDana::whereNull('program_id')
-                ->where('status', 'Approved')
-                ->whereBetween('created_at', [$startDate, $endDate])
-                ->sum('amount');
-            
-            $penyaluranUnassigned = \App\Models\Penyaluran::whereHas('pengajuan', function($q) {
-                $q->whereNull('program_id');
-            })->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
-            ->sum('amount');
-            
-            if ($pemasukanUnassigned > 0 || $pengajuanUnassigned > 0 || $penyaluranUnassigned > 0) {
-                $programData[] = [
-                    'id' => 'unassigned',
-                    'nama' => 'Tanpa Program / Operasional Umum',
-                    'pemasukan' => (float)$pemasukanUnassigned,
-                    'pengajuan_dana' => (float)$pengajuanUnassigned,
-                    'penyaluran' => (float)$penyaluranUnassigned,
-                    'saldo' => (float)($pemasukanUnassigned - ($pengajuanUnassigned + $penyaluranUnassigned)),
-                ];
-            }
-        }
-
+        // 1. Calculate assigned programs first to get their allocated "Dana Siap Salur"
+        /** @var Program $program */
         foreach ($programs as $program) {
-            $pemasukan = $program->transaksis()
+            $rawInflow = $program->transaksis()
                 ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
                 ->sum('nominal');
             
@@ -372,16 +272,148 @@ class LaporanKeuanganController extends Controller
             })->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
             ->sum('amount');
 
+            // Calculate Dana Siap Salur based on Program Percentage
+            $programShareAllocated = 0;
+            $allSharesAllocated = 0;
+            
+            foreach ($program->shares as $s) {
+                $pst = $s->relationLoaded('type') ? $s->getRelation('type') : \App\Models\ProgramShareType::find($s->program_share_type_id);
+                $key = $pst->key ?? 'unknown';
+                
+                $allocated = 0;
+                if ($s->type === 'percentage' && $s->value !== null) {
+                    $allocated = floor($rawInflow * (float)$s->value / 100);
+                } elseif ($s->type === 'nominal' && $s->value !== null) {
+                    $allocated = (float)$s->value;
+                }
+                
+                if ($key === 'program') {
+                    $programShareAllocated = $allocated;
+                }
+                $allSharesAllocated += $allocated;
+            }
+
+            // If no explicit 'program' share percentage, use remainder (matching allocationSummary logic)
+            if ($programShareAllocated == 0 && $allSharesAllocated < $rawInflow) {
+                $programShareAllocated = $rawInflow - $allSharesAllocated;
+            }
+
+            $danaSiapSalur = (float)$programShareAllocated;
+            
             // Only include programs with activity
-            if ($pemasukan > 0 || $pengajuan > 0 || $penyaluran > 0) {
-                $programData[] = [
+            if ($rawInflow > 0 || $pengajuan > 0 || $penyaluran > 0) {
+                $programDataEntries[] = [
                     'id' => $program->id,
                     'nama' => $program->nama_program,
-                    'pemasukan' => (float)$pemasukan,
+                    'pemasukan' => $danaSiapSalur, // Display as Dana Siap Salur
                     'pengajuan_dana' => (float)$pengajuan,
                     'penyaluran' => (float)$penyaluran,
-                    'saldo' => (float)($pemasukan - ($pengajuan + $penyaluran)),
+                    'saldo' => (float)($danaSiapSalur - ($pengajuan + $penyaluran)),
                 ];
+                $totalDanaSiapSalur += $danaSiapSalur;
+            }
+        }
+
+        // 2. Calculate Unassigned
+        $pemasukanUnassigned = Transaksi::whereNull('program_id')
+            ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('nominal');
+        
+        $pengajuanUnassigned = \App\Models\PengajuanDana::whereNull('program_id')
+            ->where('status', 'Approved')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('amount');
+        
+        $penyaluranUnassigned = \App\Models\Penyaluran::whereHas('pengajuan', function($q) {
+            $q->whereNull('program_id');
+        })->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+        ->sum('amount');
+
+        $unassignedRow = null;
+        if ($pemasukanUnassigned > 0 || $pengajuanUnassigned > 0 || $penyaluranUnassigned > 0) {
+            $danaSiapSalurUnassigned = (float)$pemasukanUnassigned; // 100% for unassigned
+            $unassignedRow = [
+                'id' => 'unassigned',
+                'nama' => 'Tanpa Program / Operasional Umum',
+                'pemasukan' => $danaSiapSalurUnassigned,
+                'pengajuan_dana' => (float)$pengajuanUnassigned,
+                'penyaluran' => (float)$penyaluranUnassigned,
+                'saldo' => (float)($danaSiapSalurUnassigned - ($pengajuanUnassigned + $penyaluranUnassigned)),
+            ];
+            $totalDanaSiapSalur += $danaSiapSalurUnassigned;
+        }
+
+        // 3. Calculate Global Totals for "Semua Program"
+        $pengajuanTotal = \App\Models\PengajuanDana::where('status', 'Approved')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('amount');
+        
+        $penyaluranTotal = \App\Models\Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('amount');
+
+        $programData = [];
+        if ($totalDanaSiapSalur > 0 || $pengajuanTotal > 0 || $penyaluranTotal > 0) {
+            // Detailed breakdown for "Semua Program" (Dana Siap Salur Breakdown)
+            $pemasukanBreakdown = [];
+            foreach ($programDataEntries as $entry) {
+                if ($entry['pemasukan'] > 0) {
+                    $pemasukanBreakdown[] = [
+                        'program_nama' => $entry['nama'],
+                        'amount' => $entry['pemasukan'],
+                    ];
+                }
+            }
+            if ($unassignedRow && $unassignedRow['pemasukan'] > 0) {
+                $pemasukanBreakdown[] = [
+                    'program_nama' => $unassignedRow['nama'],
+                    'amount' => $unassignedRow['pemasukan'],
+                ];
+            }
+
+            // We still need the original breakdowns for expenses to keep the UI rich
+            $pengajuanBreakdown = [];
+            $pengajuanDetails = \App\Models\PengajuanDana::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(pengajuan_danas.amount) as total')
+                ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
+                ->where('status', 'Approved')
+                ->whereBetween('pengajuan_danas.created_at', [$startDate, $endDate])
+                ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
+                ->get();
+            foreach ($pengajuanDetails as $item) {
+                $pengajuanBreakdown[] = ['program_nama' => $item->nama_program ?: 'Tanpa Program', 'amount' => (float)$item->total];
+            }
+
+            $penyaluranBreakdown = [];
+            $penyaluranDetails = \App\Models\Penyaluran::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(penyalurans.amount) as total')
+                ->leftJoin('pengajuan_danas', 'penyalurans.pengajuan_dana_id', '=', 'pengajuan_danas.id')
+                ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
+                ->whereBetween(DB::raw('DATE(penyalurans.created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+                ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
+                ->get();
+            foreach ($penyaluranDetails as $item) {
+                $penyaluranBreakdown[] = ['program_nama' => $item->nama_program ?: 'Tanpa Program', 'amount' => (float)$item->total];
+            }
+
+            $programData[] = [
+                'id' => null,
+                'nama' => 'Semua Program',
+                'pemasukan' => (float)$totalDanaSiapSalur, // Dana Siap Salur Total
+                'pengajuan_dana' => (float)$pengajuanTotal,
+                'penyaluran' => (float)$penyaluranTotal,
+                'saldo' => (float)($totalDanaSiapSalur - ($pengajuanTotal + $penyaluranTotal)),
+                'breakdown' => [
+                    'pemasukan' => $pemasukanBreakdown,
+                    'pengajuan_dana' => $pengajuanBreakdown,
+                    'penyaluran' => $penyaluranBreakdown,
+                ],
+            ];
+
+            if ($unassignedRow) {
+                $programData[] = $unassignedRow;
+            }
+            
+            // Add individual programs
+            foreach ($programDataEntries as $entry) {
+                $programData[] = $entry;
             }
         }
 
@@ -409,7 +441,7 @@ class LaporanKeuanganController extends Controller
 
         try {
             $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
-            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : Carbon::create(2020, 1, 1)->startOfDay();
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
         }
@@ -591,7 +623,7 @@ class LaporanKeuanganController extends Controller
 
         try {
             $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
-            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : Carbon::create(2020, 1, 1)->startOfDay();
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
         }
@@ -685,7 +717,7 @@ class LaporanKeuanganController extends Controller
 
         try {
             $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
-            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : Carbon::create(2020, 1, 1)->startOfDay();
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
         }
@@ -782,7 +814,7 @@ class LaporanKeuanganController extends Controller
 
         try {
             $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
-            $startDate = $start ? Carbon::parse($start)->startOfDay() : $endDate->copy()->startOfMonth();
+            $startDate = $start ? Carbon::parse($start)->startOfDay() : Carbon::create(2020, 1, 1)->startOfDay();
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Invalid date format'], 422);
         }

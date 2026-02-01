@@ -577,7 +577,6 @@
                     <th class="px-4 py-3 text-right">Pemasukan</th>
                     <th class="px-4 py-3 text-right">Pengajuan Dana</th>
                     <th class="px-4 py-3 text-right">Penyaluran</th>
-                    <th class="px-4 py-3 text-right">Total Pengeluaran</th>
                     <th class="px-4 py-3 text-right">Saldo</th>
                   </tr>
                 </thead>
@@ -618,13 +617,12 @@
                       <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(program.pemasukan || 0) }}</td>
                       <td class="px-4 py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(program.pengajuan_dana || 0) }}</td>
                       <td class="px-4 py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(program.penyaluran || 0) }}</td>
-                      <td class="px-4 py-3 text-right text-sm font-semibold text-red-600 dark:text-red-400">{{ formatCurrency(program.total_pengeluaran || 0) }}</td>
                       <td class="px-4 py-3 text-right text-sm font-bold" :class="(program.saldo || 0) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.saldo || 0) }}</td>
                     </tr>
                     
                     <!-- Expanded Detail Row for Semua Program -->
                     <tr v-if="program.id === null && program.breakdown && expandedProgramId === 'null'" class="border-b border-gray-100 bg-blue-50/30 dark:border-gray-800 dark:bg-blue-900/5">
-                      <td colspan="6" class="px-4 py-4">
+                      <td colspan="5" class="px-4 py-4">
                         <div class="ml-8 space-y-4">
                           <div class="text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Detail Breakdown (FIFO)</div>
                           
@@ -681,7 +679,7 @@
                     </tr>
                   </template>
                   <tr v-if="programBreakdownData.length === 0 && !isLoadingProgramBreakdown">
-                    <td colspan="6" class="px-4 py-12 text-center">
+                    <td colspan="5" class="px-4 py-12 text-center">
                       <div class="flex flex-col items-center justify-center gap-3">
                         <svg class="h-16 w-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1982,7 +1980,6 @@ const handleExportProgramBreakdown = () => {
     'Pemasukan': formatCurrency(p.pemasukan || 0),
     'Pengajuan Dana': formatCurrency(p.pengajuan_dana || 0),
     'Penyaluran': formatCurrency(p.penyaluran || 0),
-    'Total Pengeluaran': formatCurrency((p.pengajuan_dana || 0) + (p.penyaluran || 0)),
     'Saldo': formatCurrency(p.saldo || 0),
   }))
   

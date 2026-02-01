@@ -49,14 +49,13 @@ class LaporanKeuanganController extends Controller
         }
         $incomingInRange = $incomingInRangeQuery->sum('nominal');
 
-        $disbursementsInRangeQuery = PengajuanDanaDisbursement::whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()]);
+        $disbursementsInRangeQuery = \App\Models\PengajuanDana::where('status', 'Approved')
+            ->whereBetween('created_at', [$startDate, $endDate]);
         if ($programId) {
             $disbursementsInRangeQuery->where('program_id', $programId);
         }
         if ($kantorCabangId) {
-            $disbursementsInRangeQuery->whereHas('pengajuan', function ($q) use ($kantorCabangId) {
-                $q->where('kantor_cabang_id', $kantorCabangId);
-            });
+            $disbursementsInRangeQuery->where('kantor_cabang_id', $kantorCabangId);
         }
         $disbursementsInRange = $disbursementsInRangeQuery->sum('amount');
 
@@ -83,14 +82,13 @@ class LaporanKeuanganController extends Controller
         }
         $incomingBefore = $incomingBeforeQuery->sum('nominal');
 
-        $disbursementsBeforeQuery = PengajuanDanaDisbursement::where('tanggal_disburse', '<', $startDate->toDateString());
+        $disbursementsBeforeQuery = \App\Models\PengajuanDana::where('status', 'Approved')
+            ->where('created_at', '<', $startDate);
         if ($programId) {
             $disbursementsBeforeQuery->where('program_id', $programId);
         }
         if ($kantorCabangId) {
-            $disbursementsBeforeQuery->whereHas('pengajuan', function ($q) use ($kantorCabangId) {
-                $q->where('kantor_cabang_id', $kantorCabangId);
-            });
+            $disbursementsBeforeQuery->where('kantor_cabang_id', $kantorCabangId);
         }
         $disbursementsBefore = $disbursementsBeforeQuery->sum('amount');
 
@@ -138,25 +136,25 @@ class LaporanKeuanganController extends Controller
                 ];
             })->toArray();
 
-        $disbursementRowsQuery = PengajuanDanaDisbursement::whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])->orderBy('tanggal_disburse', 'asc');
+        $disbursementRowsQuery = \App\Models\PengajuanDana::where('status', 'Approved')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->orderBy('created_at', 'asc');
         if ($programId) {
             $disbursementRowsQuery->where('program_id', $programId);
         }
         if ($kantorCabangId) {
-            $disbursementRowsQuery->whereHas('pengajuan', function ($q) use ($kantorCabangId) {
-                $q->where('kantor_cabang_id', $kantorCabangId);
-            });
+            $disbursementRowsQuery->where('kantor_cabang_id', $kantorCabangId);
         }
         $disbursementRows = $disbursementRowsQuery
-            ->get(['id', 'tanggal_disburse', 'amount', 'pengajuan_dana_id'])
+            ->get(['id', 'created_at', 'amount', 'submission_type'])
             ->map(function ($d) {
                 return [
                     'id' => $d->id,
-                    'tanggal' => $d->tanggal_disburse ? $d->tanggal_disburse->format('Y-m-d') : null,
-                    'keterangan' => 'Pengajuan Dana',
+                    'tanggal' => $d->created_at ? $d->created_at->format('Y-m-d') : null,
+                    'keterangan' => 'Pengajuan Dana (' . $d->submission_type . ')',
                     'masuk' => 0.0,
                     'keluar' => (float)$d->amount,
-                    'source' => 'disbursement',
+                    'source' => 'disbursement', // keep key for frontend compat
                 ];
             })->toArray();
 
@@ -254,34 +252,26 @@ class LaporanKeuanganController extends Controller
 
         $programData = [];
         
-        // Add "Semua Program" (NULL program_id) entry first for transactions without program
-        $pemasukanNull = Transaksi::whereNull('program_id')
-            ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+        // Calculate Totals for "Semua Program" (Grand Total for the period)
+        $pemasukanTotal = Transaksi::whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
             ->sum('nominal');
         
-        $pengajuanNull = \App\Models\PengajuanDanaDisbursement::whereNull('program_id')
-            ->whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
+        $pengajuanTotal = \App\Models\PengajuanDana::where('status', 'Approved')
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->sum('amount');
         
-        $penyaluranNull = \App\Models\Penyaluran::whereHas('pengajuan', function($q) {
-            $q->whereNull('program_id');
-        })->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
-        ->sum('amount');
+        $penyaluranTotal = \App\Models\Penyaluran::whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('amount');
 
-        if ($pemasukanNull > 0 || $pengajuanNull > 0 || $penyaluranNull > 0) {
+        if ($pemasukanTotal > 0 || $pengajuanTotal > 0 || $penyaluranTotal > 0) {
             // Get detailed breakdown for "Semua Program" - FIFO based
-            // These show where the "unassigned" transactions actually came from
             $pemasukanBreakdown = [];
             $pengajuanBreakdown = [];
             $penyaluranBreakdown = [];
 
-            // For "Semua Program" (NULL program_id), we show ALL transactions grouped by program
-            // to give visibility on where the money came from/went to
-            
-            // Breakdown pemasukan by actual programs (FIFO - earliest first)
+            // Breakdown all pemasukan grouped by program (including Tanpa Program)
             $pemasukanWithProgram = Transaksi::selectRaw('transaksis.program_id, program.nama_program, SUM(transaksis.nominal) as total')
                 ->leftJoin('program', 'transaksis.program_id', '=', 'program.id')
-                ->whereNotNull('transaksis.program_id')
                 ->whereBetween('transaksis.tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
                 ->groupBy('transaksis.program_id', 'program.nama_program')
                 ->orderBy(DB::raw('MIN(transaksis.tanggal_transaksi)'), 'asc') // FIFO
@@ -289,32 +279,31 @@ class LaporanKeuanganController extends Controller
             
             foreach ($pemasukanWithProgram as $item) {
                 $pemasukanBreakdown[] = [
-                    'program_nama' => $item->nama_program ?: 'Unknown',
+                    'program_nama' => $item->nama_program ?: 'Tanpa Program',
                     'amount' => (float)$item->total,
                 ];
             }
 
-            // Breakdown pengajuan dana by program (FIFO)
-            $pengajuanDetails = \App\Models\PengajuanDanaDisbursement::selectRaw('pengajuan_dana_disbursements.program_id, program.nama_program, SUM(pengajuan_dana_disbursements.amount) as total')
-                ->leftJoin('program', 'pengajuan_dana_disbursements.program_id', '=', 'program.id')
-                ->whereNotNull('pengajuan_dana_disbursements.program_id')
-                ->whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
-                ->groupBy('pengajuan_dana_disbursements.program_id', 'program.nama_program')
-                ->orderBy(DB::raw('MIN(tanggal_disburse)'), 'asc') // FIFO
+            // Breakdown all pengajuan dana by program (including Tanpa Program)
+            $pengajuanDetails = \App\Models\PengajuanDana::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(pengajuan_danas.amount) as total')
+                ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
+                ->where('status', 'Approved')
+                ->whereBetween('pengajuan_danas.created_at', [$startDate, $endDate])
+                ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
+                ->orderBy(DB::raw('MIN(pengajuan_danas.created_at)'), 'asc') // FIFO
                 ->get();
             
             foreach ($pengajuanDetails as $item) {
                 $pengajuanBreakdown[] = [
-                    'program_nama' => $item->nama_program ?: 'Unknown',
+                    'program_nama' => $item->nama_program ?: 'Tanpa Program',
                     'amount' => (float)$item->total,
                 ];
             }
 
-            // Breakdown penyaluran by program (FIFO)
+            // Breakdown all penyaluran by program (including Tanpa Program)
             $penyaluranDetails = \App\Models\Penyaluran::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(penyalurans.amount) as total')
-                ->join('pengajuan_danas', 'penyalurans.pengajuan_dana_id', '=', 'pengajuan_danas.id')
+                ->leftJoin('pengajuan_danas', 'penyalurans.pengajuan_dana_id', '=', 'pengajuan_danas.id')
                 ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
-                ->whereNotNull('pengajuan_danas.program_id')
                 ->whereBetween(DB::raw('DATE(penyalurans.created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
                 ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
                 ->orderBy(DB::raw('MIN(penyalurans.created_at)'), 'asc') // FIFO
@@ -322,7 +311,7 @@ class LaporanKeuanganController extends Controller
             
             foreach ($penyaluranDetails as $item) {
                 $penyaluranBreakdown[] = [
-                    'program_nama' => $item->nama_program ?: 'Unknown',
+                    'program_nama' => $item->nama_program ?: 'Tanpa Program',
                     'amount' => (float)$item->total,
                 ];
             }
@@ -330,17 +319,42 @@ class LaporanKeuanganController extends Controller
             $programData[] = [
                 'id' => null,
                 'nama' => 'Semua Program',
-                'pemasukan' => (float)$pemasukanNull,
-                'pengajuan_dana' => (float)$pengajuanNull,
-                'penyaluran' => (float)$penyaluranNull,
-                'total_pengeluaran' => (float)($pengajuanNull + $penyaluranNull),
-                'saldo' => (float)($pemasukanNull - ($pengajuanNull + $penyaluranNull)),
+                'pemasukan' => (float)$pemasukanTotal,
+                'pengajuan_dana' => (float)$pengajuanTotal,
+                'penyaluran' => (float)$penyaluranTotal,
+                'saldo' => (float)($pemasukanTotal - ($pengajuanTotal + $penyaluranTotal)),
                 'breakdown' => [
                     'pemasukan' => $pemasukanBreakdown,
                     'pengajuan_dana' => $pengajuanBreakdown,
                     'penyaluran' => $penyaluranBreakdown,
                 ],
             ];
+            
+            // Add "Tanpa Program / Operasional Umum" specific row if unassigned data exists
+            $pemasukanUnassigned = Transaksi::whereNull('program_id')
+                ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+                ->sum('nominal');
+            
+            $pengajuanUnassigned = \App\Models\PengajuanDana::whereNull('program_id')
+                ->where('status', 'Approved')
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->sum('amount');
+            
+            $penyaluranUnassigned = \App\Models\Penyaluran::whereHas('pengajuan', function($q) {
+                $q->whereNull('program_id');
+            })->whereBetween(DB::raw('DATE(created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('amount');
+            
+            if ($pemasukanUnassigned > 0 || $pengajuanUnassigned > 0 || $penyaluranUnassigned > 0) {
+                $programData[] = [
+                    'id' => 'unassigned',
+                    'nama' => 'Tanpa Program / Operasional Umum',
+                    'pemasukan' => (float)$pemasukanUnassigned,
+                    'pengajuan_dana' => (float)$pengajuanUnassigned,
+                    'penyaluran' => (float)$penyaluranUnassigned,
+                    'saldo' => (float)($pemasukanUnassigned - ($pengajuanUnassigned + $penyaluranUnassigned)),
+                ];
+            }
         }
 
         foreach ($programs as $program) {
@@ -348,8 +362,9 @@ class LaporanKeuanganController extends Controller
                 ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
                 ->sum('nominal');
             
-            $pengajuan = \App\Models\PengajuanDanaDisbursement::where('program_id', $program->id)
-                ->whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
+            $pengajuan = \App\Models\PengajuanDana::where('program_id', $program->id)
+                ->where('status', 'Approved')
+                ->whereBetween('created_at', [$startDate, $endDate])
                 ->sum('amount');
             
             $penyaluran = \App\Models\Penyaluran::whereHas('pengajuan', function($q) use ($program) {
@@ -365,7 +380,6 @@ class LaporanKeuanganController extends Controller
                     'pemasukan' => (float)$pemasukan,
                     'pengajuan_dana' => (float)$pengajuan,
                     'penyaluran' => (float)$penyaluran,
-                    'total_pengeluaran' => (float)($pengajuan + $penyaluran),
                     'saldo' => (float)($pemasukan - ($pengajuan + $penyaluran)),
                 ];
             }
@@ -596,18 +610,17 @@ class LaporanKeuanganController extends Controller
         
         $pemasukanData = $pemasukanQuery->get()->keyBy('date');
 
-        // Daily aggregates for pengajuan dana
-        $pengajuanQuery = PengajuanDanaDisbursement::selectRaw('DATE(tanggal_disburse) as date, SUM(amount) as total')
-            ->whereBetween('tanggal_disburse', [$startDate->toDateString(), $endDate->toDateString()])
+        // Daily aggregates for pengajuan dana (Approved)
+        $pengajuanQuery = \App\Models\PengajuanDana::selectRaw('DATE(created_at) as date, SUM(amount) as total')
+            ->where('status', 'Approved')
+            ->whereBetween('created_at', [$startDate, $endDate])
             ->groupBy('date');
         
         if ($programId) {
             $pengajuanQuery->where('program_id', $programId);
         }
         if ($kantorCabangId) {
-            $pengajuanQuery->whereHas('pengajuan', function ($q) use ($kantorCabangId) {
-                $q->where('kantor_cabang_id', $kantorCabangId);
-            });
+            $pengajuanQuery->where('kantor_cabang_id', $kantorCabangId);
         }
         
         $pengajuanData = $pengajuanQuery->get()->keyBy('date');

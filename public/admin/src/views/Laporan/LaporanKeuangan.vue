@@ -1937,6 +1937,11 @@ watch(activeTab, (v) => {
     fetchBalanceData(1)
     fetchPrograms()
     fetchKantorCabangs()
+    fetchProgramBreakdown()
+    fetchPenyaluranByAlias()
+    fetchExpenseTypeBreakdown()
+    fetchAllocationSummary()
+    fetchBankAccounts()
   }
 })
 
@@ -1946,6 +1951,11 @@ onMounted(() => {
     fetchBalanceData(1)
     fetchPrograms()
     fetchKantorCabangs()
+    fetchProgramBreakdown()
+    fetchPenyaluranByAlias()
+    fetchExpenseTypeBreakdown()
+    fetchAllocationSummary()
+    fetchBankAccounts()
   }
 })
 

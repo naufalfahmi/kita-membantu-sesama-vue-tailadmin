@@ -308,7 +308,8 @@ class LaporanKeuanganController extends Controller
                     'pemasukan' => $danaSiapSalur, // Display as Dana Siap Salur
                     'pengajuan_dana' => (float)$pengajuan,
                     'penyaluran' => (float)$penyaluran,
-                    'saldo' => (float)($danaSiapSalur - ($pengajuan + $penyaluran)),
+                    'selisih' => (float)($pengajuan - $penyaluran), // Undisbursed approved funds
+                    'saldo' => (float)($danaSiapSalur - $penyaluran), // Dana Siap Salur minus actual disbursements
                 ];
                 $totalDanaSiapSalur += $danaSiapSalur;
             }
@@ -338,7 +339,8 @@ class LaporanKeuanganController extends Controller
                 'pemasukan' => $danaSiapSalurUnassigned,
                 'pengajuan_dana' => (float)$pengajuanUnassigned,
                 'penyaluran' => (float)$penyaluranUnassigned,
-                'saldo' => (float)($danaSiapSalurUnassigned - ($pengajuanUnassigned + $penyaluranUnassigned)),
+                'selisih' => (float)($pengajuanUnassigned - $penyaluranUnassigned),
+                'saldo' => (float)($danaSiapSalurUnassigned - $penyaluranUnassigned),
             ];
             $totalDanaSiapSalur += $danaSiapSalurUnassigned;
         }
@@ -399,7 +401,8 @@ class LaporanKeuanganController extends Controller
                 'pemasukan' => (float)$totalDanaSiapSalur, // Dana Siap Salur Total
                 'pengajuan_dana' => (float)$pengajuanTotal,
                 'penyaluran' => (float)$penyaluranTotal,
-                'saldo' => (float)($totalDanaSiapSalur - ($pengajuanTotal + $penyaluranTotal)),
+                'selisih' => (float)($pengajuanTotal - $penyaluranTotal),
+                'saldo' => (float)($totalDanaSiapSalur - $penyaluranTotal),
                 'breakdown' => [
                     'pemasukan' => $pemasukanBreakdown,
                     'pengajuan_dana' => $pengajuanBreakdown,

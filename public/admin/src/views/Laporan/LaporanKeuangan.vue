@@ -202,9 +202,6 @@
                   <p class="text-2xl font-bold text-orange-600 dark:text-orange-400">
                     {{ formatCurrency(balanceBreakdown.pengajuan_dana || 0) }}
                   </p>
-                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">
-                    {{ balanceBreakdown.pengajuan_dana_percentage || 0 }}% dari total pengeluaran
-                  </p>
                 </div>
                 <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-500/10">
                   <svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,9 +218,6 @@
                   <p class="mb-1 text-sm font-medium text-gray-600 dark:text-gray-400">Penyaluran</p>
                   <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">
                     {{ formatCurrency(balanceBreakdown.penyaluran || 0) }}
-                  </p>
-                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">
-                    {{ balanceBreakdown.penyaluran_percentage || 0 }}% dari total pengeluaran
                   </p>
                 </div>
                 <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/10">
@@ -251,24 +245,35 @@
               </div>
             </div>
 
-            <!-- Saldo Card -->
+            <!-- Saldo Card - Breakdown Details -->
             <div class="rounded-lg border border-gray-200 bg-gradient-to-br from-brand-500 to-brand-600 p-6 shadow-lg dark:border-gray-700 dark:from-brand-600 dark:to-brand-700">
-              <h3 class="mb-4 text-lg font-semibold text-white/90">Saldo</h3>
+              <h3 class="mb-4 text-lg font-semibold text-white/90">Detail Breakdown</h3>
               <div class="space-y-4">
                 <div>
-                  <p class="text-sm text-white/80">Saldo Akhir</p>
-                  <p class="text-3xl font-bold text-white">{{ formatCurrency(balanceTotals.saldo_akhir || 0) }}</p>
+                  <p class="text-sm text-white/80">Selisih Dana Belum Tersalurkan</p>
+                  <p class="text-3xl font-bold text-white">{{ formatCurrency(Math.max(0, (balanceBreakdown.pengajuan_dana || 0) - (balanceBreakdown.penyaluran || 0))) }}</p>
                 </div>
-                <div class="flex items-center justify-between border-t border-white/20 pt-4">
-                  <div>
-                    <p class="text-xs text-white/70">Saldo Awal</p>
-                    <p class="text-lg font-semibold text-white">{{ formatCurrency(balanceTotals.saldo_awal || 0) }}</p>
+                <div class="space-y-3 border-t border-white/20 pt-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <div class="h-3 w-3 rounded-full bg-orange-300"></div>
+                      <p class="text-xs text-white/70">Pengajuan Dana</p>
+                    </div>
+                    <p class="text-sm font-semibold text-white">{{ formatCurrency(balanceBreakdown.pengajuan_dana || 0) }}</p>
                   </div>
-                  <div class="text-right">
-                    <p class="text-xs text-white/70">Selisih</p>
-                    <p class="text-lg font-semibold" :class="(balanceTotals.saldo_akhir - balanceTotals.saldo_awal) >= 0 ? 'text-green-200' : 'text-red-200'">
-                      {{ formatCurrency(Math.abs(balanceTotals.saldo_akhir - balanceTotals.saldo_awal)) }}
-                    </p>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <div class="h-3 w-3 rounded-full bg-purple-300"></div>
+                      <p class="text-xs text-white/70">Penyaluran</p>
+                    </div>
+                    <p class="text-sm font-semibold text-white">{{ formatCurrency(balanceBreakdown.penyaluran || 0) }}</p>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <div class="h-3 w-3 rounded-full bg-cyan-300"></div>
+                      <p class="text-xs text-white/70">Selisih</p>
+                    </div>
+                    <p class="text-sm font-semibold text-white">{{ formatCurrency(Math.max(0, (balanceBreakdown.pengajuan_dana || 0) - (balanceBreakdown.penyaluran || 0))) }}</p>
                   </div>
                 </div>
               </div>
@@ -577,6 +582,7 @@
                     <th class="px-4 py-3 text-right">Dana Siap Salur</th>
                     <th class="px-4 py-3 text-right">Pengajuan Dana</th>
                     <th class="px-4 py-3 text-right">Penyaluran</th>
+                    <th class="px-4 py-3 text-right">Selisih</th>
                     <th class="px-4 py-3 text-right">Saldo</th>
                   </tr>
                 </thead>
@@ -617,12 +623,13 @@
                       <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(program.pemasukan || 0) }}</td>
                       <td class="px-4 py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(program.pengajuan_dana || 0) }}</td>
                       <td class="px-4 py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(program.penyaluran || 0) }}</td>
+                      <td class="px-4 py-3 text-right text-sm font-semibold" :class="(program.selisih || 0) >= 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.selisih || 0) }}</td>
                       <td class="px-4 py-3 text-right text-sm font-bold" :class="(program.saldo || 0) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.saldo || 0) }}</td>
                     </tr>
                     
                     <!-- Expanded Detail Row for Semua Program -->
                     <tr v-if="program.id === null && program.breakdown && expandedProgramId === 'null'" class="border-b border-gray-100 bg-blue-50/30 dark:border-gray-800 dark:bg-blue-900/5">
-                      <td colspan="5" class="px-4 py-4">
+                      <td colspan="6" class="px-4 py-4">
                         <div class="ml-8 space-y-4">
                           <div class="text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Detail Breakdown (FIFO)</div>
                           
@@ -679,7 +686,7 @@
                     </tr>
                   </template>
                   <tr v-if="programBreakdownData.length === 0 && !isLoadingProgramBreakdown">
-                    <td colspan="5" class="px-4 py-12 text-center">
+                    <td colspan="6" class="px-4 py-12 text-center">
                       <div class="flex flex-col items-center justify-center gap-3">
                         <svg class="h-16 w-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -1311,8 +1318,8 @@ const breakdownChartOptions = computed(() => ({
     fontFamily: 'Outfit, sans-serif',
     type: 'donut',
   },
-  colors: ['#f97316', '#a855f7'],
-  labels: ['Pengajuan Dana', 'Penyaluran'],
+  colors: ['#f97316', '#a855f7', '#06b6d4'],
+  labels: ['Pengajuan Dana', 'Penyaluran', 'Selisih'],
   legend: {
     position: 'bottom',
     labels: {
@@ -1348,13 +1355,14 @@ const breakdownChartOptions = computed(() => ({
           },
           total: {
             show: true,
-            label: 'Total',
+            label: 'Pengajuan Dana',
             fontSize: '14px',
             fontWeight: 600,
             color: '#6B7280',
             formatter: function (w: any) {
-              const total = w.globals.seriesTotals.reduce((a: number, b: number) => a + b, 0)
-              return formatCurrency(total)
+              // Show only Pengajuan Dana (first segment) as the source fund
+              const pengajuanDana = w.globals.seriesTotals[0] || 0
+              return formatCurrency(pengajuanDana)
             },
           },
         },
@@ -1363,10 +1371,12 @@ const breakdownChartOptions = computed(() => ({
   },
 }))
 
-const breakdownChartSeries = computed(() => [
-  balanceBreakdown.value.pengajuan_dana || 0,
-  balanceBreakdown.value.penyaluran || 0,
-])
+const breakdownChartSeries = computed(() => {
+  const pengajuan = balanceBreakdown.value.pengajuan_dana || 0
+  const penyaluran = balanceBreakdown.value.penyaluran || 0
+  const selisih = Math.max(0, pengajuan - penyaluran)
+  return [pengajuan, penyaluran, selisih]
+})
 
 
 // NEW: Penyaluran by Alias Horizontal Bar Chart
@@ -1981,6 +1991,7 @@ const handleExportProgramBreakdown = () => {
     'Dana Siap Salur': formatCurrency(p.pemasukan || 0),
     'Pengajuan Dana': formatCurrency(p.pengajuan_dana || 0),
     'Penyaluran': formatCurrency(p.penyaluran || 0),
+    'Selisih': formatCurrency(p.selisih || 0),
     'Saldo': formatCurrency(p.saldo || 0),
   }))
   

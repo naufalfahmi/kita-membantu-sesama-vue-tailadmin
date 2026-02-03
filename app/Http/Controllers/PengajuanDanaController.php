@@ -621,7 +621,12 @@ class PengajuanDanaController extends Controller
                     }
                     } else {
                         // ALL PROGRAMS: Calculate aggregate remaining across all programs
-                        $aggData = $this->calculateAggregateBalance($shareKey, $request->input('used_at'), $request->input('start_date'), $request->input('end_date'));
+                        // FIX: Use cumulative range (2020-01-01 to prev month end) if no explicit range provided
+                        // This matches the UI "Sisa Alokasi" logic which is cumulative
+                        $checkStart = $request->input('start_date') ?? '2020-01-01';
+                        $checkEnd = $request->input('end_date') ?? \Carbon\Carbon::parse($request->input('used_at'))->startOfMonth()->subMonths(1)->endOfMonth()->toDateString();
+
+                        $aggData = $this->calculateAggregateBalance($shareKey, $request->input('used_at'), $checkStart, $checkEnd);
                         $remaining = $aggData['remaining'];
 
                         if ((int)$request->input('amount') > $remaining) {
@@ -662,7 +667,11 @@ class PengajuanDanaController extends Controller
                             $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey, 1);
                         } else {
                             // Multi-program: allocate from programs with highest balance first
-                            $this->allocateFromMultiplePrograms($p->id, $shareKey, $p->used_at, $p->amount, auth()->id(), $request->input('start_date'), $request->input('end_date'));
+                            // FIX: Use same cumulative range as validation
+                            $allocStart = $request->input('start_date') ?? '2020-01-01';
+                            $allocEnd = $request->input('end_date') ?? \Carbon\Carbon::parse($p->used_at)->startOfMonth()->subMonths(1)->endOfMonth()->toDateString();
+
+                            $this->allocateFromMultiplePrograms($p->id, $shareKey, $p->used_at, $p->amount, auth()->id(), $allocStart, $allocEnd);
                         }
                     }
                 }
@@ -767,7 +776,7 @@ class PengajuanDanaController extends Controller
 
                 // Re-allocate disbursements when program/used_at/amount changed.
                 // Remove previous disbursements first. Only create new disbursements when the pengajuan is approved.
-                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->program_id && $p->used_at) {
+                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->used_at) {
                     // remove previous disbursements for this pengajuan
                     PengajuanDanaDisbursement::where('pengajuan_dana_id', $p->id)->delete();
                     if (is_string($p->status) && strtolower(trim($p->status)) === 'approved') {
@@ -775,8 +784,18 @@ class PengajuanDanaController extends Controller
                         if ($stype === 'operasional') $shareKey = 'ops_2';
                         elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                         else $shareKey = 'program';
-                        // allocate using default lookback = 1 (previous month)
-                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey, 1);
+                        
+                        if ($p->program_id) {
+                            // allocate using default lookback = 1 (previous month)
+                            $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, auth()->id(), $shareKey, 1);
+                        } else {
+                            // Multi-program: allocate from programs with highest balance first
+                            // Use cumulative range (2020 to prev month) matching validaton logic
+                            $allocStart = '2020-01-01';
+                            $allocEnd = \Carbon\Carbon::parse($p->used_at)->startOfMonth()->subMonths(1)->endOfMonth()->toDateString();
+                            
+                            $this->allocateFromMultiplePrograms($p->id, $shareKey, $p->used_at, $p->amount, auth()->id(), $allocStart, $allocEnd);
+                        }
                     }
                 } else {
                     // if not program/operasional anymore, remove any previous disbursements
@@ -862,13 +881,23 @@ class PengajuanDanaController extends Controller
 
             // if approved and program/operasional/gaji_karyawan submission, create disbursements
             if (is_string($decision) && strtolower($decision) === 'approved') {
-                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->program_id && $p->used_at) {
+                if (in_array($p->submission_type, ['program','operasional','gaji karyawan']) && $p->used_at) {
                     $stype = $p->submission_type;
                     if ($stype === 'operasional') $shareKey = 'ops_2';
                     elseif ($stype === 'gaji karyawan') $shareKey = 'ops_1';
                     else $shareKey = 'program';
-                    // allocate using default lookback = 1 (previous month)
-                    $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, $user->id, $shareKey, 1);
+                    
+                    if ($p->program_id) {
+                        // allocate using default lookback = 1 (previous month)
+                        $this->allocateDisbursements($p->id, $p->program_id, $p->used_at, $p->amount, $user->id, $shareKey, 1);
+                    } else {
+                        // Multi-program: allocate from programs with highest balance first
+                        // Use cumulative range (2020 to prev month) matching validaton logic
+                        $allocStart = '2020-01-01';
+                        $allocEnd = \Carbon\Carbon::parse($p->used_at)->startOfMonth()->subMonths(1)->endOfMonth()->toDateString();
+
+                        $this->allocateFromMultiplePrograms($p->id, $shareKey, $p->used_at, $p->amount, $user->id, $allocStart, $allocEnd);
+                    }
                 }
             } else {
                 // if rejected, ensure there are no disbursements

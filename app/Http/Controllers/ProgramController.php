@@ -654,15 +654,19 @@ class ProgramController extends Controller
                 $transRows[] = $prow;
             }
 
-            // prepare disbursedTotals separately by summing pengajuan_dana_disbursements grouped by mapped key across all programs
-            $disbursedTotals = ['total_transaksi' => $totals['total_transaksi']];
+            // prepare disbursedTotals separately by summing PENYALURAN (matching Laporan Keuangan)
+            // grouped by mapped key across all programs
+            $disbursedTotals = [];
             foreach ($columns as $c) $disbursedTotals[$c] = 0;
-            $disq = \App\Models\PengajuanDanaDisbursement::query();
+            
+            // Use Penyaluran model as it is the source of truth for "Realized/Distributed" funds in reports
+            $disq = \App\Models\Penyaluran::query();
             if ($start && $end) {
-                $disq->whereBetween('tanggal_disburse', [$start->toDateString(), $end->toDateString()]);
+                $disq->whereBetween(DB::raw('DATE(penyalurans.created_at)'), [$start->toDateString(), $end->toDateString()]);
             }
-            $disrows = $disq->selectRaw('pengajuan_dana_disbursements.*, pengajuan_danas.submission_type')
-                ->leftJoin('pengajuan_danas', 'pengajuan_danas.id', '=', 'pengajuan_dana_disbursements.pengajuan_dana_id')
+            // Join pengajuan to get proper program_id and submission_type
+            $disrows = $disq->selectRaw('penyalurans.*, pengajuan_danas.submission_type, pengajuan_danas.program_id as linked_program_id')
+                ->leftJoin('pengajuan_danas', 'pengajuan_danas.id', '=', 'penyalurans.pengajuan_dana_id')
                 ->get();
 
             // Build both overall disbursed totals by share key and per-program-per-share mapping
@@ -677,21 +681,48 @@ class ProgramController extends Controller
                 }
             }
 
+            // Pre-fetch share types to optimize loop
+            $allShareTypes = \App\Models\ProgramShareType::all();
+
             foreach ($disrows as $dr) {
                 $stype = $dr->submission_type ?? null;
-                $keyFor = 'program';
-                if ($stype === 'operasional') $keyFor = 'ops_2';
-                elseif ($stype === 'gaji karyawan') $keyFor = 'ops_1';
+                
+                $keyFor = null;
+                // robust matching: check alias OR name case-insensitively
+                if ($stype) {
+                    $match = $allShareTypes->first(function($pst) use ($stype) {
+                        return (strcasecmp($pst->alias ?? '', $stype) === 0) || (strcasecmp($pst->name ?? '', $stype) === 0);
+                    });
+                    if ($match) {
+                        $keyFor = $match->key;
+                    }
+                }
+
+                // Fallback for known legacy types if no match found
+                if (!$keyFor) {
+                    $stypeLower = $stype ? strtolower($stype) : '';
+                    if ($stypeLower === 'operasional') $keyFor = 'ops_2';
+                    elseif ($stypeLower === 'gaji karyawan') $keyFor = 'ops_1';
+                    elseif ($stypeLower === 'program') $keyFor = 'program';
+                    else $keyFor = 'program'; // default
+                }
 
                 // accumulate overall by share-type
                 if (! isset($disbursedTotals[$keyFor])) $disbursedTotals[$keyFor] = 0;
                 $disbursedTotals[$keyFor] += (int) $dr->amount;
 
-                // accumulate per-program-per-share if program_id exists on disbursement
-                $progId = $dr->program_id ?? null;
+                // accumulate per-program-per-share if program_id exists on disbursement (via pengajuan)
+                // accumulate per-program-per-share if program_id exists on disbursement (via pengajuan)
+                $progId = $dr->linked_program_id ?? $dr->program_id ?? null;
+                
+                // If NO program ID, map to global key
+                if (!$progId) {
+                    $progId = 'global';
+                }
+
                 if ($progId) {
                     $base = 'p_' . $progId;
-                    // ensure key exists
+                    // ensure key exists (for Global or dynamically added programs)
                     if (! isset($disbursedTotalsByProgram[$base])) {
                         $disbursedTotalsByProgram[$base] = 0;
                         $disbursedTotalsByProgram[$base . '_nominal'] = 0;
@@ -705,6 +736,62 @@ class ProgramController extends Controller
                     $disbursedTotalsByProgram[$base . '_nominal'] = $disbursedTotalsByProgram[$base];
                 }
             }
+
+            // Distribute global usage to programs based on largest allocation (FIFO / Largest Fund strategy)
+            $globalKeys = [];
+            foreach ($disbursedTotalsByProgram as $k => $v) {
+                if (strpos($k, 'p_global_') === 0 && $v > 0) {
+                     $cleanKey = substr($k, strlen('p_global_'));
+                     $globalKeys[$cleanKey] = $v;
+                }
+            }
+
+            if (!empty($globalKeys)) {
+                 foreach ($globalKeys as $shareKey => $amountToDistribute) {
+                      // Create a temporary list of programs with their allocations for this key
+                      $candidates = [];
+                      foreach ($rows as $row) {
+                          $pid = $row['program_id'] ?? $row['id'] ?? null;
+                          if (!$pid) continue;
+                          $alloc = $row['p_' . $pid . '_' . $shareKey] ?? 0;
+                          $candidates[] = ['id' => $pid, 'alloc' => $alloc];
+                      }
+
+                      // Sort by allocation descending (Largest Fund first)
+                      usort($candidates, function($a, $b) {
+                          return $b['alloc'] <=> $a['alloc'];
+                      });
+
+                      // Distribute
+                      foreach ($candidates as $cand) {
+                           if ($amountToDistribute <= 0) break;
+                           
+                           $pid = $cand['id'];
+                           $alloc = $cand['alloc'];
+                           
+                           $usageKey = 'p_' . $pid . '_' . $shareKey;
+                           $currentUsage = $disbursedTotalsByProgram[$usageKey] ?? 0;
+                           
+                           // Calculate available room in this bucket
+                           $available = max(0, $alloc - $currentUsage);
+                           
+                           if ($available > 0) {
+                                $take = min($available, $amountToDistribute);
+                                // Add to usage
+                                $disbursedTotalsByProgram[$usageKey] = $currentUsage + $take;
+                                $amountToDistribute -= $take;
+                           }
+                      }
+                      
+                      // If remainder exists (usage > total allocation), dump to largest allocator
+                      if ($amountToDistribute > 0 && !empty($candidates)) {
+                          $largestPid = $candidates[0]['id'];
+                          $usageKey = 'p_' . $largestPid . '_' . $shareKey;
+                          $disbursedTotalsByProgram[$usageKey] = ($disbursedTotalsByProgram[$usageKey] ?? 0) + $amountToDistribute;
+                      }
+                 }
+            }
+
 
             $shareTypeLabels = \App\Models\ProgramShareType::pluck('name', 'key')->toArray();
 

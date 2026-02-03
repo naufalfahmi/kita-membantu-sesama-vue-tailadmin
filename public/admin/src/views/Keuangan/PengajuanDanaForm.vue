@@ -15,8 +15,11 @@
           </div>
 
           <div class="lg:col-span-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe Pengajuan <span class="text-red-500">*</span></label>
-            <SearchableSelect v-model="formData.submissionType" :options="submissionTypeList" placeholder="Pilih tipe pengajuan" :search-input="submissionTypeSearchInput" @update:search-input="submissionTypeSearchInput = $event" />
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe POS <span class="text-red-500">*</span></label>
+            <SearchableSelect v-model="formData.submissionType" :options="submissionTypeList" placeholder="Pilih tipe pos" :search-input="submissionTypeSearchInput" @update:search-input="submissionTypeSearchInput = $event" />
+            <p v-if="formData.submissionType" class="mt-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
+              {{ formData.submissionType }} = {{ getShareKeyLabel(formData.submissionType) }}
+            </p>
           </div>
 
           <div class="lg:col-span-1">
@@ -295,6 +298,41 @@ const formatCurrency = (v: number | null) => {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v)
 }
 
+const submissionTypeMeta = ref<any[]>([])
+
+const fetchSubmissionTypes = async () => {
+  try {
+    const res = await fetch('/admin/api/program-share-types/submission-types', {
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      }
+    })
+    const json = await res.json()
+    if (json.success) {
+      submissionTypeMeta.value = json.data || []
+      submissionTypeList.value = (json.data || []).map((item: any) => ({
+        value: item.value,
+        label: item.label,
+        share_key: item.share_key,
+        name: item.name
+      }))
+    }
+  } catch (err) {
+    console.error('Failed to fetch submission types', err)
+  }
+}
+
+const getShareKeyLabel = (type: string) => {
+  if (!type) return ''
+  const t = type.toLowerCase()
+  const found = submissionTypeMeta.value.find((item: any) => item.value.toLowerCase() === t)
+  if (found && found.name) {
+    return found.name
+  }
+  return 'Program' // default fallback
+}
+
 const formatMonthYear = (ym: string | null) => {
   if (!ym) return ''
   // expected format 'YYYY-MM'
@@ -477,40 +515,7 @@ const loadProgramDetail = async () => {
   }
 }
 
-// Fetch submission types from API (dynamic based on program_share_types.alias)
-const fetchSubmissionTypes = async () => {
-  try {
-    const res = await fetch('/admin/api/program-share-types/submission-types', {
-      credentials: 'same-origin',
-      headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    const json = await res.json()
-    if (json.success && Array.isArray(json.data)) {
-      // Use alias only for label
-      submissionTypeList.value = json.data.map((item: any) => ({
-        value: item.value,
-        label: item.value,
-        share_key: item.share_key,
-        name: item.name
-      }))
-    } else {
-      // Fallback to hardcoded values if API fails
-      submissionTypeList.value = [
-        { value: 'Program', label: 'Program', share_key: 'program' },
-        { value: 'Operasional', label: 'Operasional', share_key: 'ops_2' },
-        { value: 'Gaji Karyawan', label: 'Gaji Karyawan', share_key: 'ops_1' },
-      ]
-    }
-  } catch (err) {
-    console.error('Error fetching submission types', err)
-    // Fallback to hardcoded values
-    submissionTypeList.value = [
-      { value: 'Program', label: 'Program', share_key: 'program' },
-      { value: 'Operasional', label: 'Operasional', share_key: 'ops_2' },
-      { value: 'Gaji Karyawan', label: 'Gaji Karyawan', share_key: 'ops_1' },
-    ]
-  }
-}
+// submission types already fetched and defined above
 
 // watch programId and usedAt with debounce
 watch([

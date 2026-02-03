@@ -78,8 +78,28 @@
       <!-- Summary boxes (dynamic, update with date filter) -->
       <div v-if="!isLoading" class="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <div v-for="(box, idx) in summaryBoxes" :key="`summary-${idx}`" class="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.02]">
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ box.label }}</p>
-          <p class="mt-2 text-lg font-semibold text-gray-800 dark:text-white">{{ formatCurrency(box.value) }}</p>
+          <p class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-200 border-b border-gray-100 dark:border-gray-700 pb-2">{{ box.label }}</p>
+          
+          <div class="space-y-2">
+            <div>
+              <p class="text-xs text-gray-500 dark:text-gray-400">Total Alokasi</p>
+              <p class="text-base font-semibold text-gray-800 dark:text-white">{{ formatCurrency(box.allocated) }}</p>
+            </div>
+            
+            <div class="flex justify-between items-end border-t border-gray-50 dark:border-gray-800/50 pt-1 mt-1">
+              <div>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400">Teralokasi di Penyaluran</p>
+                <p class="text-sm font-medium text-blue-600 dark:text-blue-400">{{ formatCurrency(box.used) }}</p>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-end border-t border-gray-50 dark:border-gray-800/50 pt-1 mt-1">
+               <div>
+                <p class="text-[10px] text-gray-500 dark:text-gray-400">Sisa Saldo</p>
+                <p class="text-sm font-medium text-green-600 dark:text-green-400">{{ formatCurrency(box.remaining) }}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -93,11 +113,11 @@
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+        <div class="grid gap-4 grid-cols-1 md:grid-cols-2">
           <div v-for="p in programsList" :key="p.program_id" class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div class="bg-gray-100 dark:bg-gray-800/50 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
               <div class="flex items-center justify-between">
-                <h4 class="font-semibold text-gray-800 dark:text-white/90">
+                <h4 class="font-semibold text-gray-800 dark:text-white/90 whitespace-nowrap truncate max-w-[300px]" :title="p.program_name + (p.tipe_name ? ' (' + p.tipe_name + ')' : '')">
                   {{ p.program_name || 'Program' }}
                   <span v-if="p.tipe_name" class="text-sm font-normal text-gray-600 dark:text-gray-400">({{ p.tipe_name }})</span>
                 </h4>
@@ -108,7 +128,7 @@
                 <thead class="bg-gray-50 dark:bg-gray-800/30">
                   <tr>
                     <th class="sticky left-0 z-10 min-w-[200px] border-r border-gray-200 bg-gray-50 px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800/30 dark:text-gray-300">Pembagian</th>
-                    <th class="border-r border-gray-200 px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-300"><div class="flex flex-col items-center gap-1"><span>Total</span></div></th>
+                    <th class="border-r border-gray-200 px-4 py-3 text-center text-xs font-semibold text-gray-700 dark:border-gray-700 dark:text-gray-300">Total</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -351,6 +371,9 @@ const shareTypeLabels = ref<Record<string,string>>({})
 
 // Summary boxes shown above the grid (dynamically built from program summaries)
 const summaryBoxes = ref<any[]>([])
+
+// Store disbursed totals per program (from API)
+const disbursedTotalsByProgram = ref<Record<string, number>>({})
 
 // Sample data - generate 200 items for infinite scroll testing
 const generateRowData = (): KeuanganRow[] => {
@@ -618,6 +641,9 @@ const fetchSummary = async () => {
     // Pivot: build group columns per program and rows per share key
     const programs = payload.data.rows || []
     const shareKeys = payload.data.columns && payload.data.columns.length ? payload.data.columns : ['dp','ops_1','ops_2','program','fee_mitra','bonus','championship']
+    
+    // Store disbursed totals by program for breakdown table
+    disbursedTotalsByProgram.value = payload.data.disbursed_totals_by_program || {}
 
     // Save into reactive refs used by the form layout
     programsList.value = (programs || []).filter(Boolean)
@@ -705,7 +731,7 @@ const fetchSummary = async () => {
     // Build a single totals row (summary across the selected date range)
     const totalsRow: any = { summary_label: 'TOTAL' }
     // total nominal can be taken from program totals
-    const totalNominal = programs.reduce((s: number, p: any) => s + Number(p?.total_transaksi || 0), 0)
+    const totalNominal = programs.filter((p: any) => p.id !== 'global').reduce((s: number, p: any) => s + Number(p?.total_transaksi || 0), 0)
 
     programs.forEach((p: any) => {
       if (!p) return
@@ -721,22 +747,56 @@ const fetchSummary = async () => {
 
     // Build summary boxes: overall nominal and aggregated per-share totals
     const boxes: any[] = []
-    boxes.push({ label: 'Nominal Keseluruhan Transaksi', value: totalNominal })
+    
+    // Total disbursement across all types
+    const totalDisbursed = Object.values(payload.data.disbursed_totals || {}).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0)
+    
+    boxes.push({ 
+      label: 'Nominal Keseluruhan Transaksi', 
+      value: totalNominal,
+      isTotal: true,
+      allocated: totalNominal, // Total amount is considered "allocated" to the system
+      used: totalDisbursed,
+      remaining: Math.max(0, totalNominal - totalDisbursed)
+    })
 
     // Include aggregated totals for each share key
     // Note: These represent allocated amounts per share type across all programs
     let totalSharesSum = 0
+    let totalSharesUsed = 0
+
     shareKeys.forEach((k: string) => {
-      const sum = programs.reduce((s: number, p: any) => s + Number(p?.[k] || 0), 0)
+      // Allocated from programs (exclude global/usage-only row)
+      const allocated = programs.filter((p: any) => p.id !== 'global').reduce((s: number, p: any) => s + Number(p?.[k] || 0), 0)
+      
+      // Used from disbursements (mapped on backend)
+      const used = Number(payload.data.disbursed_totals?.[k] || 0)
+      
       const labelName = shareTypeLabels.value[k] || getShareLabel(k, programs)
-      boxes.push({ label: `Nominal All ${labelName}`, value: sum })
-      totalSharesSum += sum
+      boxes.push({ 
+        label: `Nominal All ${labelName}`, 
+        value: allocated, // Keep value for potential backward campat, but template will use specific fields
+        allocated: allocated,
+        used: used,
+        remaining: Math.max(0, allocated - used)
+      })
+      
+      totalSharesSum += allocated
+      totalSharesUsed += used
     })
     
-    // Calculate unallocated (remainder)
+    // Calculate unallocated (remainder) matching backend logic
+    // Unallocated here means funds that didn't go into any specific share bucket
+    // For unallocated, "Used" is 0 because disbursements are always against a specific type (or default program)
     const unallocated = totalNominal - totalSharesSum
     if (unallocated > 0) {
-      boxes.push({ label: 'Sisa Belum Teralokasi', value: unallocated })
+      boxes.push({ 
+        label: 'Sisa Belum Teralokasi', 
+        value: unallocated,
+        allocated: unallocated,
+        used: 0,
+        remaining: unallocated
+      })
     }
 
     summaryBoxes.value = boxes

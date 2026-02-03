@@ -372,26 +372,49 @@ class LaporanKeuanganController extends Controller
             }
 
             // We still need the original breakdowns for expenses to keep the UI rich
+            // Mapping for aliases to clear names (e.g. "Gaji Karyawan" -> "OPS 1")
+            $shareTypes = \App\Models\ProgramShareType::all();
+            $typeMap = [];
+            foreach ($shareTypes as $st) {
+                 if ($st->alias) $typeMap[strtolower($st->alias)] = $st->name;
+                 if ($st->name) $typeMap[strtolower($st->name)] = $st->name;
+            }
+
+            // We still need the original breakdowns for expenses to keep the UI rich
             $pengajuanBreakdown = [];
-            $pengajuanDetails = \App\Models\PengajuanDana::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(pengajuan_danas.amount) as total')
+            $pengajuanDetails = \App\Models\PengajuanDana::selectRaw('pengajuan_danas.program_id, program.nama_program, pengajuan_danas.submission_type, SUM(pengajuan_danas.amount) as total')
                 ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
                 ->where('status', 'Approved')
                 ->whereBetween('pengajuan_danas.created_at', [$startDate, $endDate])
-                ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
+                ->groupBy('pengajuan_danas.program_id', 'program.nama_program', 'pengajuan_danas.submission_type')
+                ->orderBy('program.nama_program', 'desc') // Programs first, then nulls
                 ->get();
+            
             foreach ($pengajuanDetails as $item) {
-                $pengajuanBreakdown[] = ['program_nama' => $item->nama_program ?: 'Operasional', 'amount' => (float)$item->total];
+                $label = $item->nama_program;
+                if (!$label) {
+                    $stype = $item->submission_type;
+                    $label = $typeMap[strtolower((string)$stype)] ?? $stype ?? 'Operasional';
+                }
+                $pengajuanBreakdown[] = ['program_nama' => $label, 'amount' => (float)$item->total];
             }
 
             $penyaluranBreakdown = [];
-            $penyaluranDetails = \App\Models\Penyaluran::selectRaw('pengajuan_danas.program_id, program.nama_program, SUM(penyalurans.amount) as total')
+            $penyaluranDetails = \App\Models\Penyaluran::selectRaw('pengajuan_danas.program_id, program.nama_program, pengajuan_danas.submission_type, SUM(penyalurans.amount) as total')
                 ->leftJoin('pengajuan_danas', 'penyalurans.pengajuan_dana_id', '=', 'pengajuan_danas.id')
                 ->leftJoin('program', 'pengajuan_danas.program_id', '=', 'program.id')
                 ->whereBetween(DB::raw('DATE(penyalurans.created_at)'), [$startDate->toDateString(), $endDate->toDateString()])
-                ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
+                ->groupBy('pengajuan_danas.program_id', 'program.nama_program', 'pengajuan_danas.submission_type')
+                ->orderBy('program.nama_program', 'desc')
                 ->get();
+            
             foreach ($penyaluranDetails as $item) {
-                $penyaluranBreakdown[] = ['program_nama' => $item->nama_program ?: 'Operasional', 'amount' => (float)$item->total];
+                 $label = $item->nama_program;
+                if (!$label) {
+                    $stype = $item->submission_type;
+                    $label = $typeMap[strtolower((string)$stype)] ?? $stype ?? 'Operasional';
+                }
+                $penyaluranBreakdown[] = ['program_nama' => $label, 'amount' => (float)$item->total];
             }
 
             $programData[] = [
@@ -460,11 +483,8 @@ class LaporanKeuanganController extends Controller
         // Preferred keys for summary
         $shareKeys = ['dp', 'ops_1', 'ops_2', 'program', 'fee_mitra', 'bonus', 'championship'];
         
-        // Dynamic labels mapping - Use alias as primary label if available
-        $shareTypeLabels = \App\Models\ProgramShareType::pluck('alias', 'key')
-            ->map(function($alias, $key) {
-                return $alias ?: ucwords(str_replace('_', ' ', $key));
-            })->toArray();
+        // Fetch full share type objects for label and code mapping
+        $shareTypesByKey = \App\Models\ProgramShareType::all()->keyBy('key');
         
         $totalNominal = 0;
         $allocatedTotals = [];
@@ -582,7 +602,7 @@ class LaporanKeuanganController extends Controller
 
         // Build boxes
         $boxes = [];
-        $boxes[] = ['label' => 'Nominal Keseluruhan Transaksi', 'value' => $totalNominal, 'penyaluran' => $grandTotalPenyaluran];
+        $boxes[] = ['label' => 'Nominal Keseluruhan Transaksi', 'value' => $totalNominal, 'penyaluran' => $grandTotalPenyaluran, 'alias_code' => '-'];
         
         $totalSharesSum = 0;
         foreach ($shareKeys as $k) {
@@ -590,11 +610,15 @@ class LaporanKeuanganController extends Controller
             $peny = $penyaluranTotals[$k] ?? 0;
             if ($val <= 0 && $peny <= 0 && !in_array($k, ['dp', 'ops_1', 'ops_2', 'program'])) continue;
             
-            $label = $shareTypeLabels[$k];
+            $meta = $shareTypesByKey[$k] ?? null;
+            $label = $meta ? ($meta->alias ?: ucwords(str_replace('_', ' ', $k))) : ucwords(str_replace('_', ' ', $k));
+            $aliasCode = $meta ? $meta->name : '-';
+            
             $boxes[] = [
                 'label' => $label,
                 'value' => $val,
-                'penyaluran' => $peny
+                'penyaluran' => $peny,
+                'alias_code' => $aliasCode
             ];
             $totalSharesSum += $val;
         }

@@ -152,6 +152,7 @@
                 <thead>
                   <tr class="border-b border-gray-200 text-left text-sm font-semibold text-gray-600 dark:border-gray-700 dark:text-gray-400">
                     <th class="px-4 py-3">Kategori</th>
+                    <th class="px-4 py-3">Alias</th>
                     <th class="px-4 py-3 text-right">Dana Siap Salur</th>
                     <th class="px-4 py-3 text-right">Penyaluran</th>
                     <th class="px-4 py-3 text-right">Saldo</th>
@@ -160,6 +161,9 @@
                 <tbody>
                    <tr v-for="(box, idx) in filteredAllocationBoxes" :key="`alloc-${idx}`" class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]">
                       <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">{{ box.label }}</td>
+                      <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
+                        {{ box.alias_code || '-' }}
+                      </td>
                       <td class="px-4 py-3 text-right text-sm font-bold" :class="box.label.includes('Sisa') ? 'text-brand-600 dark:text-brand-400' : 'text-gray-800 dark:text-white/90'">
                         {{ formatCurrency(box.value) }}
                       </td>
@@ -171,12 +175,13 @@
                       </td>
                    </tr>
                    <tr v-if="filteredAllocationBoxes.length === 0 && !grandTotalBox && !isLoadingAllocation">
-                      <td colspan="4" class="px-4 py-12 text-center text-gray-500">Tidak ada data alokasi</td>
+                      <td colspan="5" class="px-4 py-12 text-center text-gray-500">Tidak ada data alokasi</td>
                    </tr>
                 </tbody>
                 <tfoot v-if="grandTotalBox">
                   <tr class="bg-gray-50 dark:bg-gray-800/50">
                     <td class="px-4 py-4 text-sm font-bold text-gray-800 dark:text-white/90">{{ grandTotalBox.label }}</td>
+                    <td class="px-4 py-4"></td>
                     <td class="px-4 py-4 text-right text-lg font-bold text-brand-600 dark:text-brand-400">
                       {{ formatCurrency(grandTotalBox.value) }}
                     </td>
@@ -350,39 +355,25 @@
               </div>
             </div>
 
-            <!-- Top 3 Categories Cards -->
-            <div v-if="penyaluranByAliasData.breakdown && penyaluranByAliasData.breakdown.length > 0" class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <!-- Breakdown Categories Cards -->
+            <div v-if="penyaluranByAliasData.breakdown && penyaluranByAliasData.breakdown.length > 0" class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div
-                v-for="(item, index) in penyaluranByAliasData.breakdown.slice(0, 3)"
+                v-for="(item, index) in penyaluranByAliasData.breakdown"
                 :key="index"
                 class="rounded-lg border p-4"
-                :class="{
-                  'border-purple-200 bg-purple-50 dark:border-purple-500/20 dark:bg-purple-500/10': index === 0,
-                  'border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/10': index === 1,
-                  'border-green-200 bg-green-50 dark:border-green-500/20 dark:bg-green-500/10': index === 2,
-                }"
+                :class="getCardStyle(index).container"
               >
                 <div class="flex items-center justify-between">
                   <div class="flex-1">
                     <div class="mb-1 flex items-center gap-2">
                       <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
-                        :class="{
-                          'bg-purple-200 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400': index === 0,
-                          'bg-blue-200 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400': index === 1,
-                          'bg-green-200 text-green-700 dark:bg-green-500/20 dark:text-green-400': index === 2,
-                        }"
+                        :class="getCardStyle(index).icon"
                       >
                         {{ index + 1 }}
                       </span>
                       <p class="text-sm font-medium text-gray-800 dark:text-white/90">{{ item.alias }}</p>
                     </div>
-                    <p class="text-lg font-bold"
-                      :class="{
-                        'text-purple-700 dark:text-purple-400': index === 0,
-                        'text-blue-700 dark:text-blue-400': index === 1,
-                        'text-green-700 dark:text-green-400': index === 2,
-                      }"
-                    >
+                    <p class="text-lg font-bold" :class="getCardStyle(index).text">
                       {{ formatCurrency(item.amount) }}
                     </p>
                     <p class="text-xs text-gray-600 dark:text-gray-400">
@@ -1390,9 +1381,47 @@ const generateColors = (count: number) => {
   return colors
 }
 
+// Helper to get card styles based on index
+const getCardStyle = (index: number) => {
+  const styles = [
+    {
+      container: 'border-purple-200 bg-purple-50 dark:border-purple-500/20 dark:bg-purple-500/10',
+      icon: 'bg-purple-200 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400',
+      text: 'text-purple-700 dark:text-purple-400'
+    },
+    {
+      container: 'border-blue-200 bg-blue-50 dark:border-blue-500/20 dark:bg-blue-500/10',
+      icon: 'bg-blue-200 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
+      text: 'text-blue-700 dark:text-blue-400'
+    },
+    {
+      container: 'border-green-200 bg-green-50 dark:border-green-500/20 dark:bg-green-500/10',
+      icon: 'bg-green-200 text-green-700 dark:bg-green-500/20 dark:text-green-400',
+      text: 'text-green-700 dark:text-green-400'
+    },
+    {
+      container: 'border-orange-200 bg-orange-50 dark:border-orange-500/20 dark:bg-orange-500/10',
+      icon: 'bg-orange-200 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400',
+      text: 'text-orange-700 dark:text-orange-400'
+    },
+    {
+      container: 'border-pink-200 bg-pink-50 dark:border-pink-500/20 dark:bg-pink-500/10',
+      icon: 'bg-pink-200 text-pink-700 dark:bg-pink-500/20 dark:text-pink-400',
+      text: 'text-pink-700 dark:text-pink-400'
+    },
+    {
+      container: 'border-indigo-200 bg-indigo-50 dark:border-indigo-500/20 dark:bg-indigo-500/10',
+      icon: 'bg-indigo-200 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400',
+      text: 'text-indigo-700 dark:text-indigo-400'
+    }
+  ]
+  return styles[index % styles.length]
+}
+
 // Kemudian di chartOptions
 const penyaluranByAliasChartOptions = computed(() => {
   const dataCount = penyaluranByAliasData.value.breakdown.length
+
   const dynamicColors = generateColors(dataCount)
   
   return {
@@ -1633,6 +1662,31 @@ const fetchBalanceData = async (page = 1) => {
     await fetchProgramBreakdown()
   } catch (err) {
     console.error('Exception fetching laporan keuangan', err)
+  }
+}
+
+// NEW: Store full meta for alias mapping
+const submissionTypeMeta = ref<any[]>([])
+
+const getAliasForCategory = (label: string) => {
+  if (!label) return '-'
+  // Find item where label matches item.value (which is the alias/category name like "Gaji Karyawan")
+  const found = submissionTypeMeta.value.find((m: any) => String(m.value).toLowerCase() === String(label).toLowerCase())
+  return found ? found.name : '-'
+}
+
+const fetchSubmissionTypes = async () => {
+  try {
+    const res = await fetch('/admin/api/program-share-types/submission-types', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    })
+    const json = await res.json()
+    if (json.success) {
+      submissionTypeMeta.value = json.data || []
+    }
+  } catch (err) {
+    console.error('Error fetching submission types', err)
   }
 }
 

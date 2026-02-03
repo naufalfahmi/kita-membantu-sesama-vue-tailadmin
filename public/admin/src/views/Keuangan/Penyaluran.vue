@@ -239,13 +239,22 @@ const columnDefs = [
     filter: false,
     flex: 1,
     valueGetter: (params: any) => {
-      // Jika kosong, tampilkan 'Operasional'
-      const val = params.data?.namaProgram || ''
-      return val ? val : 'Operasional'
+      const tipe = params.data?.tipe || ''
+      const mapped = submissionTypeMeta.value.find((m: any) => String(m.value).toLowerCase() === String(tipe).toLowerCase())
+      const label = mapped ? mapped.name : tipe
+      
+      // If label is 'Program', return the program name
+      if (String(label).toLowerCase() === 'program') {
+        const val = params.data?.namaProgram || ''
+        return val ? val : 'Program'
+      }
+      
+      // Otherwise return the mapped label (e.g. OPS 1, DP 1)
+      return label ? label : (params.data?.namaProgram || 'Operasional')
     },
   },
   {
-    headerName: 'Tipe Penyaluran',
+    headerName: 'Tipe POS',
     field: 'tipe',
     sortable: true,
     filter: false,
@@ -695,6 +704,9 @@ onMounted(() => {
   })
 })
 
+// Store full meta for column mapping
+const submissionTypeMeta = ref<any[]>([])
+
 const loadMyCredit = async () => {
   try {
     // First fetch submission types from API
@@ -706,6 +718,7 @@ const loadMyCredit = async () => {
     
     let types: Array<{value: string, label: string}> = []
     if (typesJson.success && Array.isArray(typesJson.data)) {
+      submissionTypeMeta.value = typesJson.data
       types = typesJson.data.map((item: any) => ({ value: item.value, label: item.value }))
     } else {
       // Fallback to hardcoded if API fails

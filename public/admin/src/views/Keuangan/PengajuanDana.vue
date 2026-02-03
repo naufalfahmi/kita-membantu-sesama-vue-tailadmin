@@ -120,7 +120,7 @@
           </div>
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Tipe Penyaluran
+              Tipe POS
             </label>
             <SearchableSelect
               v-model="filterTipePenyaluran"
@@ -340,7 +340,7 @@ const columnDefs = [
     },
   },
   {
-    headerName: 'Tipe Pengajuan',
+    headerName: 'Tipe POS',
     field: 'submissionType',
     sortable: true,
     filter: false,

@@ -103,7 +103,7 @@
                   </div>
                 </div>
                 <div class="flex-1">
-                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe Penyaluran</label>
+                  <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Tipe POS</label>
                   <SearchableSelect v-model="filterType" :options="typeOptions" placeholder="Cari tipe..." />
                 </div>
         </div>

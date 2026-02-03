@@ -71,8 +71,7 @@ class LaporanKeuanganController extends Controller
             $penyaluranInRangeQuery->where('kantor_cabang_id', $kantorCabangId);
         }
         $penyaluranInRange = $penyaluranInRangeQuery->sum('amount');
-
-        $outgoingInRange = $disbursementsInRange + $penyaluranInRange;
+        $outgoingInRange = (float)$penyaluranInRange;
 
         // Totals before start (for opening balance)
         $incomingBeforeQuery = Transaksi::where('tanggal_transaksi', '<', $startDate->toDateString());
@@ -104,7 +103,7 @@ class LaporanKeuanganController extends Controller
             $penyaluranBeforeQuery->where('kantor_cabang_id', $kantorCabangId);
         }
         $penyaluranBefore = $penyaluranBeforeQuery->sum('amount');
-        $outgoingBefore = $disbursementsBefore + $penyaluranBefore;
+        $outgoingBefore = (float)$penyaluranBefore;
 
         $saldoAwal = (float)$incomingBefore - (float)$outgoingBefore;
         $saldoAkhir = $saldoAwal + (float)$incomingInRange - (float)$outgoingInRange;
@@ -113,8 +112,8 @@ class LaporanKeuanganController extends Controller
         $breakdown = [
             'pengajuan_dana' => (float)$disbursementsInRange,
             'penyaluran' => (float)$penyaluranInRange,
-            'pengajuan_percentage' => $outgoingInRange > 0 ? round(($disbursementsInRange / $outgoingInRange) * 100, 2) : 0,
-            'penyaluran_percentage' => $outgoingInRange > 0 ? round(($penyaluranInRange / $outgoingInRange) * 100, 2) : 0,
+            'pengajuan_percentage' => ($disbursementsInRange + $penyaluranInRange) > 0 ? round(($disbursementsInRange / ($disbursementsInRange + $penyaluranInRange)) * 100, 2) : 0,
+            'penyaluran_percentage' => ($disbursementsInRange + $penyaluranInRange) > 0 ? round(($penyaluranInRange / ($disbursementsInRange + $penyaluranInRange)) * 100, 2) : 0,
         ];
 
         // Build transactions list (incoming and outgoing unified)
@@ -155,7 +154,7 @@ class LaporanKeuanganController extends Controller
                     'tanggal' => $d->created_at ? $d->created_at->format('Y-m-d') : null,
                     'keterangan' => 'Pengajuan Dana (' . $d->submission_type . ')',
                     'masuk' => 0.0,
-                    'keluar' => (float)$d->amount,
+                    'keluar' => 0.0, // Informational only, does not affect balance
                     'source' => 'disbursement', // keep key for frontend compat
                 ];
             })->toArray();

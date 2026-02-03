@@ -72,7 +72,7 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div class="flex-1">
             <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
-              Nama Program
+              Dana Salur
             </label>
             <SearchableSelect
               v-model="filterProgramId"
@@ -233,11 +233,16 @@ const columnDefs = [
     flex: 1,
   },
   {
-    headerName: 'Nama Program',
+    headerName: 'Dana Salur',
     field: 'namaProgram',
     sortable: true,
     filter: false,
     flex: 1,
+    valueGetter: (params: any) => {
+      // Jika kosong, tampilkan 'Operasional'
+      const val = params.data?.namaProgram || ''
+      return val ? val : 'Operasional'
+    },
   },
   {
     headerName: 'Tipe Penyaluran',

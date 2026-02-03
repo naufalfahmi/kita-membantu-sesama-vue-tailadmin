@@ -1987,7 +1987,7 @@ const handleExportBalance = () => {
 // NEW: Export program breakdown
 const handleExportProgramBreakdown = () => {
   const data = programBreakdownData.value.map((p) => ({
-    'Program': p.program_nama,
+    'Program': p.nama,
     'Dana Siap Salur': formatCurrency(p.pemasukan || 0),
     'Pengajuan Dana': formatCurrency(p.pengajuan_dana || 0),
     'Penyaluran': formatCurrency(p.penyaluran || 0),

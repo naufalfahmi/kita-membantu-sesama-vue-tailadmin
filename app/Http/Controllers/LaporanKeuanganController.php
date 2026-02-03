@@ -381,7 +381,7 @@ class LaporanKeuanganController extends Controller
                 ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
                 ->get();
             foreach ($pengajuanDetails as $item) {
-                $pengajuanBreakdown[] = ['program_nama' => $item->nama_program ?: 'Tanpa Program', 'amount' => (float)$item->total];
+                $pengajuanBreakdown[] = ['program_nama' => $item->nama_program ?: 'Operasional', 'amount' => (float)$item->total];
             }
 
             $penyaluranBreakdown = [];
@@ -392,7 +392,7 @@ class LaporanKeuanganController extends Controller
                 ->groupBy('pengajuan_danas.program_id', 'program.nama_program')
                 ->get();
             foreach ($penyaluranDetails as $item) {
-                $penyaluranBreakdown[] = ['program_nama' => $item->nama_program ?: 'Tanpa Program', 'amount' => (float)$item->total];
+                $penyaluranBreakdown[] = ['program_nama' => $item->nama_program ?: 'Operasional', 'amount' => (float)$item->total];
             }
 
             $programData[] = [
@@ -410,9 +410,11 @@ class LaporanKeuanganController extends Controller
                 ],
             ];
 
+            /*
             if ($unassignedRow) {
                 $programData[] = $unassignedRow;
             }
+            */
             
             // Add individual programs
             foreach ($programDataEntries as $entry) {

@@ -20,7 +20,7 @@
           </div>
 
           <div class="lg:col-span-1">
-            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
+            <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Dana Salur</label>
             <div class="flex items-center gap-2">
               <div class="flex-1">
                 <div v-if="loadingProgramList" class="h-11 flex items-center rounded-lg border border-gray-300 bg-gray-50 px-4 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">

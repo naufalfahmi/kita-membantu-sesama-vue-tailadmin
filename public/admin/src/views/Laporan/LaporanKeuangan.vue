@@ -650,7 +650,7 @@
                           
                           <!-- Pengajuan Dana Breakdown -->
                           <div v-if="program.breakdown.pengajuan_dana && program.breakdown.pengajuan_dana.length > 0">
-                            <div class="mb-2 text-sm font-medium text-orange-700 dark:text-orange-400">Pengajuan Dana dari Program:</div>
+                            <div class="mb-2 text-sm font-medium text-orange-700 dark:text-orange-400">Pengajuan Dana:</div>
                             <div class="space-y-1">
                               <div
                                 v-for="(item, idx) in program.breakdown.pengajuan_dana"
@@ -665,7 +665,7 @@
                           
                           <!-- Penyaluran Breakdown -->
                           <div v-if="program.breakdown.penyaluran && program.breakdown.penyaluran.length > 0">
-                            <div class="mb-2 text-sm font-medium text-purple-700 dark:text-purple-400">Penyaluran dari Program:</div>
+                            <div class="mb-2 text-sm font-medium text-purple-700 dark:text-purple-400">Penyaluran:</div>
                             <div class="space-y-1">
                               <div
                                 v-for="(item, idx) in program.breakdown.penyaluran"

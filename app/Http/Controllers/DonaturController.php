@@ -500,25 +500,37 @@ class DonaturController extends Controller
             }
 
             if ($hasExplicitVisibility) {
-                $query->whereIn('donaturs.pic', $allowed);
+                // Allow visibility if donatur matches PIC OR created_by (same as index method)
                 if ($hasExplicitMitraVisibility) {
-                    $query->whereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
+                    $query->where(function ($q) use ($allowed, $allowedMitra) {
+                        $q->where(function ($q2) use ($allowed) {
+                            $q2->whereIn('donaturs.pic', $allowed)
+                               ->orWhereIn('donaturs.created_by', $allowed);
+                        })
+                        ->orWhereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
+                    });
+                } else {
+                    $query->where(function ($q) use ($allowed) {
+                        $q->whereIn('donaturs.pic', $allowed)
+                          ->orWhereIn('donaturs.created_by', $allowed);
+                    });
                 }
+            } elseif ($hasExplicitMitraVisibility) {
+                // When only mitra visibility exists, allow all donaturs in that mitra
+                $query->whereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
             } elseif (! empty($assignedIds) && $isAdminCabang) {
                 $query->whereIn('donaturs.kantor_cabang_id', $assignedIds);
             } elseif (! empty($assignedIds)) {
                 $query->where(function ($q) use ($assignedIds, $allowed) {
                     $q->whereIn('donaturs.kantor_cabang_id', $assignedIds)
-                      ->orWhereIn('donaturs.pic', $allowed);
+                      ->orWhereIn('donaturs.pic', $allowed)
+                      ->orWhereIn('donaturs.created_by', $allowed);
                 });
-                if ($hasExplicitMitraVisibility) {
-                    $query->whereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
-                }
             } else {
-                $query->whereIn('donaturs.pic', $allowed);
-                if ($hasExplicitMitraVisibility) {
-                    $query->whereIn('donaturs.mitra_id', !empty($allowedMitra) ? $allowedMitra : ['-1']);
-                }
+                $query->where(function ($q) use ($allowed) {
+                    $q->whereIn('donaturs.pic', $allowed)
+                      ->orWhereIn('donaturs.created_by', $allowed);
+                });
             }
             try {
                 \Log::debug('DonaturController@show visibility debug', [

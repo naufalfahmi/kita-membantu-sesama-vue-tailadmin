@@ -50,8 +50,8 @@
           <!-- 1. Top Filter Section -->
           <div class="mb-6">
             <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
-              <!-- Range picker - Hidden but still functional -->
-              <div class="md:col-span-4 hidden">
+              <!-- Range picker -->
+              <div class="md:col-span-4">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal</label>
                 <flat-pickr
                   v-model="balanceRange"
@@ -62,7 +62,7 @@
               </div>
 
               <!-- Program select -->
-              <div class="md:col-span-4">
+              <div class="md:col-span-3">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
                 <SearchableSelect
                   v-model="selectedProgram"
@@ -74,7 +74,7 @@
               </div>
 
               <!-- Kantor Cabang select -->
-              <div class="md:col-span-4">
+              <div class="md:col-span-3">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
                 <SearchableSelect
                   v-model="selectedKantor"
@@ -86,7 +86,7 @@
               </div>
 
               <!-- Reset button -->
-              <div class="md:col-span-4 flex items-end justify-end">
+              <div class="md:col-span-2 flex items-end justify-end">
                 <button
                   @click="resetBalanceFilter"
                   class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03]"
@@ -1091,8 +1091,8 @@ const currentMitraPage = ref(1)
 const mitraPerPage = 6
 
 // Balance filters & state
-const balanceStart = ref('2020-01-01')
-const balanceEnd = ref(new Date().toISOString().split('T')[0])
+const balanceStart = ref(null)
+const balanceEnd = ref(null)
 const showBalanceTransactions = ref(false)
 
 const balanceTotals = ref({
@@ -1558,8 +1558,8 @@ const fetchBalanceData = async (page = 1) => {
     console.log('fetchBalanceData start', { start: balanceStart.value, end: balanceEnd.value, program: selectedProgram.value, kantor: selectedKantor.value, page })
     balancePagination.value.current_page = page
     const params = new URLSearchParams()
-    params.append('start', balanceStart.value)
-    params.append('end', balanceEnd.value)
+    if (balanceStart.value) params.append('start', balanceStart.value)
+    if (balanceEnd.value) params.append('end', balanceEnd.value)
     params.append('page', String(page))
     params.append('per_page', String(balancePagination.value.per_page || 20))
     if (selectedProgram.value) params.append('program_id', selectedProgram.value)
@@ -1642,8 +1642,8 @@ const fetchAllocationSummary = async () => {
   isLoadingAllocation.value = true
   try {
     const params = new URLSearchParams()
-    params.append('start', balanceStart.value)
-    params.append('end', balanceEnd.value)
+    if (balanceStart.value) params.append('start', balanceStart.value)
+    if (balanceEnd.value) params.append('end', balanceEnd.value)
     if (selectedProgram.value) params.append('program_id', selectedProgram.value)
     if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
 
@@ -1813,8 +1813,8 @@ const fetchProgramBreakdown = async () => {
   try {
     isLoadingProgramBreakdown.value = true
     const params = new URLSearchParams()
-    params.append('start', balanceStart.value)
-    params.append('end', balanceEnd.value)
+    if (balanceStart.value) params.append('start', balanceStart.value)
+    if (balanceEnd.value) params.append('end', balanceEnd.value)
     if (selectedProgram.value) params.append('program_id', selectedProgram.value)
     if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
 
@@ -1851,8 +1851,8 @@ const fetchPenyaluranByAlias = async () => {
   try {
     isLoadingPenyaluranByAlias.value = true
     const params = new URLSearchParams()
-    params.append('start', balanceStart.value)
-    params.append('end', balanceEnd.value)
+    if (balanceStart.value) params.append('start', balanceStart.value)
+    if (balanceEnd.value) params.append('end', balanceEnd.value)
     if (selectedProgram.value) params.append('program_id', selectedProgram.value)
     if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
 
@@ -1881,8 +1881,8 @@ const fetchExpenseTypeBreakdown = async () => {
   try {
     isLoadingExpenseTypeBreakdown.value = true
     const params = new URLSearchParams()
-    params.append('start', balanceStart.value)
-    params.append('end', balanceEnd.value)
+    if (balanceStart.value) params.append('start', balanceStart.value)
+    if (balanceEnd.value) params.append('end', balanceEnd.value)
     if (selectedProgram.value) params.append('program_id', selectedProgram.value)
     if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
 
@@ -1909,11 +1909,9 @@ const fetchExpenseTypeBreakdown = async () => {
 
 
 const resetBalanceFilter = () => {
-  const start = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0]
-  const end = new Date().toISOString().split('T')[0]
-  balanceStart.value = start
-  balanceEnd.value = end
-  balanceRange.value = [start, end]
+  balanceStart.value = null
+  balanceEnd.value = null
+  balanceRange.value = []
   selectedProgram.value = ''
   selectedKantor.value = ''
   // immediately fetch since filters changed

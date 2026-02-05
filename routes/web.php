@@ -339,6 +339,9 @@ Route::middleware(['web', 'auth'])->prefix('admin/api')->group(function () {
     Route::post('notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markRead'])->name('admin.api.notifications.read');
     Route::post('notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('admin.api.notifications.readAll');
 
+    // OneSignal
+    Route::post('onesignal/register', [\App\Http\Controllers\OneSignalController::class, 'register'])->name('admin.api.onesignal.register');
+
     // Mitra API
     Route::get('check-email', [MitraController::class, 'checkEmail'])->name('admin.api.check-email');
     Route::apiResource('mitra', MitraController::class);

@@ -170,21 +170,58 @@
         <span class="ml-3 text-gray-600 dark:text-gray-400">Memuat data...</span>
       </div>
 
-      <div v-else class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 600px;">
-        <ag-grid-vue
-          ref="agGridRef"
-          class="ag-theme-alpine"
-          style="width: 100%; height: 100%;"
-          :columnDefs="columnDefs"
-          :defaultColDef="defaultColDef"
-          :rowModelType="'infinite'"
-          :cacheBlockSize="pageSize"
-          :maxBlocksInCache="5"
-          theme="legacy"
-          :animateRows="true"
-          :suppressHorizontalScroll="true"
-          @grid-ready="onGridReady"
-        />
+      <div v-else>
+        <!-- Horizontal Scroll Controls -->
+        <div class="mb-3 flex items-center justify-end gap-2">
+          <button
+            @click="scrollGridLeft"
+            :disabled="!canScrollLeft"
+            :class="[
+              'flex items-center justify-center w-10 h-10 rounded-lg transition-all',
+              canScrollLeft
+                ? 'bg-brand-500 hover:bg-brand-600 text-white'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-800'
+            ]"
+            title="Scroll ke kiri"
+          >
+            <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M12.7071 4.29289C13.0976 4.68342 13.0976 5.31658 12.7071 5.70711L8.41421 10L12.7071 14.2929C13.0976 14.6834 13.0976 15.3166 12.7071 15.7071C12.3166 16.0976 11.6834 16.0976 11.2929 15.7071L6.29289 10.7071C5.90237 10.3166 5.90237 9.68342 6.29289 9.29289L11.2929 4.29289C11.6834 3.90237 12.3166 3.90237 12.7071 4.29289Z" fill="currentColor"/>
+            </svg>
+          </button>
+          <button
+            @click="scrollGridRight"
+            :disabled="!canScrollRight"
+            :class="[
+              'flex items-center justify-center w-10 h-10 rounded-lg transition-all',
+              canScrollRight
+                ? 'bg-brand-500 hover:bg-brand-600 text-white'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-800'
+            ]"
+            title="Scroll ke kanan"
+          >
+            <svg class="fill-current" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill-rule="evenodd" clip-rule="evenodd" d="M7.29289 4.29289C7.68342 3.90237 8.31658 3.90237 8.70711 4.29289L13.7071 9.29289C14.0976 9.68342 14.0976 10.3166 13.7071 10.7071L8.70711 15.7071C8.31658 16.0976 7.68342 16.0976 7.29289 15.7071C6.90237 15.3166 6.90237 14.6834 7.29289 14.2929L11.5858 10L7.29289 5.70711C6.90237 5.31658 6.90237 4.68342 7.29289 4.29289Z" fill="currentColor"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="ag-theme-alpine dark:ag-theme-alpine-dark" style="width: 100%; height: 600px;">
+          <ag-grid-vue
+            ref="agGridRef"
+            class="ag-theme-alpine"
+            style="width: 100%; height: 100%;"
+            :columnDefs="columnDefs"
+            :defaultColDef="defaultColDef"
+            :rowModelType="'infinite'"
+            :cacheBlockSize="pageSize"
+            :maxBlocksInCache="5"
+            theme="legacy"
+            :animateRows="true"
+            :suppressHorizontalScroll="false"
+            @grid-ready="onGridReady"
+            @body-scroll="onBodyScroll"
+          />
+        </div>
       </div>
     </div>
 
@@ -286,6 +323,10 @@ const filterProgram = ref('')
 const filterFundraiser = ref('')
 const filterKantorCabang = ref('')
 const filterMitra = ref('')
+
+// Horizontal scroll state
+const canScrollLeft = ref(false)
+const canScrollRight = ref(false)
 
 // Helpers used by exports: sanitize control characters and CSV escaping (semicolon delimiter)
 const sanitizeString = (s: any) => String(s || '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
@@ -941,6 +982,7 @@ const onGridReady = (event: any) => {
   gridColumnApi.value = event.columnApi
   const ds = createDatasource()
   gridApi.value.setDatasource(ds)
+  updateScrollButtons()
 }
 
 const refreshGrid = () => {
@@ -948,6 +990,68 @@ const refreshGrid = () => {
     const ds = createDatasource()
     gridApi.value.setDatasource(ds)
   }
+}
+
+// Update scroll button states based on current scroll position
+const updateScrollButtons = () => {
+  if (!gridApi.value) return
+  
+  try {
+    const gridBodyViewport = document.querySelector('.ag-body-horizontal-scroll-viewport') as HTMLElement
+    if (!gridBodyViewport) return
+    
+    const scrollLeft = gridBodyViewport.scrollLeft || 0
+    const scrollWidth = gridBodyViewport.scrollWidth || 0
+    const clientWidth = gridBodyViewport.clientWidth || 0
+    
+    canScrollLeft.value = scrollLeft > 0
+    canScrollRight.value = scrollLeft < (scrollWidth - clientWidth - 1)
+  } catch (e) {
+    console.error('Error updating scroll buttons:', e)
+  }
+}
+
+// Scroll grid left by 300px
+const scrollGridLeft = () => {
+  if (!gridApi.value) return
+  
+  try {
+    const gridBodyViewport = document.querySelector('.ag-body-horizontal-scroll-viewport') as HTMLElement
+    if (gridBodyViewport) {
+      gridBodyViewport.scrollBy({
+        left: -300,
+        behavior: 'smooth'
+      })
+      // Update button states after scroll animation
+      setTimeout(updateScrollButtons, 350)
+    }
+  } catch (e) {
+    console.error('Error scrolling left:', e)
+  }
+}
+
+// Scroll grid right by 300px
+const scrollGridRight = () => {
+  if (!gridApi.value) return
+  
+  try {
+    const gridBodyViewport = document.querySelector('.ag-body-horizontal-scroll-viewport') as HTMLElement
+    if (gridBodyViewport) {
+      gridBodyViewport.scrollBy({
+        left: 300,
+        behavior: 'smooth'
+      })
+      // Update button states after scroll animation
+      setTimeout(updateScrollButtons, 350)
+    }
+  } catch (e) {
+    console.error('Error scrolling right:', e)
+  }
+}
+
+// Handle body scroll event to update button states
+const onBodyScroll = () => {
+  updateScrollButtons()
 }
 
   const fetchFilterOptions = async () => {

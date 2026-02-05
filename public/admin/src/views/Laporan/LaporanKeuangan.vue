@@ -440,6 +440,7 @@
                       <th class="pb-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">Nama Penyaluran</th>
                       <th class="pb-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Pengajuan Dana</th>
                       <th class="pb-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Penyaluran</th>
+                      <th class="pb-3 text-right text-sm font-semibold text-gray-700 dark:text-gray-300">Selisih</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -469,11 +470,12 @@
                         </td>
                         <td class="py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(item.pengajuan_dana) }}</td>
                         <td class="py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(item.penyaluran) }}</td>
+                        <td class="py-3 text-right text-sm font-semibold" :class="(item.pengajuan_dana - item.penyaluran) >= 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(item.pengajuan_dana - item.penyaluran) }}</td>
                       </tr>
                       
                       <!-- Detail Row -->
                       <tr v-if="expandedExpenseType === item.submission_type" class="bg-gray-50 dark:bg-gray-800/50">
-                        <td colspan="3" class="p-4">
+                        <td colspan="4" class="p-4">
                           <div class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
                             <h5 class="bg-gray-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                               Detail Penyaluran ({{ item.details?.length || 0 }})
@@ -520,6 +522,9 @@
                       </td>
                       <td class="pt-3 text-right text-sm font-bold text-purple-600 dark:text-purple-400">
                         {{ formatCurrency(expenseTypeBreakdownData.reduce((sum, item) => sum + item.penyaluran, 0)) }}
+                      </td>
+                      <td class="pt-3 text-right text-sm font-bold" :class="expenseTypeBreakdownData.reduce((sum, item) => sum + (item.pengajuan_dana - item.penyaluran), 0) >= 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-red-600 dark:text-red-400'">
+                        {{ formatCurrency(expenseTypeBreakdownData.reduce((sum, item) => sum + (item.pengajuan_dana - item.penyaluran), 0)) }}
                       </td>
                     </tr>
                   </tfoot>

@@ -345,6 +345,10 @@ class LaporanKeuanganController extends Controller
         }
 
         // 3. Calculate Global Totals for "Semua Program"
+        // For "Semua Program", Dana Siap Salur should be the total of ALL transactions (not just program allocations)
+        $totalTransaksiKeseluruhan = Transaksi::whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+            ->sum('nominal');
+        
         $pengajuanTotal = \App\Models\PengajuanDana::where('status', 'Approved')
             ->whereBetween('created_at', [$startDate, $endDate])
             ->sum('amount');
@@ -353,21 +357,26 @@ class LaporanKeuanganController extends Controller
             ->sum('amount');
 
         $programData = [];
-        if ($totalDanaSiapSalur > 0 || $pengajuanTotal > 0 || $penyaluranTotal > 0) {
-            // Detailed breakdown for "Semua Program" (Dana Siap Salur Breakdown)
+        if ($totalTransaksiKeseluruhan > 0 || $pengajuanTotal > 0 || $penyaluranTotal > 0) {
+            // Detailed breakdown for "Semua Inflow" - use raw transaction totals per program
             $pemasukanBreakdown = [];
-            foreach ($programDataEntries as $entry) {
-                if ($entry['pemasukan'] > 0) {
+            foreach ($programs as $program) {
+                $rawInflow = $program->transaksis()
+                    ->whereBetween('tanggal_transaksi', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->sum('nominal');
+                
+                if ($rawInflow > 0) {
                     $pemasukanBreakdown[] = [
-                        'program_nama' => $entry['nama'],
-                        'amount' => $entry['pemasukan'],
+                        'program_nama' => $program->nama_program,
+                        'amount' => (float)$rawInflow,
                     ];
                 }
             }
-            if ($unassignedRow && $unassignedRow['pemasukan'] > 0) {
+            // Add unassigned/operasional transactions
+            if ($pemasukanUnassigned > 0) {
                 $pemasukanBreakdown[] = [
-                    'program_nama' => $unassignedRow['nama'],
-                    'amount' => $unassignedRow['pemasukan'],
+                    'program_nama' => 'Tanpa Program / Operasional Umum',
+                    'amount' => (float)$pemasukanUnassigned,
                 ];
             }
 
@@ -419,12 +428,12 @@ class LaporanKeuanganController extends Controller
 
             $programData[] = [
                 'id' => null,
-                'nama' => 'Semua Program',
-                'pemasukan' => (float)$totalDanaSiapSalur, // Dana Siap Salur Total
+                'nama' => 'Semua Inflow',
+                'pemasukan' => (float)$totalTransaksiKeseluruhan, // Total ALL transactions (not just program allocations)
                 'pengajuan_dana' => (float)$pengajuanTotal,
                 'penyaluran' => (float)$penyaluranTotal,
                 'selisih' => (float)($pengajuanTotal - $penyaluranTotal),
-                'saldo' => (float)($totalDanaSiapSalur - $penyaluranTotal),
+                'saldo' => (float)($totalTransaksiKeseluruhan - $penyaluranTotal),
                 'breakdown' => [
                     'pemasukan' => $pemasukanBreakdown,
                     'pengajuan_dana' => $pengajuanBreakdown,

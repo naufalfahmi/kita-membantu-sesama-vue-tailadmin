@@ -579,103 +579,34 @@
                 </thead>
                 <tbody>
                   <template v-for="program in programBreakdownData" :key="program.id || 'null-program'">
-                    <!-- Main Row -->
-                    <tr
-                      class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]"
-                      :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': expandedProgramId === (program.id || 'null') }"
-                    >
-                      <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
-                        <div class="flex items-center gap-2">
-                          <!-- Expand button for Semua Program with breakdown -->
-                          <button
-                            v-if="program.id === null && program.breakdown"
-                            @click="expandedProgramId = expandedProgramId === 'null' ? null : 'null'"
-                            class="flex h-6 w-6 items-center justify-center rounded hover:bg-gray-200 dark:hover:bg-gray-700"
-                          >
-                            <svg
-                              class="h-4 w-4 text-gray-600 dark:text-gray-400 transition-transform"
-                              :class="{ 'rotate-90': expandedProgramId === 'null' }"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                          <span v-if="program.id === null" class="inline-flex items-center gap-2">
-                            <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            {{ program.nama }}
-                          </span>
-                          <span v-else>{{ program.nama }}</span>
-                        </div>
-                      </td>
-                      <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(program.pemasukan || 0) }}</td>
-                      <td class="px-4 py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(program.pengajuan_dana || 0) }}</td>
-                      <td class="px-4 py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(program.penyaluran || 0) }}</td>
-                      <td class="px-4 py-3 text-right text-sm font-semibold" :class="(program.selisih || 0) >= 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.selisih || 0) }}</td>
-                      <td class="px-4 py-3 text-right text-sm font-bold" :class="(program.saldo || 0) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.saldo || 0) }}</td>
-                    </tr>
-                    
-                    <!-- Expanded Detail Row for Semua Program -->
-                    <tr v-if="program.id === null && program.breakdown && expandedProgramId === 'null'" class="border-b border-gray-100 bg-blue-50/30 dark:border-gray-800 dark:bg-blue-900/5">
-                      <td colspan="6" class="px-4 py-4">
-                        <div class="ml-8 space-y-4">
-                          <div class="text-xs font-semibold uppercase text-gray-600 dark:text-gray-400">Detail Breakdown (FIFO)</div>
-                          
-                          <!-- Pemasukan Breakdown -->
-                          <div v-if="program.breakdown.pemasukan && program.breakdown.pemasukan.length > 0">
-                            <div class="mb-2 text-sm font-medium text-green-700 dark:text-green-400">Dana Siap Salur dari Program:</div>
-                            <div class="space-y-1">
-                              <div
-                                v-for="(item, idx) in program.breakdown.pemasukan"
-                                :key="'pemasukan-' + idx"
-                                class="flex items-center justify-between rounded bg-white px-3 py-2 text-sm dark:bg-gray-800/50"
-                              >
-                                <span class="text-gray-700 dark:text-gray-300">{{ item.program_nama }}</span>
-                                <span class="font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(item.amount) }}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <!-- Pengajuan Dana Breakdown -->
-                          <div v-if="program.breakdown.pengajuan_dana && program.breakdown.pengajuan_dana.length > 0">
-                            <div class="mb-2 text-sm font-medium text-orange-700 dark:text-orange-400">Pengajuan Dana:</div>
-                            <div class="space-y-1">
-                              <div
-                                v-for="(item, idx) in program.breakdown.pengajuan_dana"
-                                :key="'pengajuan-' + idx"
-                                class="flex items-center justify-between rounded bg-white px-3 py-2 text-sm dark:bg-gray-800/50"
-                              >
-                                <span class="text-gray-700 dark:text-gray-300">{{ item.program_nama }}</span>
-                                <span class="font-semibold text-orange-600 dark:text-orange-400">{{ formatCurrency(item.amount) }}</span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <!-- Penyaluran Breakdown -->
-                          <div v-if="program.breakdown.penyaluran && program.breakdown.penyaluran.length > 0">
-                            <div class="mb-2 text-sm font-medium text-purple-700 dark:text-purple-400">Penyaluran:</div>
-                            <div class="space-y-1">
-                              <div
-                                v-for="(item, idx) in program.breakdown.penyaluran"
-                                :key="'penyaluran-' + idx"
-                                class="flex items-center justify-between rounded bg-white px-3 py-2 text-sm dark:bg-gray-800/50"
-                              >
-                                <span class="text-gray-700 dark:text-gray-300">{{ item.program_nama }}</span>
-                                <span class="font-semibold text-purple-600 dark:text-purple-400">{{ formatCurrency(item.amount) }}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div v-if="(!program.breakdown.pemasukan || program.breakdown.pemasukan.length === 0) && (!program.breakdown.pengajuan_dana || program.breakdown.pengajuan_dana.length === 0) && (!program.breakdown.penyaluran || program.breakdown.penyaluran.length === 0)" class="text-sm text-gray-500 dark:text-gray-500">
-                            Tidak ada detail breakdown untuk periode ini
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
+                    <!-- Skip "Semua Inflow" row (id === null) -->
+                    <template v-if="program.id !== null">
+                      <!-- Main Row -->
+                      <tr
+                        class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]"
+                      >
+                        <td class="px-4 py-3 text-sm font-medium text-gray-800 dark:text-white/90">
+                          {{ program.nama }}
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">{{ formatCurrency(program.pemasukan || 0) }}</td>
+                        <td class="px-4 py-3 text-right text-sm text-orange-600 dark:text-orange-400">{{ formatCurrency(program.pengajuan_dana || 0) }}</td>
+                        <td class="px-4 py-3 text-right text-sm text-purple-600 dark:text-purple-400">{{ formatCurrency(program.penyaluran || 0) }}</td>
+                        <td class="px-4 py-3 text-right text-sm font-semibold" :class="(program.selisih || 0) >= 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.selisih || 0) }}</td>
+                        <td class="px-4 py-3 text-right text-sm font-bold" :class="(program.saldo || 0) >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(program.saldo || 0) }}</td>
+                      </tr>
+                    </template>
                   </template>
+                  
+                  <!-- Total Row -->
+                  <tr v-if="programBreakdownData.length > 0" class="border-t-2 border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-800/50">
+                    <td class="px-4 py-3 text-sm font-bold text-gray-800 dark:text-white">TOTAL</td>
+                    <td class="px-4 py-3 text-right text-sm font-bold text-green-600 dark:text-green-400">{{ formatCurrency(programBreakdownTotal.pemasukan) }}</td>
+                    <td class="px-4 py-3 text-right text-sm font-bold text-orange-600 dark:text-orange-400">{{ formatCurrency(programBreakdownTotal.pengajuan_dana) }}</td>
+                    <td class="px-4 py-3 text-right text-sm font-bold text-purple-600 dark:text-purple-400">{{ formatCurrency(programBreakdownTotal.penyaluran) }}</td>
+                    <td class="px-4 py-3 text-right text-sm font-bold" :class="programBreakdownTotal.selisih >= 0 ? 'text-cyan-600 dark:text-cyan-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(programBreakdownTotal.selisih) }}</td>
+                    <td class="px-4 py-3 text-right text-sm font-bold" :class="programBreakdownTotal.saldo >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-red-600 dark:text-red-400'">{{ formatCurrency(programBreakdownTotal.saldo) }}</td>
+                  </tr>
+                  
                   <tr v-if="programBreakdownData.length === 0 && !isLoadingProgramBreakdown">
                     <td colspan="6" class="px-4 py-12 text-center">
                       <div class="flex flex-col items-center justify-center gap-3">
@@ -1246,6 +1177,18 @@ const isLoadingProgramBreakdown = ref(false)
 
 // NEW: Expanded row state for program breakdown details
 const expandedProgramId = ref(null)
+
+// NEW: Computed totals for program breakdown (excluding "Semua Inflow" row)
+const programBreakdownTotal = computed(() => {
+  const data = programBreakdownData.value.filter((p: any) => p.id !== null)
+  return {
+    pemasukan: data.reduce((sum: number, p: any) => sum + (p.pemasukan || 0), 0),
+    pengajuan_dana: data.reduce((sum: number, p: any) => sum + (p.pengajuan_dana || 0), 0),
+    penyaluran: data.reduce((sum: number, p: any) => sum + (p.penyaluran || 0), 0),
+    selisih: data.reduce((sum: number, p: any) => sum + (p.selisih || 0), 0),
+    saldo: data.reduce((sum: number, p: any) => sum + (p.saldo || 0), 0),
+  }
+})
 
 // NEW: Penyaluran by Alias data
 const penyaluranByAliasData = ref({ total: 0, breakdown: [] })

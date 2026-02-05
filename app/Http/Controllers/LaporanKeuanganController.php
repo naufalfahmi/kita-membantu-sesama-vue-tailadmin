@@ -863,7 +863,7 @@ class LaporanKeuanganController extends Controller
             ->pluck('submission_type')
             ->toArray();
 
-        $breakdown = [];
+        $breakdownByType = [];
 
         foreach ($submissionTypes as $submissionType) {
             // Get alias from program_share_types
@@ -906,26 +906,32 @@ class LaporanKeuanganController extends Controller
             }
 
             // Get Details for Penyaluran (Activity in period)
-            // Penyaluran doesn't have program/transaksi relations directly. using fields directly.
             $detailsQuery = clone $penyaluranQuery;
             $details = $detailsQuery->orderBy('created_at', 'desc')->get();
 
             $penyaluran = $penyaluranQuery->sum('amount');
 
-            // Only include if there's activity in this period (Approved/Disbursed)
-            // Saldo removed as requested
+            // Only include if there's activity in this period
             if ($pengajuanDana > 0 || $penyaluran > 0) {
-                // Total Pengeluaran removed as it was double counting and confusing
-
-                $breakdown[] = [
-                    'alias' => $alias,
-                    'submission_type' => $submissionType,
-                    'pengajuan_dana' => (float)$pengajuanDana,
-                    'penyaluran' => (float)$penyaluran,
-                    'details' => $details,
-                ];
+                // Initialize or accumulate by alias
+                if (!isset($breakdownByType[$alias])) {
+                    $breakdownByType[$alias] = [
+                        'alias' => $alias,
+                        'submission_type' => $submissionType, // Use first submission_type encountered
+                        'pengajuan_dana' => 0,
+                        'penyaluran' => 0,
+                        'details' => collect([]),
+                    ];
+                }
+                
+                $breakdownByType[$alias]['pengajuan_dana'] += (float)$pengajuanDana;
+                $breakdownByType[$alias]['penyaluran'] += (float)$penyaluran;
+                $breakdownByType[$alias]['details'] = $breakdownByType[$alias]['details']->concat($details);
             }
         }
+
+        // Convert associative array to indexed array
+        $breakdown = array_values($breakdownByType);
 
         // Sort by penyaluran desc
         usort($breakdown, function($a, $b) {

@@ -50,8 +50,8 @@
           <!-- 1. Top Filter Section -->
           <div class="mb-6">
             <div class="grid grid-cols-1 gap-3 md:grid-cols-12">
-              <!-- Range picker -->
-              <div class="md:col-span-4">
+              <!-- Range picker - Hidden but still functional -->
+              <div class="md:col-span-4 hidden">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Rentang Tanggal</label>
                 <flat-pickr
                   v-model="balanceRange"
@@ -62,7 +62,7 @@
               </div>
 
               <!-- Program select -->
-              <div class="md:col-span-3">
+              <div class="md:col-span-4">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Program</label>
                 <SearchableSelect
                   v-model="selectedProgram"
@@ -74,7 +74,7 @@
               </div>
 
               <!-- Kantor Cabang select -->
-              <div class="md:col-span-3">
+              <div class="md:col-span-4">
                 <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">Kantor Cabang</label>
                 <SearchableSelect
                   v-model="selectedKantor"
@@ -86,7 +86,7 @@
               </div>
 
               <!-- Reset button -->
-              <div class="md:col-span-2 flex items-end justify-end">
+              <div class="md:col-span-4 flex items-end justify-end">
                 <button
                   @click="resetBalanceFilter"
                   class="h-11 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.03]"

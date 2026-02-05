@@ -33,6 +33,7 @@ class LaporanKeuanganController extends Controller
         $end = $request->query('end');
         $programId = $request->query('program_id');
         $kantorCabangId = $request->query('kantor_cabang_id');
+        $type = $request->query('type', 'all'); // all, masuk, pengajuan_dana, penyaluran
 
         try {
             $endDate = $end ? Carbon::parse($end)->endOfDay() : Carbon::now()->endOfDay();
@@ -147,8 +148,10 @@ class LaporanKeuanganController extends Controller
             $disbursementRowsQuery->where('kantor_cabang_id', $kantorCabangId);
         }
         $disbursementRows = $disbursementRowsQuery
-            ->get(['id', 'created_at', 'amount', 'submission_type'])
+            ->with(['program'])
+            ->get(['id', 'created_at', 'amount', 'submission_type', 'program_id'])
             ->map(function ($d) {
+                $tipe_pos = ($d->program && $d->program->nama) ? $d->program->nama : $d->submission_type;
                 return [
                     'id' => $d->id,
                     'tanggal' => $d->created_at ? $d->created_at->format('Y-m-d') : null,
@@ -156,6 +159,7 @@ class LaporanKeuanganController extends Controller
                     'masuk' => 0.0,
                     'keluar' => 0.0, // Informational only, does not affect balance
                     'source' => 'disbursement', // keep key for frontend compat
+                    'tipe_pos' => $tipe_pos,
                 ];
             })->toArray();
 
@@ -169,8 +173,22 @@ class LaporanKeuanganController extends Controller
             $penyaluranRowsQuery->where('kantor_cabang_id', $kantorCabangId);
         }
         $penyaluranRows = $penyaluranRowsQuery
-            ->get(['id', 'amount', 'program_name', 'created_at'])
+            ->with(['pengajuan.program'])
+            ->get(['id', 'amount', 'program_name', 'created_at', 'pengajuan_dana_id'])
             ->map(function ($p) {
+                $tipe_pos = '';
+                if ($p->pengajuan) {
+                    // If submission_type is 'program', show program name
+                    if (strtolower($p->pengajuan->submission_type) === 'program' && $p->pengajuan->program && $p->pengajuan->program->nama) {
+                        $tipe_pos = $p->pengajuan->program->nama;
+                    } else {
+                        // Otherwise show submission_type
+                        $tipe_pos = $p->pengajuan->submission_type;
+                    }
+                }
+                if (!$tipe_pos) {
+                    $tipe_pos = $p->program_name ?: '';
+                }
                 return [
                     'id' => $p->id,
                     'tanggal' => $p->created_at ? $p->created_at->toDateString() : null,
@@ -178,23 +196,42 @@ class LaporanKeuanganController extends Controller
                     'masuk' => 0.0,
                     'keluar' => (float)$p->amount,
                     'source' => 'penyaluran',
+                    'tipe_pos' => $tipe_pos,
                 ];
             })->toArray();
 
         $rows = array_merge($incomingRows, $disbursementRows, $penyaluranRows);
 
-        // Sort by tanggal asc (nulls at end)
+        // Filter by type
+        if ($type !== 'all') {
+            $rows = array_filter($rows, function ($r) use ($type) {
+                if ($type === 'masuk') {
+                    return $r['masuk'] > 0;
+                } elseif ($type === 'pengajuan_dana') {
+                    return $r['source'] === 'disbursement';
+                } elseif ($type === 'penyaluran') {
+                    return $r['source'] === 'penyaluran';
+                }
+                return true;
+            });
+            $rows = array_values($rows); // Re-index after filter
+        }
+
+        // Sort by tanggal asc first (chronological order for balance calculation)
         usort($rows, function ($a, $b) {
             return strcmp($a['tanggal'] ?? '', $b['tanggal'] ?? '');
         });
 
-        // Compute running balance
+        // Compute running balance in chronological order
         $running = $saldoAwal;
         foreach ($rows as &$r) {
             $running += ($r['masuk'] - $r['keluar']);
             $r['saldo'] = $running;
         }
         unset($r);
+
+        // Now reverse to show newest first
+        $rows = array_reverse($rows);
 
         // Simple pagination (memory based) to keep API implementation simple
         $page = max(1, (int)$request->query('page', 1));

@@ -688,7 +688,7 @@
                     :key="tx.id"
                     class="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]"
                   >
-                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ tx.tanggal }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(tx.tanggal) }}</td>
                     <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ tx.keterangan }}</td>
                     <td class="px-4 py-3">
                       <span
@@ -698,7 +698,7 @@
                           'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400': tx.keluar > 0
                         }"
                       >
-                        {{ tx.masuk > 0 ? 'Pemasukan' : 'Pengeluaran' }}
+                        {{ tx.tipe_pos || (tx.masuk > 0 ? 'Pemasukan' : 'Penyaluran') }}
                       </span>
                     </td>
                     <td class="px-4 py-3 text-right text-sm font-semibold text-green-600 dark:text-green-400">
@@ -723,6 +723,22 @@
                     </td>
                   </tr>
                 </tbody>
+                <tfoot v-if="filteredTransactions.length > 0">
+                  <tr class="border-t-2 border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-white/[0.05]">
+                    <td colspan="3" class="px-4 py-3 text-sm font-bold text-gray-800 dark:text-white/90">
+                      TOTAL
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm font-bold text-green-600 dark:text-green-400">
+                      {{ formatCurrency(dynamicTransactionTotals.totalMasuk) }}
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm font-bold text-red-600 dark:text-red-400">
+                      {{ formatCurrency(dynamicTransactionTotals.totalKeluar) }}
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm font-bold text-gray-800 dark:text-white/90">
+                      {{ formatCurrency(dynamicTransactionTotals.saldoAkhir) }}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
 
@@ -1008,13 +1024,12 @@ const currentPageTitle = computed(() => (route.meta.title as string) || 'Laporan
 // Helper for date formatting
 const formatDate = (dateString: string) => {
   if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  const date = new Date(dateString)
+  const day = date.getDate()
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']
+  const month = months[date.getMonth()]
+  const year = date.getFullYear()
+  return `${day} ${month} ${year}`
 }
 
 // Icon components
@@ -1225,29 +1240,28 @@ const transactionFilters = [
 
 const activeTransactionFilter = ref('all')
 
-// Watch for transaction filter changes and add loading animation
+// Watch for transaction filter changes and fetch with type parameter
 watch(activeTransactionFilter, () => {
   isLoadingTransactionFilter.value = true
   // Reset to first page when changing filter
   balancePagination.value.current_page = 1
-  setTimeout(() => {
-    isLoadingTransactionFilter.value = false
-  }, 300)
+  // Fetch data with the new filter type
+  fetchBalanceData(1)
 })
 
 // NEW: Filtered transactions based on active filter
 const filteredTransactions = computed(() => {
-  if (!balanceTransactions.value) return []
-  
-  switch (activeTransactionFilter.value) {
-    case 'masuk':
-      return balanceTransactions.value.filter(t => t.masuk > 0)
-    case 'pengajuan_dana':
-      return balanceTransactions.value.filter(t => t.keluar > 0 && t.keterangan.toLowerCase().includes('pengajuan'))
-    case 'penyaluran':
-      return balanceTransactions.value.filter(t => t.keluar > 0 && t.keterangan.toLowerCase().includes('penyalur'))
-    default:
-      return balanceTransactions.value
+  // No longer needed as backend handles filtering
+  return balanceTransactions.value || []
+})
+
+// Computed dynamic totals for current filtered transactions
+const dynamicTransactionTotals = computed(() => {
+  // Use balanceTotals from API for grand total (all tabs)
+  return {
+    totalMasuk: balanceTotals.value.totalMasuk || 0,
+    totalKeluar: balanceTotals.value.totalKeluar || 0,
+    saldoAkhir: balanceTotals.value.saldo_akhir || 0
   }
 })
 
@@ -1555,13 +1569,14 @@ const progressChartSeries = computed(() => [persentaseMasuk.value])
 
 const fetchBalanceData = async (page = 1) => {
   try {
-    console.log('fetchBalanceData start', { start: balanceStart.value, end: balanceEnd.value, program: selectedProgram.value, kantor: selectedKantor.value, page })
+    console.log('fetchBalanceData start', { start: balanceStart.value, end: balanceEnd.value, program: selectedProgram.value, kantor: selectedKantor.value, page, type: activeTransactionFilter.value })
     balancePagination.value.current_page = page
     const params = new URLSearchParams()
     if (balanceStart.value) params.append('start', balanceStart.value)
     if (balanceEnd.value) params.append('end', balanceEnd.value)
     params.append('page', String(page))
     params.append('per_page', String(balancePagination.value.per_page || 20))
+    params.append('type', activeTransactionFilter.value)
     if (selectedProgram.value) params.append('program_id', selectedProgram.value)
     if (selectedKantor.value) params.append('kantor_cabang_id', selectedKantor.value)
 
@@ -1610,6 +1625,8 @@ const fetchBalanceData = async (page = 1) => {
     await fetchProgramBreakdown()
   } catch (err) {
     console.error('Exception fetching laporan keuangan', err)
+  } finally {
+    isLoadingTransactionFilter.value = false
   }
 }
 
